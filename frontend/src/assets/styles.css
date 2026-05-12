@@ -607,6 +607,49 @@ a {
   object-fit: cover;
 }
 
+.thumb-item {
+  position: relative;
+  cursor: pointer;
+}
+
+.thumb-item img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  object-fit: cover;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.thumb-item:hover img {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.thumb-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: #f56c6c;
+  color: white;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.thumb-item:hover .thumb-remove {
+  opacity: 1;
+}
+
 .el-button,
 .el-input__wrapper,
 .el-select__wrapper,
@@ -625,6 +668,18 @@ a {
   --el-button-border-color: var(--primary);
   --el-button-hover-bg-color: var(--primary-dark);
   --el-button-hover-border-color: var(--primary-dark);
+}
+
+.el-overlay {
+  z-index: 2000 !important;
+}
+
+.el-dialog {
+  z-index: 2001 !important;
+}
+
+.view {
+  overflow: visible;
 }
 
 @media (max-width: 1060px) {

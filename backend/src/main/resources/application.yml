@@ -23,7 +23,7 @@ spring:
 
 app:
   upload:
-    dir: uploads
+    dir: ${user.dir}/uploads
     public-path: /uploads
   security:
     token-secret: change-this-secret-before-deploying-guitu

@@ -3,7 +3,7 @@
     <el-upload
       class="image-uploader"
       drag
-      multiple
+      :multiple="limit > 1"
       :action="action"
       :headers="headers"
       :limit="limit"
@@ -11,6 +11,7 @@
       :on-success="handleSuccess"
       :on-remove="handleRemove"
       :on-error="handleError"
+      :on-preview="handlePreview"
       accept=".jpg,.jpeg,.png,.webp"
     >
       <UploadCloud :size="28" />
@@ -20,8 +21,17 @@
       </template>
     </el-upload>
     <div v-if="modelValue.length" class="thumb-grid">
-      <img v-for="url in modelValue" :key="url" :src="url" alt="上传图片预览" />
+      <div v-for="(url, index) in modelValue" :key="url" class="thumb-item">
+        <img :src="getFullUrl(url)" alt="上传图片预览" @click="previewImage(url)" />
+        <button class="thumb-remove" @click.stop="removeImage(index)">×</button>
+      </div>
     </div>
+
+    <el-dialog v-model="previewVisible" title="图片预览" width="600px" append-to-body>
+      <div style="text-align: center">
+        <img :src="previewUrl" alt="预览图片" style="max-width: 100%; max-height: 70vh; object-fit: contain;" />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -43,11 +53,26 @@ const headers = computed(() => {
   return token ? { Authorization: `Bearer ${token}` } : {}
 })
 const fileList = ref([])
+const previewVisible = ref(false)
+const previewUrl = ref('')
+
+const API_BASE = window.location.origin
+
+function getFullUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url
+  }
+  return `${API_BASE}${url}`
+}
 
 watch(
   () => props.modelValue,
   (urls) => {
-    fileList.value = urls.map((url, index) => ({ name: `image-${index + 1}`, url }))
+    fileList.value = urls.map((url, index) => ({
+      name: `image-${index + 1}`,
+      url: url
+    }))
   },
   { immediate: true }
 )
@@ -57,7 +82,9 @@ function handleSuccess(response) {
     ElMessage.error(response?.message || '上传失败')
     return
   }
-  emit('update:modelValue', [...props.modelValue, response.data.url])
+  const newUrls = [...props.modelValue, response.data.url]
+  emit('update:modelValue', newUrls)
+  ElMessage.success('图片上传成功')
 }
 
 function handleRemove(file) {
@@ -66,6 +93,22 @@ function handleRemove(file) {
 }
 
 function handleError() {
-  ElMessage.error('图片上传失败')
+  ElMessage.error('图片上传失败，请稍后重试')
+}
+
+function handlePreview(file) {
+  const url = file.url || file.response?.data?.url
+  previewUrl.value = getFullUrl(url)
+  previewVisible.value = true
+}
+
+function previewImage(url) {
+  previewUrl.value = getFullUrl(url)
+  previewVisible.value = true
+}
+
+function removeImage(index) {
+  const newUrls = props.modelValue.filter((_, i) => i !== index)
+  emit('update:modelValue', newUrls)
 }
 </script>

@@ -40,7 +40,7 @@
       <el-pagination v-model:current-page="page" :page-size="pageSize" :total="total" layout="prev, pager, next" @current-change="load" />
     </div>
 
-    <el-dialog v-model="dialogVisible" title="发布动物档案" width="720px">
+    <el-dialog v-model="dialogVisible" title="发布动物档案" width="720px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
         <el-row :gutter="12">
           <el-col :span="8">

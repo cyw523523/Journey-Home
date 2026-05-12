@@ -33,7 +33,7 @@
     </div>
     <EmptyState v-else title="暂无救助信息" description="可以发布一条救助信息，等待管理员审核后展示。" />
 
-    <el-dialog v-model="detailVisible" title="救助详情" width="680px">
+    <el-dialog v-model="detailVisible" title="救助详情" width="680px" append-to-body>
       <div v-if="current" class="form-shell">
         <StatusTag :value="current.status" :text="current.statusText" :options="rescueStatusOptions" />
         <h2>{{ current.location }}</h2>
@@ -45,7 +45,7 @@
       </div>
     </el-dialog>
 
-    <el-dialog v-model="dialogVisible" title="发布救助信息" width="720px">
+    <el-dialog v-model="dialogVisible" title="发布救助信息" width="720px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
         <el-form-item label="救助地点" prop="location">
           <el-input v-model="form.location" />

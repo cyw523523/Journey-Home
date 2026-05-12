@@ -148,7 +148,7 @@
       </main>
     </div>
 
-    <el-dialog v-model="auditDialog" title="审核处理" width="520px">
+    <el-dialog v-model="auditDialog" title="审核处理" width="520px" append-to-body>
       <el-form :model="auditForm" label-position="top">
         <el-form-item label="审核结果">
           <el-select v-model="auditForm.action" style="width: 100%">
@@ -167,7 +167,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="noticeDialog" title="公告管理" width="680px">
+    <el-dialog v-model="noticeDialog" title="公告管理" width="680px" append-to-body>
       <el-form :model="noticeForm" label-position="top">
         <el-form-item label="标题">
           <el-input v-model="noticeForm.title" />

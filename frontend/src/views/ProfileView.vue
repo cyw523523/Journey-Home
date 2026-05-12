@@ -18,7 +18,7 @@
     <div class="profile-grid">
       <aside class="sidebar-panel surface">
         <div class="avatar-block">
-          <el-avatar :src="profile.avatarUrl" :size="92">{{ profile.nickname?.slice(0, 1) }}</el-avatar>
+          <el-avatar :src="getFullUrl(profile.avatarUrl)" :size="92">{{ profile.nickname?.slice(0, 1) }}</el-avatar>
           <h2>{{ profile.nickname }}</h2>
           <StatusTag :value="profile.status" :text="profile.statusText" :options="userStatusOptions" />
         </div>
@@ -154,6 +154,15 @@ const passwordRef = ref()
 const avatarUrls = ref([])
 const profileForm = reactive({ nickname: '', phone: '', avatarUrl: '' })
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
+
+const API_BASE = window.location.origin
+function getFullUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url
+  }
+  return `${API_BASE}${url}`
+}
 const passwordRules = {
   oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
   newPassword: [{ required: true, message: '请输入新密码', trigger: 'blur' }, { min: 6, max: 32, message: '密码长度需为6-32位', trigger: 'blur' }],
@@ -186,9 +195,10 @@ async function saveProfile() {
   saving.value = true
   try {
     profileForm.avatarUrl = avatarUrls.value[0] || ''
-    profile.value = await userApi.update(profileForm)
-    auth.state.user = profile.value
-    localStorage.setItem('guitu_user', JSON.stringify(profile.value))
+    const updatedProfile = await userApi.update(profileForm)
+    profile.value = updatedProfile
+    auth.state.user = updatedProfile
+    localStorage.setItem('guitu_user', JSON.stringify(updatedProfile))
     ElMessage.success('资料已更新')
   } catch (error) {
     notifyError(error)
