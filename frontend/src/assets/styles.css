@@ -144,17 +144,6 @@ a {
   animation: viewIn 0.42s ease both;
 }
 
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.page-enter-from,
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
 @keyframes viewIn {
   from {
     opacity: 0;

@@ -8,3 +8,4 @@ frontend/dist/
 frontend/.npm-cache/
 frontend/*.log
 frontend/*screenshot.png
+.claude

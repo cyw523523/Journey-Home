@@ -45,7 +45,7 @@ public class Animal extends BaseEntity {
     @Column(length = 500)
     private String coverImageUrl;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "animal_images", joinColumns = @JoinColumn(name = "animal_id"))
     @Column(name = "image_url", length = 500)
     private List<String> imageUrls = new ArrayList<>();

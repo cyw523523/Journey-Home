@@ -36,7 +36,7 @@ public class Rescue extends BaseEntity {
     @Column(nullable = false, length = 1000)
     private String description;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "rescue_images", joinColumns = @JoinColumn(name = "rescue_id"))
     @Column(name = "image_url", length = 500)
     private List<String> imageUrls = new ArrayList<>();

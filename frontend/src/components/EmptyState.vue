@@ -11,7 +11,7 @@
 import { SearchX } from 'lucide-vue-next'
 
 defineProps({
-  icon: { type: [Object, Function], default: SearchX },
+  icon: { type: [Object, Function], default: () => SearchX },
   title: { type: String, default: '暂无数据' },
   description: { type: String, default: '换个条件试试，或稍后再来看看。' }
 })
