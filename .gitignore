@@ -1,0 +1,10 @@
+tools/
+.docker/
+.env
+backend/target/
+backend/uploads/
+frontend/node_modules/
+frontend/dist/
+frontend/.npm-cache/
+frontend/*.log
+frontend/*screenshot.png

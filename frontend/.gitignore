@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.npm-cache/
+vite.log
+vite.err.log
+home-screenshot.png
+mobile-screenshot.png
+*.local
+.env.local
+.env.*.local
