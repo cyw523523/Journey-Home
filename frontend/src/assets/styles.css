@@ -111,6 +111,7 @@ a {
 .top-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .user-chip {
@@ -124,6 +125,27 @@ a {
   background: #fff;
   color: var(--ink);
   cursor: pointer;
+}
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.lang-switch:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .page-stage {

@@ -79,10 +79,14 @@ function apply() {
 onMounted(async () => {
   loading.value = true
   try {
-    animal.value = await animalApi.detail(route.params.id)
-  } catch (error) {
+    const data = await animalApi.detail(route.params.id)
+    if (data && data.id) {
+      animal.value = data
+    } else {
+      animal.value = demoAnimals.find((item) => String(item.id) === String(route.params.id)) || demoAnimals[0]
+    }
+  } catch {
     animal.value = demoAnimals.find((item) => String(item.id) === String(route.params.id)) || demoAnimals[0]
-    notifyError(error)
   } finally {
     loading.value = false
   }

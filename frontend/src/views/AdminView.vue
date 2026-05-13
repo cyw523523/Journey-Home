@@ -2,20 +2,20 @@
   <section class="view page">
     <div class="section-head">
       <div>
-        <h1>管理员后台</h1>
-        <p>统一审核、用户管理、公告发布和数据统计。</p>
+        <h1>{{ $t('admin.title') }}</h1>
+        <p>{{ $t('admin.description') }}</p>
       </div>
-      <el-button :icon="RefreshCw" @click="loadAll">刷新</el-button>
+      <el-button :icon="RefreshCw" @click="loadAll">{{ $t('common.refresh') }}</el-button>
     </div>
 
     <div class="admin-layout">
       <aside class="admin-menu surface">
         <el-menu v-model="active" @select="active = $event">
-          <el-menu-item index="dashboard"><ChartNoAxesCombined />统计概览</el-menu-item>
-          <el-menu-item index="audits"><ClipboardCheck />审核管理</el-menu-item>
-          <el-menu-item index="users"><Users />用户管理</el-menu-item>
-          <el-menu-item index="notices"><Megaphone />公告管理</el-menu-item>
-          <el-menu-item index="applications"><HeartHandshake />领养申请</el-menu-item>
+          <el-menu-item index="dashboard"><ChartNoAxesCombined />{{ $t('admin.dashboard') }}</el-menu-item>
+          <el-menu-item index="audits"><ClipboardCheck />{{ $t('admin.auditManagement') }}</el-menu-item>
+          <el-menu-item index="users"><Users />{{ $t('admin.userManagement') }}</el-menu-item>
+          <el-menu-item index="notices"><Megaphone />{{ $t('admin.noticeManagement') }}</el-menu-item>
+          <el-menu-item index="applications"><HeartHandshake />{{ $t('admin.adoptionApplications') }}</el-menu-item>
         </el-menu>
       </aside>
 
@@ -23,43 +23,43 @@
         <div v-show="active === 'dashboard'" class="surface form-shell">
           <div class="metric-grid">
             <div class="metric">
-              <span>用户数</span>
+              <span>{{ $t('admin.userCount') }}</span>
               <strong>{{ overview.userCount }}</strong>
             </div>
             <div class="metric">
-              <span>动物档案</span>
+              <span>{{ $t('admin.animalCount') }}</span>
               <strong>{{ overview.animalCount }}</strong>
             </div>
             <div class="metric">
-              <span>救助信息</span>
+              <span>{{ $t('admin.rescueCount') }}</span>
               <strong>{{ overview.rescueCount }}</strong>
             </div>
             <div class="metric">
-              <span>领养申请</span>
+              <span>{{ $t('admin.applyCount') }}</span>
               <strong>{{ overview.applyCount }}</strong>
             </div>
             <div class="metric">
-              <span>待审核</span>
+              <span>{{ $t('admin.pendingAuditCount') }}</span>
               <strong>{{ overview.pendingAuditCount }}</strong>
             </div>
           </div>
           <el-row :gutter="14" style="margin-top: 16px">
             <el-col :md="8" :sm="24">
-              <h3>动物状态</h3>
+              <h3>{{ $t('admin.animalStatus') }}</h3>
               <div v-for="item in animalStatus" :key="item.status" class="mini-row">
-                <span>{{ item.statusText }}</span><strong>{{ item.count }}</strong>
+                <span>{{ item.statusText }}<strong>{{ item.count }}</strong></span>
               </div>
             </el-col>
             <el-col :md="8" :sm="24">
-              <h3>救助状态</h3>
+              <h3>{{ $t('admin.rescueStatus') }}</h3>
               <div v-for="item in rescueStatus" :key="item.status" class="mini-row">
-                <span>{{ item.statusText }}</span><strong>{{ item.count }}</strong>
+                <span>{{ item.statusText }}<strong>{{ item.count }}</strong></span>
               </div>
             </el-col>
             <el-col :md="8" :sm="24">
-              <h3>申请状态</h3>
+              <h3>{{ $t('admin.applyStatus') }}</h3>
               <div v-for="item in applyStatus" :key="item.status" class="mini-row">
-                <span>{{ item.statusText }}</span><strong>{{ item.count }}</strong>
+                <span>{{ item.statusText }}<strong>{{ item.count }}</strong></span>
               </div>
             </el-col>
           </el-row>
@@ -67,22 +67,22 @@
 
         <div v-show="active === 'audits'" class="surface form-shell">
           <div style="display: flex; gap: 10px; margin-bottom: 12px">
-            <el-select v-model="auditType" placeholder="审核类型" clearable style="width: 220px" @change="loadPending">
-              <el-option label="动物档案" value="ANIMAL" />
-              <el-option label="救助信息" value="RESCUE" />
-              <el-option label="领养申请" value="ADOPT_APPLY" />
+            <el-select v-model="auditType" :placeholder="$t('admin.auditType')" clearable style="width: 220px" @change="loadPending">
+              <el-option :label="$t('admin.animalRecord')" value="ANIMAL" />
+              <el-option :label="$t('admin.rescueInfo')" value="RESCUE" />
+              <el-option :label="$t('admin.adoptApply')" value="ADOPT_APPLY" />
             </el-select>
-            <el-button :icon="RefreshCw" @click="loadPending">刷新</el-button>
+            <el-button :icon="RefreshCw" @click="loadPending">{{ $t('common.refresh') }}</el-button>
           </div>
           <el-table :data="pending" stripe>
-            <el-table-column prop="targetType" label="类型" width="140" />
-            <el-table-column prop="targetId" label="业务ID" width="100" />
-            <el-table-column prop="title" label="内容" />
-            <el-table-column prop="publisherOrApplicant" label="发布/申请人" width="150" />
-            <el-table-column label="操作" width="210">
+            <el-table-column prop="targetType" :label="$t('common.type')" width="140" />
+            <el-table-column prop="targetId" :label="$t('admin.businessId')" width="100" />
+            <el-table-column prop="title" :label="$t('admin.content')" />
+            <el-table-column prop="publisherOrApplicant" :label="$t('admin.publisherOrApplicant')" width="150" />
+            <el-table-column :label="$t('admin.action')" width="210">
               <template #default="{ row }">
-                <el-button size="small" :icon="Check" type="primary" @click="openAudit(row, 'APPROVE')">通过</el-button>
-                <el-button size="small" :icon="X" @click="openAudit(row, 'REJECT')">驳回</el-button>
+                <el-button size="small" :icon="Check" type="primary" @click="openAudit(row, 'APPROVE')">{{ $t('admin.approve') }}</el-button>
+                <el-button size="small" :icon="X" @click="openAudit(row, 'REJECT')">{{ $t('admin.reject') }}</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -90,18 +90,18 @@
 
         <div v-show="active === 'users'" class="surface form-shell">
           <el-table :data="usersList" stripe>
-            <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="account" label="账号" />
-            <el-table-column prop="nickname" label="昵称" />
-            <el-table-column prop="phone" label="手机号" />
-            <el-table-column label="角色" width="150">
+            <el-table-column prop="id" :label="$t('admin.id')" width="80" />
+            <el-table-column prop="account" :label="$t('auth.account')" />
+            <el-table-column prop="nickname" :label="$t('admin.nickname')" />
+            <el-table-column prop="phone" :label="$t('admin.phoneNumber')" />
+            <el-table-column :label="$t('admin.role')" width="150">
               <template #default="{ row }">
                 <el-select v-model="row.role" size="small" @change="updateUser(row)">
                   <el-option v-for="item in roleOptions" :key="item.value" :label="item.label" :value="item.value" />
                 </el-select>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="140">
+            <el-table-column :label="$t('admin.status')" width="140">
               <template #default="{ row }">
                 <el-select v-model="row.status" size="small" @change="updateUser(row)">
                   <el-option v-for="item in userStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -113,20 +113,20 @@
 
         <div v-show="active === 'notices'" class="surface form-shell">
           <div style="display: flex; justify-content: flex-end; margin-bottom: 12px">
-            <el-button :icon="Plus" type="primary" @click="openNotice()">新增公告</el-button>
+            <el-button :icon="Plus" type="primary" @click="openNotice()">{{ $t('admin.addNotice') }}</el-button>
           </div>
           <el-table :data="notices" stripe>
-            <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="title" label="标题" />
-            <el-table-column label="状态" width="120">
+            <el-table-column prop="id" :label="$t('admin.id')" width="80" />
+            <el-table-column prop="title" :label="$t('admin.noticeTitle')" />
+            <el-table-column :label="$t('admin.status')" width="120">
               <template #default="{ row }">
                 <StatusTag :value="row.status" :text="row.statusText" :options="noticeStatusOptions" />
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="220">
+            <el-table-column :label="$t('admin.action')" width="220">
               <template #default="{ row }">
-                <el-button size="small" :icon="Pencil" @click="openNotice(row)">编辑</el-button>
-                <el-button size="small" :icon="Archive" @click="offlineNotice(row)">下架</el-button>
+                <el-button size="small" :icon="Pencil" @click="openNotice(row)">{{ $t('common.edit') }}</el-button>
+                <el-button size="small" :icon="Archive" @click="offlineNotice(row)">{{ $t('admin.offline') }}</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -134,11 +134,11 @@
 
         <div v-show="active === 'applications'" class="surface form-shell">
           <el-table :data="applications" stripe>
-            <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="applicantName" label="申请人" width="130" />
-            <el-table-column prop="animalTypeText" label="动物" width="100" />
-            <el-table-column prop="reason" label="理由" />
-            <el-table-column label="状态" width="120">
+            <el-table-column prop="id" :label="$t('admin.id')" width="80" />
+            <el-table-column prop="applicantName" :label="$t('admin.applicant')" width="130" />
+            <el-table-column prop="animalTypeText" :label="$t('admin.animal')" width="100" />
+            <el-table-column prop="reason" :label="$t('admin.reason')" />
+            <el-table-column :label="$t('admin.status')" width="120">
               <template #default="{ row }">
                 <StatusTag :value="row.status" :text="row.statusText" :options="applyStatusOptions" />
               </template>
@@ -148,42 +148,42 @@
       </main>
     </div>
 
-    <el-dialog v-model="auditDialog" title="审核处理" width="520px" append-to-body>
+    <el-dialog v-model="auditDialog" :title="$t('admin.auditDialogTitle')" width="520px" append-to-body>
       <el-form :model="auditForm" label-position="top">
-        <el-form-item label="审核结果">
+        <el-form-item :label="$t('admin.auditResult')">
           <el-select v-model="auditForm.action" style="width: 100%">
-            <el-option label="通过" value="APPROVE" />
-            <el-option label="驳回" value="REJECT" />
-            <el-option v-if="auditForm.targetType !== 'ADOPT_APPLY'" label="下架" value="OFFLINE" />
+            <el-option :label="$t('admin.approve')" value="APPROVE" />
+            <el-option :label="$t('admin.reject')" value="REJECT" />
+            <el-option v-if="auditForm.targetType !== 'ADOPT_APPLY'" :label="$t('admin.offline')" value="OFFLINE" />
           </el-select>
         </el-form-item>
-        <el-form-item label="审核意见">
+        <el-form-item :label="$t('admin.auditOpinion')">
           <el-input v-model="auditForm.opinion" type="textarea" :rows="4" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="auditDialog = false">取消</el-button>
-        <el-button :loading="saving" :icon="Send" type="primary" @click="submitAudit">提交</el-button>
+        <el-button @click="auditDialog = false">{{ $t('common.cancel') }}</el-button>
+        <el-button :loading="saving" :icon="Send" type="primary" @click="submitAudit">{{ $t('common.submit') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="noticeDialog" title="公告管理" width="680px" append-to-body>
+    <el-dialog v-model="noticeDialog" :title="$t('admin.noticeDialogTitle')" width="680px" append-to-body>
       <el-form :model="noticeForm" label-position="top">
-        <el-form-item label="标题">
+        <el-form-item :label="$t('admin.noticeTitle')">
           <el-input v-model="noticeForm.title" />
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item :label="$t('admin.status')">
           <el-select v-model="noticeForm.status" style="width: 100%">
             <el-option v-for="item in noticeStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="内容">
+        <el-form-item :label="$t('admin.noticeContent')">
           <el-input v-model="noticeForm.content" type="textarea" :rows="6" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="noticeDialog = false">取消</el-button>
-        <el-button :loading="saving" :icon="Save" type="primary" @click="saveNotice">保存</el-button>
+        <el-button @click="noticeDialog = false">{{ $t('common.cancel') }}</el-button>
+        <el-button :loading="saving" :icon="Save" type="primary" @click="saveNotice">{{ $t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </section>
@@ -192,6 +192,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import {
   Archive,
   ChartNoAxesCombined,
@@ -212,6 +213,7 @@ import { adminApi } from '../api'
 import { notifyError } from '../api/http'
 import { applyStatusOptions, noticeStatusOptions, roleOptions, userStatusOptions } from '../utils/status'
 
+const { t } = useI18n()
 const active = ref('dashboard')
 const saving = ref(false)
 const overview = ref({ userCount: 0, animalCount: 0, rescueCount: 0, applyCount: 0, pendingAuditCount: 0 })
@@ -286,7 +288,7 @@ function openAudit(row, action) {
     targetType: row.targetType,
     targetId: row.targetId,
     action,
-    opinion: action === 'APPROVE' ? '内容完整，审核通过。' : '信息不完整，请修改后重新提交。'
+    opinion: action === 'APPROVE' ? t('admin.defaultApproveOpinion') : t('admin.defaultRejectOpinion')
   })
   auditDialog.value = true
 }
@@ -295,7 +297,7 @@ async function submitAudit() {
   saving.value = true
   try {
     await adminApi.audit(auditForm)
-    ElMessage.success('审核已处理')
+    ElMessage.success(t('admin.auditProcessed'))
     auditDialog.value = false
     await loadAll()
   } catch (error) {
@@ -308,7 +310,7 @@ async function submitAudit() {
 async function updateUser(row) {
   try {
     await adminApi.updateUser(row.id, { role: row.role, status: row.status })
-    ElMessage.success('用户已更新')
+    ElMessage.success(t('admin.userUpdated'))
   } catch (error) {
     notifyError(error)
   }
@@ -327,7 +329,7 @@ async function saveNotice() {
     } else {
       await adminApi.createNotice(noticeForm)
     }
-    ElMessage.success('公告已保存')
+    ElMessage.success(t('admin.noticeSaved'))
     noticeDialog.value = false
     loadNotices()
   } catch (error) {
@@ -340,7 +342,7 @@ async function saveNotice() {
 async function offlineNotice(row) {
   try {
     await adminApi.offlineNotice(row.id)
-    ElMessage.success('公告已下架')
+    ElMessage.success(t('admin.noticeOffline'))
     loadNotices()
   } catch (error) {
     notifyError(error)

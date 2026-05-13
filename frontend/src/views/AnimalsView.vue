@@ -2,28 +2,28 @@
   <section class="view page">
     <div class="section-head">
       <div>
-        <h1>动物档案</h1>
-        <p>这里展示的是审核通过且允许公开查看的动物档案。你自己提交但还没审核通过的记录，请到个人中心查看。</p>
+        <h1>{{ $t('animals.title') }}</h1>
+        <p>{{ $t('animals.description') }}</p>
       </div>
       <el-button v-if="auth.isLoggedIn.value" :icon="Plus" type="primary" size="large" @click="dialogVisible = true">
-        发布档案
+        {{ $t('animals.publishRecord') }}
       </el-button>
-      <el-button v-else :icon="LogIn" size="large" @click="$router.push('/auth')">登录后发布</el-button>
+      <el-button v-else :icon="LogIn" size="large" @click="$router.push('/auth')">{{ $t('animals.loginToPublish') }}</el-button>
     </div>
 
     <div class="toolbar tool-panel">
-      <el-input v-model="filters.keyword" placeholder="关键词" clearable @keyup.enter="load" />
-      <el-select v-model="filters.type" placeholder="类型" clearable>
+      <el-input v-model="filters.keyword" :placeholder="$t('animals.keyword')" clearable @keyup.enter="load" />
+      <el-select v-model="filters.type" :placeholder="$t('animals.type')" clearable>
         <el-option v-for="item in animalTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-select v-model="filters.gender" placeholder="性别" clearable>
+      <el-select v-model="filters.gender" :placeholder="$t('animals.gender')" clearable>
         <el-option v-for="item in genderOptions" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-select v-model="filters.status" placeholder="状态" clearable>
+      <el-select v-model="filters.status" :placeholder="$t('animals.status')" clearable>
         <el-option v-for="item in publicAnimalStatuses" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-input v-model="filters.region" placeholder="地区" clearable @keyup.enter="load" />
-      <el-button :icon="Search" type="primary" @click="load">筛选</el-button>
+      <el-input v-model="filters.region" :placeholder="$t('animals.region')" clearable @keyup.enter="load" />
+      <el-button :icon="Search" type="primary" @click="load">{{ $t('animals.filter') }}</el-button>
     </div>
 
     <el-skeleton v-if="loading" :rows="6" animated />
@@ -32,53 +32,53 @@
     </div>
     <EmptyState
       v-else
-      title="当前还没有可公开查看的动物档案"
-      description="如果你刚提交了档案，它会先进入待审核状态；审核通过后才会出现在这里。"
+      :title="$t('animals.noAnimals')"
+      :description="$t('animals.noAnimalsDesc')"
     />
 
     <div v-if="total > pageSize" style="display: flex; justify-content: center; margin-top: 24px">
       <el-pagination v-model:current-page="page" :page-size="pageSize" :total="total" layout="prev, pager, next" @current-change="load" />
     </div>
 
-    <el-dialog v-model="dialogVisible" title="发布动物档案" width="720px" append-to-body>
+    <el-dialog v-model="dialogVisible" :title="$t('animals.publishDialogTitle')" width="720px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
         <el-row :gutter="12">
           <el-col :span="8">
-            <el-form-item label="动物类型" prop="type">
+            <el-form-item :label="$t('animals.animalType')" prop="type">
               <el-select v-model="form.type" style="width: 100%">
                 <el-option v-for="item in animalTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="性别" prop="gender">
+            <el-form-item :label="$t('animals.gender')" prop="gender">
               <el-select v-model="form.gender" style="width: 100%">
                 <el-option v-for="item in genderOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="年龄" prop="age">
+            <el-form-item :label="$t('animals.age')" prop="age">
               <el-input-number v-model="form.age" :min="0" :max="30" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="发现地区" prop="foundRegion">
+        <el-form-item :label="$t('animals.foundRegion')" prop="foundRegion">
           <el-input v-model="form.foundRegion" />
         </el-form-item>
-        <el-form-item label="健康情况">
+        <el-form-item :label="$t('animals.healthCondition')">
           <el-input v-model="form.healthCondition" />
         </el-form-item>
-        <el-form-item label="照片" prop="imageUrls">
+        <el-form-item :label="$t('animals.photos')" prop="imageUrls">
           <ImageUploader v-model="form.imageUrls" usage="animal" />
         </el-form-item>
-        <el-form-item label="详细说明">
+        <el-form-item :label="$t('animals.description')">
           <el-input v-model="form.description" type="textarea" :rows="4" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button :loading="saving" :icon="Send" type="primary" @click="submit">提交审核</el-button>
+        <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button :loading="saving" :icon="Send" type="primary" @click="submit">{{ $t('animals.submitForReview') }}</el-button>
       </template>
     </el-dialog>
   </section>
@@ -88,6 +88,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { LogIn, Plus, Search, Send } from 'lucide-vue-next'
 import AnimalCard from '../components/AnimalCard.vue'
 import EmptyState from '../components/EmptyState.vue'
@@ -99,6 +100,7 @@ import { animalStatusOptions, animalTypeOptions, genderOptions } from '../utils/
 import { useAuth } from '../stores/auth'
 
 const route = useRoute()
+const { t } = useI18n()
 const auth = useAuth()
 const loading = ref(false)
 const saving = ref(false)
@@ -127,10 +129,10 @@ const form = reactive({
   description: ''
 })
 const rules = {
-  type: [{ required: true, message: '请选择动物类型', trigger: 'change' }],
-  gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
-  foundRegion: [{ required: true, message: '请输入发现地区', trigger: 'blur' }],
-  imageUrls: [{ type: 'array', required: true, min: 1, message: '至少上传一张照片', trigger: 'change' }]
+  type: [{ required: true, message: () => t('animals.selectAnimalType'), trigger: 'change' }],
+  gender: [{ required: true, message: () => t('animals.selectGender'), trigger: 'change' }],
+  foundRegion: [{ required: true, message: () => t('animals.inputRegion'), trigger: 'blur' }],
+  imageUrls: [{ type: 'array', required: true, min: 1, message: () => t('animals.uploadPhoto'), trigger: 'change' }]
 }
 
 async function load() {
@@ -141,8 +143,13 @@ async function load() {
       page: page.value - 1,
       size: pageSize
     })
-    animals.value = data.content || []
-    total.value = data.totalElements || 0
+    if (data.content && data.content.length > 0) {
+      animals.value = data.content
+      total.value = data.totalElements || 0
+    } else {
+      animals.value = demoAnimals
+      total.value = demoAnimals.length
+    }
   } catch {
     animals.value = demoAnimals
     total.value = demoAnimals.length
@@ -156,7 +163,7 @@ async function submit() {
   saving.value = true
   try {
     await animalApi.create(form)
-    ElMessage.success('提交成功，等待管理员审核')
+    ElMessage.success(t('animals.submitSuccess'))
     dialogVisible.value = false
     Object.assign(form, { type: 'CAT', gender: 'UNKNOWN', age: 0, foundRegion: '', healthCondition: '', imageUrls: [], description: '' })
     load()
