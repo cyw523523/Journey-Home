@@ -31,6 +31,13 @@ app:
   upload:
     dir: ${user.dir}/uploads
     public-path: /uploads
+  ai:
+    zhipu:
+      api-url: ${ZHIPU_API_URL:https://open.bigmodel.cn/api/paas/v4/chat/completions}
+      api-key: ${ZHIPU_API_KEY:}
+      model: ${ZHIPU_AI_MODEL:glm-4-flash-250414}
+      connect-timeout-ms: ${ZHIPU_CONNECT_TIMEOUT_MS:10000}
+      read-timeout-ms: ${ZHIPU_READ_TIMEOUT_MS:60000}
   security:
     token-secret: change-this-secret-before-deploying-guitu
     token-ttl-hours: 168

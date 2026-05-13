@@ -34,6 +34,7 @@ export const rescueApi = {
 
 export const adoptionApi = {
   create: (data) => http.post('/adoptions', data),
+  smartMatch: (data) => http.post('/adoptions/smart-match', data, { timeout: 60000 }),
   list: (params) => http.get('/adoptions', { params }),
   detail: (id) => http.get(`/adoptions/${id}`),
   cancel: (id) => http.patch(`/adoptions/${id}/cancel`)

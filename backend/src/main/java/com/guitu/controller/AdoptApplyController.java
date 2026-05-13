@@ -4,7 +4,9 @@ import com.guitu.common.ApiResponse;
 import com.guitu.common.PageResponse;
 import com.guitu.domain.enums.ApplyStatus;
 import com.guitu.dto.AdoptApplyDtos;
+import com.guitu.dto.SmartAdoptionDtos;
 import com.guitu.service.AdoptApplyService;
+import com.guitu.service.SmartAdoptionService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -19,14 +21,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/adoptions")
 public class AdoptApplyController {
     private final AdoptApplyService adoptApplyService;
+    private final SmartAdoptionService smartAdoptionService;
 
-    public AdoptApplyController(AdoptApplyService adoptApplyService) {
+    public AdoptApplyController(AdoptApplyService adoptApplyService, SmartAdoptionService smartAdoptionService) {
         this.adoptApplyService = adoptApplyService;
+        this.smartAdoptionService = smartAdoptionService;
     }
 
     @PostMapping
     public ApiResponse<AdoptApplyDtos.ApplyResponse> create(@Valid @RequestBody AdoptApplyDtos.CreateApplyRequest request) {
         return ApiResponse.ok(adoptApplyService.create(request));
+    }
+
+    @PostMapping("/smart-match")
+    public ApiResponse<SmartAdoptionDtos.SmartMatchResponse> smartMatch(
+            @Valid @RequestBody SmartAdoptionDtos.SmartMatchRequest request
+    ) {
+        return ApiResponse.ok(smartAdoptionService.generateAdvice(request));
     }
 
     @GetMapping

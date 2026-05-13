@@ -15,6 +15,10 @@ public interface AdoptApplyRepository extends JpaRepository<AdoptApply, Long>, J
 
     boolean existsByAnimalIdAndApplicantIdAndStatus(Long animalId, Long applicantId, ApplyStatus status);
 
+    long countByAnimalId(Long animalId);
+
+    long countByAnimalIdAndStatus(Long animalId, ApplyStatus status);
+
     long countByStatus(ApplyStatus status);
 
     @Query("select a.status, count(a) from AdoptApply a group by a.status")
