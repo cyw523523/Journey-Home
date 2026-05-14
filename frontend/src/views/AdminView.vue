@@ -212,9 +212,65 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="detailDialog" :title="`详情 - ${detailTargetType}`" width="760px" append-to-body>
+    <el-dialog v-model="detailDialog" :title="`详情 - ${detailTargetTypeText}`" width="760px" append-to-body>
       <el-skeleton v-if="detailLoading" :rows="8" animated />
-      <pre v-else class="admin-json-preview">{{ JSON.stringify(detailData, null, 2) }}</pre>
+      <template v-else-if="detailData">
+        <div v-if="detailTargetType === 'ANIMAL'" class="audit-detail-grid">
+          <div class="detail-item"><label>类型</label><span>{{ detailData.typeText }}</span></div>
+          <div class="detail-item"><label>性别</label><span>{{ detailData.genderText }}</span></div>
+          <div class="detail-item"><label>年龄</label><span>{{ detailData.age ?? '未知' }}</span></div>
+          <div class="detail-item"><label>发现地区</label><span>{{ detailData.foundRegion }}</span></div>
+          <div class="detail-item"><label>健康情况</label><span>{{ detailData.healthCondition || '-' }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="animalStatusOptions" /></div>
+          <div class="detail-item" v-if="parseExpectedStatus(detailData)"><label>预期操作</label><StatusTag :value="parseExpectedStatus(detailData)" :text="expectedStatusText(parseExpectedStatus(detailData))" :options="animalStatusOptions" /></div>
+          <div class="detail-item"><label>发布者</label><span>{{ detailData.publisherNickname }}</span></div>
+          <div class="detail-item full-width"><label>描述</label><p>{{ detailData.description || '-' }}</p></div>
+          <div class="detail-item full-width" v-if="detailData.coverImageUrl"><label>封面图</label><img :src="detailData.coverImageUrl" style="max-width:200px;border-radius:8px" /></div>
+          <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
+            <label>图片</label><div class="detail-thumb-row"><img v-for="u in detailData.imageUrls" :key="u" :src="u" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" /></div>
+          </div>
+        </div>
+        <div v-else-if="detailTargetType === 'RESCUE'" class="audit-detail-grid">
+          <div class="detail-item"><label>地点</label><span>{{ detailData.location }}</span></div>
+          <div class="detail-item"><label>动物情况</label><span>{{ detailData.animalCondition }}</span></div>
+          <div class="detail-item"><label>联系方式</label><span>{{ detailData.contact }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="rescueStatusOptions" /></div>
+          <div class="detail-item"><label>发布者</label><span>{{ detailData.publisherNickname }}</span></div>
+          <div class="detail-item full-width"><label>描述</label><p>{{ detailData.description }}</p></div>
+          <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
+            <label>图片</label><div class="detail-thumb-row"><img v-for="u in detailData.imageUrls" :key="u" :src="u" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" /></div>
+          </div>
+        </div>
+        <div v-else-if="detailTargetType === 'ADOPT_APPLY'" class="audit-detail-grid">
+          <div class="detail-item"><label>动物ID</label><span>{{ detailData.animalId }}</span></div>
+          <div class="detail-item"><label>动物类型</label><span>{{ detailData.animalTypeText }}</span></div>
+          <div class="detail-item"><label>申请人</label><span>{{ detailData.applicantName }}</span></div>
+          <div class="detail-item"><label>联系方式</label><span>{{ detailData.contact }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="applyStatusOptions" /></div>
+          <div class="detail-item full-width"><label>领养理由</label><p>{{ detailData.reason }}</p></div>
+          <div class="detail-item full-width"><label>居住条件</label><p>{{ detailData.livingCondition }}</p></div>
+          <div class="detail-item full-width"><label>饲养经验</label><p>{{ detailData.experience }}</p></div>
+          <div class="detail-item full-width" v-if="detailData.auditOpinion"><label>审核意见</label><p>{{ detailData.auditOpinion }}</p></div>
+        </div>
+        <div v-else-if="detailTargetType === 'COMMUNITY_POST'" class="audit-detail-grid">
+          <div class="detail-item full-width"><label>标题</label><p>{{ detailData.title }}</p></div>
+          <div class="detail-item"><label>作者</label><span>{{ detailData.authorNickname }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="communityPostStatusOptions" /></div>
+          <div class="detail-item full-width"><label>内容</label><p>{{ detailData.content }}</p></div>
+          <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
+            <label>图片</label><div class="detail-thumb-row"><img v-for="u in detailData.imageUrls" :key="u" :src="u" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" /></div>
+          </div>
+        </div>
+        <div v-else-if="detailTargetType === 'COMMUNITY_COMMENT'" class="audit-detail-grid">
+          <div class="detail-item"><label>作者</label><span>{{ detailData.authorNickname }}</span></div>
+          <div class="detail-item"><label>帖子ID</label><span>{{ detailData.postId }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="communityCommentStatusOptions" /></div>
+          <div class="detail-item full-width"><label>内容</label><p>{{ detailData.content }}</p></div>
+          <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
+            <label>图片</label><div class="detail-thumb-row"><img v-for="u in detailData.imageUrls" :key="u" :src="u" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" /></div>
+          </div>
+        </div>
+      </template>
       <template #footer>
         <el-button @click="detailDialog = false">关闭</el-button>
       </template>
@@ -319,6 +375,8 @@ import {
   appealStatusOptions,
   appealTargetOptions,
   applyStatusOptions,
+  communityCommentStatusOptions,
+  communityPostStatusOptions,
   noticeStatusOptions,
   reportActionOptions,
   reportStatusOptions,
@@ -356,6 +414,22 @@ const detailData = ref(null)
 const detailTargetType = ref('')
 const reportTarget = ref(null)
 const appealTarget = ref(null)
+
+const detailTypeLabels = { ANIMAL: '动物档案', RESCUE: '救助信息', ADOPT_APPLY: '领养申请', COMMUNITY_POST: '社区帖子', COMMUNITY_COMMENT: '社区评论' }
+const detailTargetTypeText = ref('')
+
+function parseExpectedStatus(data) {
+  if (!data || !data.reviewComment) return null
+  const comment = data.reviewComment
+  if (!comment.startsWith('STATUS_UPDATE|')) return null
+  const parts = comment.split('|')
+  if (parts.length === 3) return parts[2]
+  return null
+}
+function expectedStatusText(status) {
+  const opt = animalStatusOptions.find(o => o.value === status)
+  return opt ? opt.label : status
+}
 
 const auditForm = reactive({ targetType: '', targetId: null, action: 'APPROVE', opinion: '' })
 const noticeForm = reactive({ id: null, title: '', content: '', status: 'DRAFT' })
@@ -433,6 +507,7 @@ async function loadAppeals() {
 
 async function openDetail(row) {
   detailTargetType.value = row.targetType
+  detailTargetTypeText.value = detailTypeLabels[row.targetType] || row.targetType
   detailData.value = null
   detailLoading.value = true
   detailDialog.value = true
@@ -566,13 +641,27 @@ onMounted(loadAll)
 </script>
 
 <style scoped>
-.admin-json-preview {
-  white-space: pre-wrap;
-  word-break: break-word;
-  background: rgba(244, 248, 246, 0.9);
-  border-radius: 14px;
-  padding: 14px;
-  max-height: 62vh;
-  overflow: auto;
+.audit-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+.detail-item label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+.detail-thumb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 </style>

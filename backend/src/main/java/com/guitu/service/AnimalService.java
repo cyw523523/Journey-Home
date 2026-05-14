@@ -30,9 +30,11 @@ import java.util.Set;
 
 @Service
 public class AnimalService {
-    private static final Set<AnimalStatus> OWNER_ALLOWED_STATUSES = EnumSet.of(
+    private static final Set<AnimalStatus> DIRECT_SET_STATUSES = EnumSet.of(
             AnimalStatus.WAITING_RESCUE,
             AnimalStatus.RESCUING,
+            AnimalStatus.WAITING_ADOPTION,
+            AnimalStatus.ADOPTED,
             AnimalStatus.OFFLINE
     );
 
@@ -113,7 +115,7 @@ public class AnimalService {
         moderationService.validateText("Animal description", request.foundRegion(), request.healthCondition(), request.description());
         Animal animal = new Animal();
         fillAnimal(animal, request);
-        animal.setStatus(AnimalStatus.PENDING_REVIEW);
+        animal.setStatus(request.status() != null ? request.status() : AnimalStatus.PENDING_REVIEW);
         animal.setReviewComment(null);
         animal.setPublisher(publisher);
         AnimalDtos.AnimalResponse response = mapper.toAnimalResponse(animalRepository.save(animal));
@@ -147,10 +149,14 @@ public class AnimalService {
     public AnimalDtos.AnimalResponse updateStatus(Long id, AnimalDtos.UpdateAnimalStatusRequest request) {
         Animal animal = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(animal.getPublisher().getId());
-        if (!SecuritySupport.isAdmin() && !OWNER_ALLOWED_STATUSES.contains(request.status())) {
-            throw new BusinessException(HttpStatus.FORBIDDEN, "Current user cannot set the animal to this status");
+        if (!SecuritySupport.isAdmin()) {
+            String prev = animal.getStatus().name();
+            String target = request.status().name();
+            animal.setReviewComment("STATUS_UPDATE|" + prev + "|" + target);
+            animal.setStatus(AnimalStatus.PENDING_REVIEW);
+        } else {
+            animal.setStatus(request.status());
         }
-        animal.setStatus(request.status());
         cacheInvalidationService.evictPublicCaches();
         return mapper.toAnimalResponse(animal);
     }

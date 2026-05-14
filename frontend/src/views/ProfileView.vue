@@ -380,10 +380,7 @@ const passwordRules = {
 
 const availableStatuses = computed(() => {
   if (statusTargetType.value === 'animal') {
-    if (auth.isAdmin.value) {
-      return animalStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
-    }
-    return animalStatusOptions.filter((item) => ['WAITING_RESCUE', 'RESCUING', 'OFFLINE'].includes(item.value))
+    return animalStatusOptions.filter((item) => ['WAITING_RESCUE', 'RESCUING', 'WAITING_ADOPTION', 'ADOPTED', 'OFFLINE'].includes(item.value))
   }
   return rescueStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
 })

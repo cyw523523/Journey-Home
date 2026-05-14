@@ -72,6 +72,11 @@
         <el-form-item :label="$t('animals.photos')" prop="imageUrls">
           <ImageUploader v-model="form.imageUrls" usage="animal" />
         </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="form.status" style="width: 100%">
+            <el-option v-for="item in creatableStatuses" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+        </el-form-item>
         <el-form-item :label="$t('animals.description')">
           <el-input v-model="form.description" type="textarea" :rows="4" />
         </el-form-item>
@@ -126,8 +131,12 @@ const form = reactive({
   foundRegion: '',
   healthCondition: '',
   imageUrls: [],
-  description: ''
+  description: '',
+  status: null
 })
+const creatableStatuses = animalStatusOptions.filter(item =>
+  ['WAITING_RESCUE', 'RESCUING', 'WAITING_ADOPTION', 'PENDING_REVIEW'].includes(item.value)
+)
 const rules = {
   type: [{ required: true, message: () => t('animals.selectAnimalType'), trigger: 'change' }],
   gender: [{ required: true, message: () => t('animals.selectGender'), trigger: 'change' }],
@@ -165,7 +174,7 @@ async function submit() {
     await animalApi.create(form)
     ElMessage.success(t('animals.submitSuccess'))
     dialogVisible.value = false
-    Object.assign(form, { type: 'CAT', gender: 'UNKNOWN', age: 0, foundRegion: '', healthCondition: '', imageUrls: [], description: '' })
+    Object.assign(form, { type: 'CAT', gender: 'UNKNOWN', age: 0, foundRegion: '', healthCondition: '', imageUrls: [], description: '', status: null })
     load()
   } catch (error) {
     notifyError(error)

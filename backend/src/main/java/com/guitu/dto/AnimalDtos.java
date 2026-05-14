@@ -35,7 +35,9 @@ public final class AnimalDtos {
             List<@Size(max = 500, message = "图片路径长度不能超过500") String> imageUrls,
 
             @Size(max = 1000, message = "详细说明长度不能超过1000")
-            String description
+            String description,
+
+            AnimalStatus status
     ) {
     }
 

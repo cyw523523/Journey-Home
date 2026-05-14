@@ -164,10 +164,7 @@ const isOwnerOrAdmin = computed(() => {
 })
 
 const availableStatuses = computed(() => {
-  if (auth.isAdmin.value) {
-    return animalStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
-  }
-  return animalStatusOptions.filter((item) => ['WAITING_RESCUE', 'RESCUING', 'OFFLINE'].includes(item.value))
+  return animalStatusOptions.filter((item) => ['WAITING_RESCUE', 'RESCUING', 'WAITING_ADOPTION', 'ADOPTED', 'OFFLINE'].includes(item.value))
 })
 
 function apply() {

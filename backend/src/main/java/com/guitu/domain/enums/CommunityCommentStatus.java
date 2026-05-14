@@ -1,8 +1,8 @@
 package com.guitu.domain.enums;
 
 public enum CommunityCommentStatus {
-    PENDING_REVIEW("Pending review"),
     PUBLISHED("Published"),
+    PENDING_REVIEW("Pending review"),
     REJECTED("Rejected"),
     OFFLINE("Offline");
 

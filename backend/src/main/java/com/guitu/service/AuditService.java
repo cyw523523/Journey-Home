@@ -159,7 +159,28 @@ public class AuditService {
             if (animal.getStatus() != AnimalStatus.PENDING_REVIEW) {
                 throw new BusinessException("This record has already been audited");
             }
-            animal.setStatus(request.action() == AuditAction.APPROVE ? AnimalStatus.WAITING_ADOPTION : AnimalStatus.REJECTED);
+            boolean isStatusUpdate = animal.getReviewComment() != null && animal.getReviewComment().startsWith("STATUS_UPDATE|");
+            if (request.action() == AuditAction.APPROVE) {
+                if (isStatusUpdate) {
+                    String[] parts = animal.getReviewComment().split("\\|");
+                    if (parts.length == 3) {
+                        try { animal.setStatus(AnimalStatus.valueOf(parts[2])); }
+                        catch (IllegalArgumentException e) { animal.setStatus(AnimalStatus.WAITING_ADOPTION); }
+                    } else { animal.setStatus(AnimalStatus.WAITING_ADOPTION); }
+                } else {
+                    animal.setStatus(AnimalStatus.WAITING_ADOPTION);
+                }
+            } else {
+                if (isStatusUpdate) {
+                    String[] parts = animal.getReviewComment().split("\\|");
+                    if (parts.length >= 2) {
+                        try { animal.setStatus(AnimalStatus.valueOf(parts[1])); }
+                        catch (IllegalArgumentException e) { animal.setStatus(AnimalStatus.REJECTED); }
+                    } else { animal.setStatus(AnimalStatus.REJECTED); }
+                } else {
+                    animal.setStatus(AnimalStatus.REJECTED);
+                }
+            }
         }
         animal.setReviewComment(request.opinion());
         recordLog(AuditTargetType.ANIMAL, animal.getId(), auditor, request.action(), request.opinion());
