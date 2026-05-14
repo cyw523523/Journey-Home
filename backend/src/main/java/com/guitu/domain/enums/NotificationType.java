@@ -7,7 +7,8 @@ public enum NotificationType {
     APPEAL_UPDATE("Appeal update"),
     REPORT_CREATED("New report"),
     APPEAL_CREATED("New appeal"),
-    ACCOUNT_ACTION("Account action");
+    ACCOUNT_ACTION("Account action"),
+    COMMENT_REPLY("Comment reply");
 
     private final String label;
 

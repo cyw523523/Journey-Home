@@ -200,5 +200,30 @@ export default {
     applicant: '申请人',
     animal: '动物',
     reason: '理由'
+  },
+  notification: {
+    SYSTEM: '系统通知',
+    AUDIT_RESULT: '审核结果',
+    AUDIT_RESULT_ANIMAL: '动物档案审核结果已更新',
+    AUDIT_RESULT_RESCUE: '救助信息审核结果已更新',
+    AUDIT_RESULT_ADOPT_APPLY: '领养申请审核结果已更新',
+    AUDIT_RESULT_COMMUNITY_POST: '社区帖子审核结果已更新',
+    AUDIT_RESULT_COMMUNITY_COMMENT: '社区评论审核结果已更新',
+    AUDIT_RESULT_ADOPT_APPLY_AUTO_REJECT: '领养申请已自动关闭',
+    REPORT_UPDATE: '举报处理结果',
+    REPORT_CREATED: '新举报待处理',
+    APPEAL_UPDATE: '申诉处理结果',
+    APPEAL_CREATED: '新申诉待处理',
+    ACCOUNT_ACTION: '账号状态变更',
+    COMMENT_REPLY: '评论回复',
+    COMMENT_REPLY_COMMENT: '有人回复了你的评论',
+    COMMENT_REPLY_POST: '有人评论了你的帖子',
+    COMMENT_REPLY_COMMENT_CONTENT: '{nickname} 回复了你的评论：{snippet}',
+    COMMENT_REPLY_POST_CONTENT: '{nickname} 评论了你的帖子：{snippet}',
+    markAllRead: '全部已读',
+    noNotifications: '暂无通知',
+    notifications: '站内通知',
+    read: '已读',
+    unread: '未读'
   }
 }

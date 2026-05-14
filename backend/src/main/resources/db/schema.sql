@@ -131,3 +131,39 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     updated_at DATETIME,
     CONSTRAINT fk_audit_logs_auditor FOREIGN KEY (auditor_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS direct_conversations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_one_id BIGINT NOT NULL,
+    user_two_id BIGINT NOT NULL,
+    last_message_content VARCHAR(500),
+    last_sender_id BIGINT,
+    last_message_at DATETIME,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_dc_user_one FOREIGN KEY (user_one_id) REFERENCES users(id),
+    CONSTRAINT fk_dc_user_two FOREIGN KEY (user_two_id) REFERENCES users(id),
+    CONSTRAINT fk_dc_last_sender FOREIGN KEY (last_sender_id) REFERENCES users(id),
+    CONSTRAINT uk_dc_participants UNIQUE (user_one_id, user_two_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS direct_messages (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id BIGINT NOT NULL,
+    sender_id BIGINT NOT NULL,
+    receiver_id BIGINT NOT NULL,
+    content VARCHAR(2000) NOT NULL,
+    read_flag BIT NOT NULL,
+    read_at DATETIME,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_dm_conversation FOREIGN KEY (conversation_id) REFERENCES direct_conversations(id),
+    CONSTRAINT fk_dm_sender FOREIGN KEY (sender_id) REFERENCES users(id),
+    CONSTRAINT fk_dm_receiver FOREIGN KEY (receiver_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS direct_message_images (
+    message_id BIGINT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_dm_images_message FOREIGN KEY (message_id) REFERENCES direct_messages(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -8,13 +8,13 @@
             <p class="eyebrow"><MessagesSquare :size="16" /> {{ $t('community.title') }}</p>
             <h1>{{ detail.post.title }}</h1>
             <p class="muted author-line">
-              <RouterLink :to="'/users/' + detail.post.authorId" class="author-link">
-                <el-avatar :src="getFullUrl(detail.post.authorAvatarUrl)" :size="22" style="margin-right:4px;vertical-align:middle">
+              <RouterLink :to="avatarTarget(detail.post.authorId)" class="chat-avatar-link">
+                <el-avatar :src="getFullUrl(detail.post.authorAvatarUrl)" :size="22">
                   {{ detail.post.authorNickname?.slice(0, 1) }}
                 </el-avatar>
-                {{ detail.post.authorNickname }}
               </RouterLink>
-              · {{ detail.post.authorRoleText }} · {{ formatTime(detail.post.createdAt) }}
+              <RouterLink :to="`/users/${detail.post.authorId}`" class="author-link">{{ detail.post.authorNickname }}</RouterLink>
+              <span> · {{ detail.post.authorRoleText }} · {{ formatTime(detail.post.createdAt) }}</span>
             </p>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
@@ -74,14 +74,14 @@
             >
               <div class="community-comment-head">
                 <div style="display:flex;align-items:center;gap:8px">
-                  <RouterLink :to="'/users/' + comment.authorId" class="author-link">
+                  <RouterLink :to="avatarTarget(comment.authorId)" class="chat-avatar-link">
                     <el-avatar :src="getFullUrl(comment.authorAvatarUrl)" :size="24">
                       {{ comment.authorNickname?.slice(0, 1) }}
                     </el-avatar>
                   </RouterLink>
                   <div>
                     <div>
-                      <RouterLink :to="'/users/' + comment.authorId" class="author-link">
+                      <RouterLink :to="`/users/${comment.authorId}`" class="author-link">
                         <strong>{{ comment.authorNickname }}</strong>
                       </RouterLink>
                       <span v-if="comment.replyToAuthorNickname" class="muted" style="font-size:12px">
@@ -201,6 +201,13 @@ function formatTime(value) {
 
 function canManageComment(comment) {
   return auth.state.user && (auth.state.user.id === comment.authorId || auth.state.user.role === 'ADMIN')
+}
+
+function avatarTarget(userId) {
+  if (auth.state.user?.id === userId) {
+    return '/profile'
+  }
+  return { path: '/messages', query: { userId: String(userId) } }
 }
 
 function replyTo(comment) {

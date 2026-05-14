@@ -26,6 +26,12 @@
         </div>
 
         <div class="top-actions">
+          <button v-if="auth.isLoggedIn.value" class="user-chip notification-chip" @click="$router.push('/messages')">
+            <MessagesSquare :size="17" />
+            <span>{{ messageLabel }}</span>
+            <el-badge v-if="messageSummary.unreadCount" :value="messageSummary.unreadCount" />
+          </button>
+
           <el-dropdown @command="changeLanguage">
             <button class="lang-switch">
               <Globe :size="17" />
@@ -48,8 +54,8 @@
             <template #dropdown>
               <div class="notification-menu">
                 <div class="notification-head">
-                  <strong>站内通知</strong>
-                  <el-button text size="small" @click.stop="markAllRead">全部已读</el-button>
+                  <strong>{{ t('notification.notifications') }}</strong>
+                  <el-button text size="small" @click.stop="markAllRead">{{ t('notification.markAllRead') }}</el-button>
                 </div>
                 <div v-if="notifications.length" class="notification-list">
                   <button
@@ -59,12 +65,12 @@
                     :class="{ unread: !item.readFlag }"
                     @click="openNotification(item)"
                   >
-                    <strong>{{ item.title }}</strong>
-                    <span>{{ item.content }}</span>
+                    <strong>{{ t('notification.' + item.title, item.title) }}</strong>
+                    <span>{{ formatNotificationContent(item) }}</span>
                     <small>{{ formatTime(item.createdAt) }}</small>
                   </button>
                 </div>
-                <div v-else class="notification-empty">暂无通知</div>
+                <div v-else class="notification-empty">{{ t('notification.noNotifications') }}</div>
               </div>
             </template>
           </el-dropdown>
@@ -96,12 +102,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Bell, Globe, HeartHandshake, LogIn, UserRound } from 'lucide-vue-next'
-import { notificationApi } from '../api'
+import { Bell, Globe, HeartHandshake, LogIn, MessagesSquare, UserRound } from 'lucide-vue-next'
+import { messageApi, notificationApi } from '../api'
 import { notifyError } from '../api/http'
+import { connectMessageSocket, disconnectMessageSocket, subscribeMessageSocket } from '../services/messageSocket'
 import { useAuth } from '../stores/auth'
 
 const { locale, t } = useI18n()
@@ -109,9 +116,17 @@ const auth = useAuth()
 const router = useRouter()
 const notifications = ref([])
 const notificationSummary = ref({ unreadCount: 0 })
+const messageSummary = ref({ unreadCount: 0 })
+let refreshTimer = null
+let unsubscribeMessageSocket = null
 
 const currentLanguageLabel = computed(() => {
   return locale.value === 'zh' ? t('common.chinese') : t('common.english')
+})
+
+const messageLabel = computed(() => {
+  const translated = t('nav.messages')
+  return translated === 'nav.messages' ? '私信' : translated
 })
 
 function changeLanguage(lang) {
@@ -128,6 +143,16 @@ function formatTime(value) {
   return value ? new Date(value).toLocaleString() : '-'
 }
 
+function formatNotificationContent(item) {
+  if (item.title === 'COMMENT_REPLY_COMMENT' || item.title === 'COMMENT_REPLY_POST') {
+    const parts = (item.content || '').split('|')
+    if (parts.length === 2) {
+      return t('notification.' + item.title + '_CONTENT', { nickname: parts[0], snippet: parts[1] })
+    }
+  }
+  return item.content || ''
+}
+
 async function loadNotifications() {
   if (!auth.isLoggedIn.value) return
   try {
@@ -137,6 +162,15 @@ async function loadNotifications() {
     ])
     notifications.value = listData.content || []
     notificationSummary.value = summaryData || { unreadCount: 0 }
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+async function loadMessageSummary() {
+  if (!auth.isLoggedIn.value) return
+  try {
+    messageSummary.value = await messageApi.summary()
   } catch (error) {
     notifyError(error)
   }
@@ -163,25 +197,68 @@ async function openNotification(item) {
       await notificationApi.markRead(item.id)
     }
     await loadNotifications()
-    router.push('/profile')
+    router.push('/profile?tab=notifications')
   } catch (error) {
     notifyError(error)
   }
 }
 
+function handleMessagesUpdated() {
+  loadMessageSummary()
+}
+
+function handleMessageSocketEvent(event) {
+  if (!event || event.type === 'socket-open' || event.type === 'socket-close') return
+  loadMessageSummary()
+  window.dispatchEvent(new CustomEvent('messages:socket', { detail: event }))
+}
+
+function startRefreshTimer() {
+  stopRefreshTimer()
+  refreshTimer = window.setInterval(async () => {
+    await loadNotifications()
+  }, 20000)
+}
+
+function stopRefreshTimer() {
+  if (refreshTimer) {
+    window.clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
 watch(() => auth.isLoggedIn.value, (loggedIn) => {
   if (loggedIn) {
+    connectMessageSocket(auth.state.token)
     loadNotifications()
+    loadMessageSummary()
+    startRefreshTimer()
   } else {
+    disconnectMessageSocket()
     notifications.value = []
     notificationSummary.value = { unreadCount: 0 }
+    messageSummary.value = { unreadCount: 0 }
+    stopRefreshTimer()
   }
 }, { immediate: true })
 
 onMounted(() => {
+  window.addEventListener('messages:updated', handleMessagesUpdated)
+  unsubscribeMessageSocket = subscribeMessageSocket(handleMessageSocketEvent)
   if (auth.isLoggedIn.value) {
+    connectMessageSocket(auth.state.token)
     loadNotifications()
+    loadMessageSummary()
+    startRefreshTimer()
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('messages:updated', handleMessagesUpdated)
+  unsubscribeMessageSocket?.()
+  unsubscribeMessageSocket = null
+  disconnectMessageSocket()
+  stopRefreshTimer()
 })
 </script>
 

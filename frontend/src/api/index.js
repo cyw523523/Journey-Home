@@ -79,6 +79,14 @@ export const notificationApi = {
   markAllRead: () => http.patch('/notifications/read-all')
 }
 
+export const messageApi = {
+  listConversations: (params) => http.get('/messages/conversations', { params }),
+  detail: (id) => http.get(`/messages/conversations/${id}`),
+  detailWithUser: (userId) => http.get(`/messages/conversations/with/${userId}`),
+  send: (conversationId, data) => http.post(`/messages/conversations/${conversationId}/messages`, data),
+  summary: () => http.get('/messages/summary')
+}
+
 export const homeApi = {
   overview: () => http.get('/home/overview')
 }

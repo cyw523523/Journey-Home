@@ -97,8 +97,8 @@ public class AppealService {
         AppealRecord saved = appealRepository.save(appeal);
         notificationService.notifyAdmins(
                 NotificationType.APPEAL_CREATED,
-                "New appeal pending review",
-                "A new appeal requires admin review.",
+                "新申诉待处理",
+                "有新的申诉需要管理员审核。",
                 request.targetType().name(),
                 saved.getId()
         );
@@ -141,7 +141,7 @@ public class AppealService {
             appeal.setFirstReviewer(reviewer);
             appeal.setFirstReviewOpinion(request.opinion());
             appeal.setStatus(AppealStatus.SECOND_REVIEW_PENDING);
-            notificationService.notifyUser(appeal.getApplicant(), NotificationType.APPEAL_UPDATE, "Appeal escalated to second review", request.opinion(), appeal.getTargetType().name(), appeal.getTargetId());
+            notificationService.notifyUser(appeal.getApplicant(), NotificationType.APPEAL_UPDATE, "申诉已升级至二审", request.opinion(), appeal.getTargetType().name(), appeal.getTargetId());
             return mapper.toAppealResponse(appeal);
         }
 
@@ -167,7 +167,7 @@ public class AppealService {
         notificationService.notifyUser(
                 appeal.getApplicant(),
                 NotificationType.APPEAL_UPDATE,
-                "Appeal review updated",
+                "申诉审核结果已更新",
                 request.opinion(),
                 appeal.getTargetType().name(),
                 appeal.getTargetId()

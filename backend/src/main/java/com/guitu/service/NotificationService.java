@@ -39,7 +39,7 @@ public class NotificationService {
         SystemNotification notification = new SystemNotification();
         notification.setRecipient(recipient);
         notification.setType(type);
-        notification.setTitle(title);
+        notification.setTitle(title.startsWith("AUDIT_RESULT_") || title.startsWith("COMMENT_REPLY_") ? title : type.name());
         notification.setContent(content);
         notification.setRelatedTargetType(relatedTargetType);
         notification.setRelatedTargetId(relatedTargetId);

@@ -101,8 +101,8 @@ public class ReportService {
         ContentReport saved = reportRepository.save(report);
         notificationService.notifyAdmins(
                 NotificationType.REPORT_CREATED,
-                "New report pending review",
-                "A new report requires admin review.",
+                "新举报待处理",
+                "有新的举报需要管理员审核。",
                 request.targetType().name(),
                 saved.getId()
         );
@@ -127,7 +127,9 @@ public class ReportService {
 
     @Transactional(readOnly = true)
     public ReportDtos.ReportResponse detail(Long id) {
-        return mapper.toReportResponse(getEntity(id));
+        ContentReport report = getEntity(id);
+        String targetContent = resolveTargetContent(report.getTargetType(), report.getTargetId());
+        return mapper.toReportResponse(report, targetContent);
     }
 
     @Transactional
@@ -170,7 +172,7 @@ public class ReportService {
         notificationService.notifyUser(
                 report.getReporter(),
                 NotificationType.REPORT_UPDATE,
-                "Report processed",
+                "举报已处理",
                 request.opinion(),
                 report.getTargetType().name(),
                 report.getTargetId()
@@ -179,7 +181,7 @@ public class ReportService {
             notificationService.notifyUser(
                     report.getTargetOwner(),
                     NotificationType.REPORT_UPDATE,
-                    "Content moderation result updated",
+                    "内容审核结果已更新",
                     request.opinion(),
                     report.getTargetType().name(),
                     report.getTargetId()
@@ -220,6 +222,35 @@ public class ReportService {
             case COMMUNITY_COMMENT -> communityService.getManagedComment(targetId).getAuthor();
             case USER -> userService.getById(targetId);
         };
+    }
+
+    private String resolveTargetContent(ReportTargetType targetType, Long targetId) {
+        try {
+            return switch (targetType) {
+                case ANIMAL -> {
+                    var a = animalService.getEntity(targetId);
+                    yield "【" + a.getType().getLabel() + "】" + (a.getDescription() != null ? a.getDescription() : "");
+                }
+                case RESCUE -> {
+                    var r = rescueService.getEntity(targetId);
+                    yield "地点：" + r.getLocation() + "\n情况：" + r.getAnimalCondition() + (r.getDescription() != null ? "\n描述：" + r.getDescription() : "");
+                }
+                case COMMUNITY_POST -> {
+                    var p = communityService.getManagedPost(targetId);
+                    yield "标题：" + p.getTitle() + "\n内容：" + p.getContent();
+                }
+                case COMMUNITY_COMMENT -> {
+                    var c = communityService.getManagedComment(targetId);
+                    yield "评论内容：" + c.getContent();
+                }
+                case USER -> {
+                    var u = userService.getById(targetId);
+                    yield "用户：" + u.getNickname() + "（" + u.getAccount() + "）";
+                }
+            };
+        } catch (Exception e) {
+            return "（内容已被删除或不可访问）";
+        }
     }
 
     private Specification<ContentReport> spec(ReportStatus status, ReportTargetType targetType) {

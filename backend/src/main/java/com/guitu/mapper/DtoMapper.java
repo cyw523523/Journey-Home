@@ -7,6 +7,8 @@ import com.guitu.domain.AuditLog;
 import com.guitu.domain.ContentReport;
 import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
+import com.guitu.domain.DirectConversation;
+import com.guitu.domain.DirectMessage;
 import com.guitu.domain.Notice;
 import com.guitu.domain.Rescue;
 import com.guitu.domain.SystemNotification;
@@ -16,6 +18,7 @@ import com.guitu.dto.AppealDtos;
 import com.guitu.dto.AnimalDtos;
 import com.guitu.dto.AuditDtos;
 import com.guitu.dto.CommunityDtos;
+import com.guitu.dto.DirectMessageDtos;
 import com.guitu.dto.NotificationDtos;
 import com.guitu.dto.NoticeDtos;
 import com.guitu.dto.ReportDtos;
@@ -37,6 +40,16 @@ public class DtoMapper {
                 user.getStatus(),
                 user.getStatus().getLabel(),
                 user.getCreatedAt()
+        );
+    }
+
+    public DirectMessageDtos.UserSummary toUserSummary(User user) {
+        return new DirectMessageDtos.UserSummary(
+                user.getId(),
+                user.getNickname(),
+                user.getAvatarUrl(),
+                user.getRole(),
+                user.getRole().getLabel()
         );
     }
 
@@ -177,7 +190,35 @@ public class DtoMapper {
                 report.getReviewer() != null ? report.getReviewer().getId() : null,
                 report.getReviewer() != null ? report.getReviewer().getNickname() : null,
                 report.getReviewedAt(),
-                report.getCreatedAt()
+                report.getCreatedAt(),
+                null
+        );
+    }
+
+    public ReportDtos.ReportResponse toReportResponse(ContentReport report, String targetContent) {
+        return new ReportDtos.ReportResponse(
+                report.getId(),
+                report.getTargetType(),
+                report.getTargetType().getLabel(),
+                report.getTargetId(),
+                report.getReporter().getId(),
+                report.getReporter().getNickname(),
+                report.getTargetOwner() != null ? report.getTargetOwner().getId() : null,
+                report.getTargetOwner() != null ? report.getTargetOwner().getNickname() : null,
+                report.getReasonType(),
+                report.getReasonType().getLabel(),
+                report.getDescription(),
+                report.getEvidenceImageUrls(),
+                report.getStatus(),
+                report.getStatus().getLabel(),
+                report.getResolutionAction(),
+                report.getResolutionAction() != null ? report.getResolutionAction().getLabel() : null,
+                report.getResolutionOpinion(),
+                report.getReviewer() != null ? report.getReviewer().getId() : null,
+                report.getReviewer() != null ? report.getReviewer().getNickname() : null,
+                report.getReviewedAt(),
+                report.getCreatedAt(),
+                targetContent
         );
     }
 
@@ -193,6 +234,34 @@ public class DtoMapper {
                 notification.isReadFlag(),
                 notification.getReadAt(),
                 notification.getCreatedAt()
+        );
+    }
+
+    public DirectMessageDtos.ConversationResponse toConversationResponse(DirectConversation conversation, Long currentUserId, long unreadCount) {
+        User peer = conversation.getUserOne().getId().equals(currentUserId) ? conversation.getUserTwo() : conversation.getUserOne();
+        return new DirectMessageDtos.ConversationResponse(
+                conversation.getId(),
+                toUserSummary(peer),
+                conversation.getLastMessageContent(),
+                conversation.getLastSender() != null ? conversation.getLastSender().getId() : null,
+                conversation.getLastMessageAt(),
+                unreadCount,
+                conversation.getCreatedAt(),
+                conversation.getUpdatedAt()
+        );
+    }
+
+    public DirectMessageDtos.MessageResponse toMessageResponse(DirectMessage message) {
+        return new DirectMessageDtos.MessageResponse(
+                message.getId(),
+                message.getConversation().getId(),
+                toUserSummary(message.getSender()),
+                toUserSummary(message.getReceiver()),
+                message.getContent(),
+                message.getImageUrls(),
+                message.isReadFlag(),
+                message.getReadAt(),
+                message.getCreatedAt()
         );
     }
 

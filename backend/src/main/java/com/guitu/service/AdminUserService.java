@@ -51,8 +51,8 @@ public class AdminUserService {
         notificationService.notifyUser(
                 user,
                 NotificationType.ACCOUNT_ACTION,
-                "Account status updated",
-                "Your account role or status has been updated by an administrator.",
+                "账号状态已更新",
+                "管理员已更新您的账号角色或状态。",
                 "USER",
                 user.getId()
         );

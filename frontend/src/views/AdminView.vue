@@ -245,6 +245,9 @@
         <el-tag>{{ reportTarget.targetTypeText }}</el-tag>
         <p style="margin: 12px 0 6px">{{ reportTarget.description }}</p>
         <p class="muted">举报原因：{{ reportTarget.reasonTypeText }}</p>
+        <div v-if="reportTarget.targetContent" style="margin-top: 12px; padding: 12px; background: rgba(244,248,246,0.9); border-radius: 8px; white-space: pre-wrap; word-break: break-word; font-size: 13px; color: #30413b;">
+          <strong>被举报内容：</strong><br>{{ reportTarget.targetContent }}
+        </div>
       </div>
       <el-form :model="reportForm" label-position="top">
         <el-form-item label="处理动作">

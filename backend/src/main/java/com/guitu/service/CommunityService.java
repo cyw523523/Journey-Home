@@ -153,8 +153,9 @@ public class CommunityService {
         comment.setAuthor(currentUser);
         comment.setContent(request.content().trim());
         comment.setStatus(resolveCommentStatus(false, request));
+        CommunityComment parent = null;
         if (request.parentCommentId() != null) {
-            CommunityComment parent = getManagedComment(request.parentCommentId());
+            parent = getManagedComment(request.parentCommentId());
             comment.setParentComment(parent);
         }
         if (request.imageUrls() != null) {
@@ -162,6 +163,7 @@ public class CommunityService {
         }
         CommunityComment saved = communityCommentRepository.save(comment);
         notifyCommentReview(saved);
+        notifyReply(saved, post, parent, currentUser);
         return mapper.toCommunityCommentResponse(saved);
     }
 
@@ -232,15 +234,15 @@ public class CommunityService {
             notificationService.notifyUser(
                     post.getAuthor(),
                     NotificationType.AUDIT_RESULT,
-                    "Community post is pending review",
-                    "Your post contains images or sensitive signals and has been sent to the admin review queue.",
+                    "帖子待审核",
+                    "您的帖子包含图片或敏感内容，已提交管理员审核队列。",
                     "COMMUNITY_POST",
                     post.getId()
             );
             notificationService.notifyAdmins(
                     NotificationType.REPORT_CREATED,
-                    "New community post pending review",
-                    "A community post requires manual review before publication.",
+                    "新帖子待审核",
+                    "有新的社区帖子需要人工审核后才能发布。",
                     "COMMUNITY_POST",
                     post.getId()
             );
@@ -252,18 +254,54 @@ public class CommunityService {
             notificationService.notifyUser(
                     comment.getAuthor(),
                     NotificationType.AUDIT_RESULT,
-                    "Comment is pending review",
-                    "Your comment contains images or sensitive signals and has been sent to the admin review queue.",
+                    "评论待审核",
+                    "您的评论包含图片或敏感内容，已提交管理员审核队列。",
                     "COMMUNITY_COMMENT",
                     comment.getId()
             );
             notificationService.notifyAdmins(
                     NotificationType.REPORT_CREATED,
-                    "New community comment pending review",
-                    "A community comment requires manual review before publication.",
+                    "新评论待审核",
+                    "有新的社区评论需要人工审核后才能发布。",
                     "COMMUNITY_COMMENT",
                     comment.getId()
             );
+        }
+    }
+
+    private void notifyReply(CommunityComment comment, CommunityPost post, CommunityComment parent, User currentUser) {
+        // 只通知已发布的评论
+        if (comment.getStatus() != CommunityCommentStatus.PUBLISHED) {
+            return;
+        }
+        // 回复评论：通知父评论作者
+        if (parent != null) {
+            User parentAuthor = parent.getAuthor();
+            if (!parentAuthor.getId().equals(currentUser.getId())) {
+                String snippet = comment.getContent().length() > 50 ? comment.getContent().substring(0, 50) + "..." : comment.getContent();
+                notificationService.notifyUser(
+                        parentAuthor,
+                        NotificationType.COMMENT_REPLY,
+                        "COMMENT_REPLY_COMMENT",
+                        currentUser.getNickname() + "|" + snippet,
+                        "COMMUNITY_COMMENT",
+                        comment.getId()
+                );
+            }
+        } else {
+            // 回复帖子：通知帖子作者
+            User postAuthor = post.getAuthor();
+            if (!postAuthor.getId().equals(currentUser.getId())) {
+                String snippet = comment.getContent().length() > 50 ? comment.getContent().substring(0, 50) + "..." : comment.getContent();
+                notificationService.notifyUser(
+                        postAuthor,
+                        NotificationType.COMMENT_REPLY,
+                        "COMMENT_REPLY_POST",
+                        currentUser.getNickname() + "|" + snippet,
+                        "COMMUNITY_POST",
+                        post.getId()
+                );
+            }
         }
     }
 

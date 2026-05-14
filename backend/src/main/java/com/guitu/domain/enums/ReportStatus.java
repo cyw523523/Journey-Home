@@ -1,11 +1,11 @@
 package com.guitu.domain.enums;
 
 public enum ReportStatus {
-    PENDING_REVIEW("Pending review"),
-    PROCESSING("Processing"),
-    RESOLVED_VALID("Valid"),
-    RESOLVED_INVALID("Invalid"),
-    DISMISSED_DUPLICATE("Duplicate");
+    PENDING_REVIEW("待处理"),
+    PROCESSING("处理中"),
+    RESOLVED_VALID("举报属实"),
+    RESOLVED_INVALID("举报不属实"),
+    DISMISSED_DUPLICATE("重复举报");
 
     private final String label;
 

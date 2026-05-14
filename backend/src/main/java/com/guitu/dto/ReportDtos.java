@@ -64,7 +64,8 @@ public final class ReportDtos {
             Long reviewerId,
             String reviewerNickname,
             LocalDateTime reviewedAt,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            String targetContent
     ) {
     }
 }

@@ -27,10 +27,25 @@ export default {
     notices: 'Notices',
     animals: 'Animals',
     rescues: 'Rescues',
+    messages: 'Messages',
     profile: 'Profile',
     admin: 'Admin Panel',
     login: 'Login',
     logout: 'Logout'
+  },
+  messages: {
+    title: 'Private Messages',
+    description: 'Talk directly with publishers, rescuers, and other community members.',
+    conversations: 'Conversations',
+    unread: '{count} unread',
+    emptyTitle: 'No conversations yet',
+    emptyDesc: 'Start a private chat from a user avatar or profile.',
+    startTitle: 'No messages yet',
+    startDesc: 'Say hello and start the conversation.',
+    entryHint: 'Choose a conversation on the left, or open a chat from any user avatar.',
+    placeholder: 'Write a private message...',
+    send: 'Send',
+    composeHint: 'Unread messages are marked automatically when you open the conversation.'
   },
   home: {
     heroTitle: 'Journey Home',
@@ -200,5 +215,30 @@ export default {
     applicant: 'Applicant',
     animal: 'Animal',
     reason: 'Reason'
+  },
+  notification: {
+    SYSTEM: 'System Notification',
+    AUDIT_RESULT: 'Audit Result',
+    AUDIT_RESULT_ANIMAL: 'Animal record review updated',
+    AUDIT_RESULT_RESCUE: 'Rescue post review updated',
+    AUDIT_RESULT_ADOPT_APPLY: 'Adoption application review updated',
+    AUDIT_RESULT_COMMUNITY_POST: 'Community post review updated',
+    AUDIT_RESULT_COMMUNITY_COMMENT: 'Community comment review updated',
+    AUDIT_RESULT_ADOPT_APPLY_AUTO_REJECT: 'Adoption application auto-closed',
+    REPORT_UPDATE: 'Report processed',
+    REPORT_CREATED: 'New report pending review',
+    APPEAL_UPDATE: 'Appeal review updated',
+    APPEAL_CREATED: 'New appeal pending review',
+    ACCOUNT_ACTION: 'Account status changed',
+    COMMENT_REPLY: 'Comment reply',
+    COMMENT_REPLY_COMMENT: 'Someone replied to your comment',
+    COMMENT_REPLY_POST: 'Someone commented on your post',
+    COMMENT_REPLY_COMMENT_CONTENT: '{nickname} replied to your comment: {snippet}',
+    COMMENT_REPLY_POST_CONTENT: '{nickname} commented on your post: {snippet}',
+    markAllRead: 'Mark all as read',
+    noNotifications: 'No notifications',
+    notifications: 'Notifications',
+    read: 'Read',
+    unread: 'Unread'
   }
 }

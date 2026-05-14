@@ -31,13 +31,13 @@
           <div>
             <h3 class="post-title-link" @click="$router.push(`/community/${post.id}`)">{{ post.title }}</h3>
             <p class="muted author-line">
-              <RouterLink :to="'/users/' + post.authorId" class="author-link">
-                <el-avatar :src="getFullUrl(post.authorAvatarUrl)" :size="22" style="margin-right:4px;vertical-align:middle">
+              <RouterLink :to="avatarTarget(post.authorId)" class="chat-avatar-link">
+                <el-avatar :src="getFullUrl(post.authorAvatarUrl)" :size="22">
                   {{ post.authorNickname?.slice(0, 1) }}
                 </el-avatar>
-                {{ post.authorNickname }}
               </RouterLink>
-               · {{ post.authorRoleText }} · {{ formatTime(post.createdAt) }}
+              <RouterLink :to="`/users/${post.authorId}`" class="author-link">{{ post.authorNickname }}</RouterLink>
+              <span> · {{ post.authorRoleText }} · {{ formatTime(post.createdAt) }}</span>
             </p>
           </div>
           <StatusTag :value="post.status" :text="post.statusText" :options="communityPostStatusOptions" />
@@ -157,6 +157,13 @@ function excerpt(content) {
 
 function canManage(post) {
   return auth.state.user && (auth.state.user.id === post.authorId || auth.state.user.role === 'ADMIN')
+}
+
+function avatarTarget(userId) {
+  if (auth.state.user?.id === userId) {
+    return '/profile'
+  }
+  return { path: '/messages', query: { userId: String(userId) } }
 }
 
 function openEditor(post = null) {

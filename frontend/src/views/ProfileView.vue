@@ -126,16 +126,20 @@
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane :label="`站内通知${notificationSummary.unreadCount ? `(${notificationSummary.unreadCount})` : ''}`" name="notifications">
+          <el-tab-pane :label="`${t('notification.notifications')}${notificationSummary.unreadCount ? `(${notificationSummary.unreadCount})` : ''}`" name="notifications">
             <div class="toolbar" style="justify-content:flex-end;margin-bottom:12px">
-              <el-button text @click="markAllRead">全部已读</el-button>
+              <el-button text @click="markAllRead">{{ t('notification.markAllRead') }}</el-button>
             </div>
             <el-table :data="notifications" stripe>
-              <el-table-column prop="title" label="标题" width="220" />
-              <el-table-column prop="content" label="内容" />
-              <el-table-column label="状态" width="100">
+              <el-table-column label="标题" width="220">
+                <template #default="{ row }">{{ t('notification.' + row.title, row.title) }}</template>
+              </el-table-column>
+              <el-table-column :label="t('admin.content')">
+                <template #default="{ row }">{{ formatNotificationContent(row) }}</template>
+              </el-table-column>
+              <el-table-column :label="t('admin.status')" width="100">
                 <template #default="{ row }">
-                  <el-tag :type="row.readFlag ? 'info' : 'success'">{{ row.readFlag ? '已读' : '未读' }}</el-tag>
+                  <el-tag :type="row.readFlag ? 'info' : 'success'">{{ row.readFlag ? t('notification.read') : t('notification.unread') }}</el-tag>
                 </template>
               </el-table-column>
               <el-table-column prop="createdAt" label="时间" width="180">
@@ -294,7 +298,9 @@
 </template>
 
 <script setup>
+import { useRoute } from 'vue-router'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Archive, LockKeyhole, Save } from 'lucide-vue-next'
 import StatusTag from '../components/StatusTag.vue'
@@ -318,7 +324,9 @@ import {
 } from '../utils/status'
 
 const auth = useAuth()
-const tab = ref('animals')
+const route = useRoute()
+const { t } = useI18n()
+const tab = ref(route.query.tab || 'animals')
 const saving = ref(false)
 const profile = ref(auth.state.user || {})
 const animals = ref([])
@@ -389,6 +397,16 @@ function getFullUrl(url) {
 
 function formatTime(value) {
   return value ? new Date(value).toLocaleString() : '-'
+}
+
+function formatNotificationContent(item) {
+  if (item.title === 'COMMENT_REPLY_COMMENT' || item.title === 'COMMENT_REPLY_POST') {
+    const parts = (item.content || '').split('|')
+    if (parts.length === 2) {
+      return t('notification.' + item.title + '_CONTENT', { nickname: parts[0], snippet: parts[1] })
+    }
+  }
+  return item.content || ''
 }
 
 async function loadRecords() {

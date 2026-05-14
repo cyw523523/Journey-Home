@@ -163,7 +163,7 @@ public class AuditService {
         }
         animal.setReviewComment(request.opinion());
         recordLog(AuditTargetType.ANIMAL, animal.getId(), auditor, request.action(), request.opinion());
-        notifyAuditResult(animal.getPublisher(), "Animal profile review updated", request.opinion(), "ANIMAL", animal.getId());
+        notifyAuditResult(animal.getPublisher(), "AUDIT_RESULT_ANIMAL", request.opinion(), "ANIMAL", animal.getId());
     }
 
     private void auditRescue(AuditDtos.AuditRequest request, User auditor) {
@@ -178,7 +178,7 @@ public class AuditService {
         }
         rescue.setReviewComment(request.opinion());
         recordLog(AuditTargetType.RESCUE, rescue.getId(), auditor, request.action(), request.opinion());
-        notifyAuditResult(rescue.getPublisher(), "Rescue post review updated", request.opinion(), "RESCUE", rescue.getId());
+        notifyAuditResult(rescue.getPublisher(), "AUDIT_RESULT_RESCUE", request.opinion(), "RESCUE", rescue.getId());
     }
 
     private void auditApply(AuditDtos.AuditRequest request, User auditor) {
@@ -202,7 +202,7 @@ public class AuditService {
             apply.setAuditOpinion(request.opinion());
         }
         recordLog(AuditTargetType.ADOPT_APPLY, apply.getId(), auditor, request.action(), request.opinion());
-        notifyAuditResult(apply.getApplicant(), "Adoption application review updated", request.opinion(), "ADOPT_APPLY", apply.getId());
+        notifyAuditResult(apply.getApplicant(), "AUDIT_RESULT_ADOPT_APPLY", request.opinion(), "ADOPT_APPLY", apply.getId());
     }
 
     private void auditPost(AuditDtos.AuditRequest request, User auditor) {
@@ -216,7 +216,7 @@ public class AuditService {
             post.setStatus(request.action() == AuditAction.APPROVE ? CommunityPostStatus.PUBLISHED : CommunityPostStatus.REJECTED);
         }
         recordLog(AuditTargetType.COMMUNITY_POST, post.getId(), auditor, request.action(), request.opinion());
-        notifyAuditResult(post.getAuthor(), "Community post review updated", request.opinion(), "COMMUNITY_POST", post.getId());
+        notifyAuditResult(post.getAuthor(), "AUDIT_RESULT_COMMUNITY_POST", request.opinion(), "COMMUNITY_POST", post.getId());
     }
 
     private void auditComment(AuditDtos.AuditRequest request, User auditor) {
@@ -230,7 +230,7 @@ public class AuditService {
             comment.setStatus(request.action() == AuditAction.APPROVE ? CommunityCommentStatus.PUBLISHED : CommunityCommentStatus.REJECTED);
         }
         recordLog(AuditTargetType.COMMUNITY_COMMENT, comment.getId(), auditor, request.action(), request.opinion());
-        notifyAuditResult(comment.getAuthor(), "Community comment review updated", request.opinion(), "COMMUNITY_COMMENT", comment.getId());
+        notifyAuditResult(comment.getAuthor(), "AUDIT_RESULT_COMMUNITY_COMMENT", request.opinion(), "COMMUNITY_COMMENT", comment.getId());
     }
 
     private void rejectOtherPendingApplies(AdoptApply approvedApply) {
@@ -241,10 +241,10 @@ public class AuditService {
         );
         for (AdoptApply pendingApply : pendingApplies) {
             pendingApply.setStatus(ApplyStatus.REJECTED);
-            pendingApply.setAuditOpinion("Another adoption application has already been approved for this animal");
+            pendingApply.setAuditOpinion("该动物已有其他领养申请被批准");
             notifyAuditResult(
                     pendingApply.getApplicant(),
-                    "Adoption application review updated",
+                    "AUDIT_RESULT_ADOPT_APPLY_AUTO_REJECT",
                     pendingApply.getAuditOpinion(),
                     "ADOPT_APPLY",
                     pendingApply.getId()

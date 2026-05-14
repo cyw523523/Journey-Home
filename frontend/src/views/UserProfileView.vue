@@ -22,7 +22,8 @@
           <span class="stat-label">发布的救助信息</span>
         </div>
       </div>
-      <div v-if="auth.isLoggedIn.value && auth.state.user?.id !== profile.id" style="margin-top: 18px">
+      <div v-if="auth.isLoggedIn.value && auth.state.user?.id !== profile.id" class="profile-action-row">
+        <el-button type="primary" @click="openChat(profile.id)">发私信</el-button>
         <el-button type="danger" plain @click="reportVisible = true">举报该用户</el-button>
       </div>
     </div>
@@ -33,7 +34,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '../components/EmptyState.vue'
 import ReportDialog from '../components/ReportDialog.vue'
 import StatusTag from '../components/StatusTag.vue'
@@ -43,6 +44,7 @@ import { useAuth } from '../stores/auth'
 import { roleOptions } from '../utils/status'
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuth()
 const loading = ref(false)
 const profile = ref(null)
@@ -58,6 +60,10 @@ function getFullUrl(url) {
 
 function formatTime(value) {
   return value ? new Date(value).toLocaleString() : '-'
+}
+
+function openChat(userId) {
+  router.push({ path: '/messages', query: { userId: String(userId) } })
 }
 
 onMounted(async () => {

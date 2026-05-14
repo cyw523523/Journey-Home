@@ -2472,6 +2472,18 @@ body::before {
   color: var(--primary);
 }
 
+.chat-avatar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  color: inherit;
+}
+
+.chat-avatar-link:hover {
+  transform: translateY(-1px);
+}
+
 .post-title-link {
   cursor: pointer;
 }
@@ -2556,4 +2568,11 @@ body::before {
   margin-top: 6px;
   color: var(--muted);
   font-size: 14px;
+}
+
+.profile-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
 }

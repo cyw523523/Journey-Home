@@ -86,8 +86,8 @@ public class AdoptApplyService {
         apply.setExperience(request.experience());
         apply.setStatus(ApplyStatus.PENDING_REVIEW);
         AdoptApply saved = adoptApplyRepository.save(apply);
-        notificationService.notifyUser(applicant, NotificationType.AUDIT_RESULT, "Adoption application submitted", "Your application has been submitted and is waiting for admin review.", "ADOPT_APPLY", saved.getId());
-        notificationService.notifyAdmins(NotificationType.AUDIT_RESULT, "New adoption application pending review", "A new adoption application is waiting for review.", "ADOPT_APPLY", saved.getId());
+        notificationService.notifyUser(applicant, NotificationType.AUDIT_RESULT, "领养申请已提交", "您的领养申请已提交，请等待管理员审核。", "ADOPT_APPLY", saved.getId());
+        notificationService.notifyAdmins(NotificationType.AUDIT_RESULT, "新领养申请待审核", "有新的领养申请等待审核。", "ADOPT_APPLY", saved.getId());
         cacheInvalidationService.evictPublicCaches();
         return mapper.toApplyResponse(saved);
     }
@@ -124,7 +124,7 @@ public class AdoptApplyService {
             throw new BusinessException("Only pending applications can be canceled");
         }
         apply.setStatus(ApplyStatus.CANCELED);
-        notificationService.notifyUser(apply.getApplicant(), NotificationType.AUDIT_RESULT, "Adoption application canceled", "Your application has been canceled.", "ADOPT_APPLY", apply.getId());
+        notificationService.notifyUser(apply.getApplicant(), NotificationType.AUDIT_RESULT, "领养申请已取消", "您的领养申请已取消。", "ADOPT_APPLY", apply.getId());
         cacheInvalidationService.evictPublicCaches();
     }
 
