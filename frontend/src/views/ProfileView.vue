@@ -37,7 +37,7 @@
       </aside>
 
       <main class="content-panel surface">
-        <el-tabs v-model="tab">
+        <el-tabs v-model="tab" @tab-change="onTabChange">
           <el-tab-pane label="动物档案" name="animals">
             <el-alert
               title="这里显示的是当前账号自己发布的动物档案，包括待审核、已驳回和已通过状态。"
@@ -54,10 +54,17 @@
                   <StatusTag :value="row.status" :text="row.statusText" :options="animalStatusOptions" />
                 </template>
               </el-table-column>
+              <el-table-column label="操作" width="200">
+                <template #default="{ row }">
+                  <el-button size="small" :icon="Pencil" text @click="openAnimalEditor(row)">编辑</el-button>
+                  <el-button size="small" :icon="RefreshCw" text @click="openStatusDialog('animal', row)">状态</el-button>
+                  <el-button size="small" :icon="Archive" text type="danger" @click="offlineRecord('animal', row)">下架</el-button>
+                </template>
+              </el-table-column>
               <template #empty>
                 <EmptyState
                   :title="auth.isAdmin.value ? '管理员账号还没有发布过动物档案' : '你还没有发布过动物档案'"
-                  :description="auth.isAdmin.value ? '这是正常的。管理员主要在后台做审核和管理；只有管理员账号自己发布过档案，这里才会显示。' : '去“动物档案”页点击“发布档案”，提交后就会在这里看到记录。'"
+                  :description="auth.isAdmin.value ? '这是正常的。管理员主要在后台做审核和管理；只有管理员账号自己发布过档案，这里才会显示。' : '去「动物档案」页点击「发布档案」，提交后就会在这里看到记录。'"
                 />
               </template>
             </el-table>
@@ -78,10 +85,17 @@
                   <StatusTag :value="row.status" :text="row.statusText" :options="rescueStatusOptions" />
                 </template>
               </el-table-column>
+              <el-table-column label="操作" width="200">
+                <template #default="{ row }">
+                  <el-button size="small" :icon="Pencil" text @click="openRescueEditor(row)">编辑</el-button>
+                  <el-button size="small" :icon="RefreshCw" text @click="openStatusDialog('rescue', row)">状态</el-button>
+                  <el-button size="small" :icon="Archive" text type="danger" @click="offlineRecord('rescue', row)">下架</el-button>
+                </template>
+              </el-table-column>
               <template #empty>
                 <EmptyState
                   :title="auth.isAdmin.value ? '管理员账号还没有发布过救助信息' : '你还没有发布过救助信息'"
-                  :description="auth.isAdmin.value ? '管理员后台负责审核和管理；只有管理员账号自己发过救助信息，这里才会显示。' : '去“救助信息”页发布后，这里会显示你的记录和审核状态。'"
+                  :description="auth.isAdmin.value ? '管理员后台负责审核和管理；只有管理员账号自己发过救助信息，这里才会显示。' : '去「救助信息」页发布后，这里会显示你的记录和审核状态。'"
                 />
               </template>
             </el-table>
@@ -106,7 +120,7 @@
               <template #empty>
                 <EmptyState
                   :title="auth.isAdmin.value ? '管理员账号还没有提交过领养申请' : '你还没有提交过领养申请'"
-                  :description="auth.isAdmin.value ? '管理员一般不会用管理员账号去提交领养申请，所以这里为空是正常的。' : '在动物详情页点击“提交领养申请”后，这里会看到进度。'"
+                  :description="auth.isAdmin.value ? '管理员一般不会用管理员账号去提交领养申请，所以这里为空是正常的。' : '在动物详情页点击「提交领养申请」后，这里会看到进度。'"
                 />
               </template>
             </el-table>
@@ -128,20 +142,106 @@
         </el-tabs>
       </main>
     </div>
+
+    <!-- Animal edit dialog -->
+    <el-dialog v-model="animalEditorVisible" title="编辑动物档案" width="720px" append-to-body>
+      <el-form ref="animalFormRef" :model="animalEditor" :rules="animalRules" label-position="top">
+        <el-row :gutter="12">
+          <el-col :span="8">
+            <el-form-item label="动物类型" prop="type">
+              <el-select v-model="animalEditor.type" style="width: 100%">
+                <el-option v-for="item in animalTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="性别" prop="gender">
+              <el-select v-model="animalEditor.gender" style="width: 100%">
+                <el-option v-for="item in genderOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="年龄" prop="age">
+              <el-input-number v-model="animalEditor.age" :min="0" :max="30" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="发现地区" prop="foundRegion">
+          <el-input v-model="animalEditor.foundRegion" />
+        </el-form-item>
+        <el-form-item label="健康情况">
+          <el-input v-model="animalEditor.healthCondition" />
+        </el-form-item>
+        <el-form-item label="照片">
+          <ImageUploader v-model="animalEditor.imageUrls" usage="animal" />
+        </el-form-item>
+        <el-form-item label="详细说明">
+          <el-input v-model="animalEditor.description" type="textarea" :rows="4" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="animalEditorVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="saveAnimal">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Rescue edit dialog -->
+    <el-dialog v-model="rescueEditorVisible" title="编辑救助信息" width="720px" append-to-body>
+      <el-form ref="rescueFormRef" :model="rescueEditor" :rules="rescueRules" label-position="top">
+        <el-form-item label="救助地点" prop="location">
+          <el-input v-model="rescueEditor.location" />
+        </el-form-item>
+        <el-form-item label="动物情况" prop="animalCondition">
+          <el-input v-model="rescueEditor.animalCondition" />
+        </el-form-item>
+        <el-form-item label="联系方式" prop="contact">
+          <el-input v-model="rescueEditor.contact" />
+        </el-form-item>
+        <el-form-item label="求助说明" prop="description">
+          <el-input v-model="rescueEditor.description" type="textarea" :rows="4" />
+        </el-form-item>
+        <el-form-item label="现场图片">
+          <ImageUploader v-model="rescueEditor.imageUrls" usage="rescue" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="rescueEditorVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="saveRescue">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Status update dialog -->
+    <el-dialog v-model="statusDialogVisible" title="更新状态" width="460px" append-to-body>
+      <el-form label-position="top">
+        <el-form-item label="当前状态">
+          <StatusTag :value="statusTarget?.status" :text="statusTarget?.statusText" :options="statusTargetType === 'animal' ? animalStatusOptions : rescueStatusOptions" />
+        </el-form-item>
+        <el-form-item label="新状态">
+          <el-select v-model="statusForm.newStatus" style="width: 100%">
+            <el-option v-for="item in availableStatuses" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="statusDialogVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="saveStatus">更新</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { LockKeyhole, Save } from 'lucide-vue-next'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Archive, LockKeyhole, Pencil, RefreshCw, Save } from 'lucide-vue-next'
 import StatusTag from '../components/StatusTag.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import EmptyState from '../components/EmptyState.vue'
-import { userApi } from '../api'
+import { animalApi, rescueApi, userApi } from '../api'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
-import { animalStatusOptions, applyStatusOptions, rescueStatusOptions, userStatusOptions } from '../utils/status'
+import { animalStatusOptions, animalTypeOptions, applyStatusOptions, genderOptions, rescueStatusOptions, userStatusOptions } from '../utils/status'
 
 const auth = useAuth()
 const tab = ref('animals')
@@ -155,29 +255,70 @@ const avatarUrls = ref([])
 const profileForm = reactive({ nickname: '', phone: '', avatarUrl: '' })
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
 
+// Animal editor
+const animalEditorVisible = ref(false)
+const animalFormRef = ref()
+const animalEditor = reactive({
+  id: null,
+  type: 'CAT',
+  gender: 'UNKNOWN',
+  age: 0,
+  foundRegion: '',
+  healthCondition: '',
+  imageUrls: [],
+  description: ''
+})
+const animalRules = {
+  type: [{ required: true, message: '请选择动物类型', trigger: 'change' }],
+  gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
+  foundRegion: [{ required: true, message: '请输入发现地区', trigger: 'blur' }],
+  imageUrls: [{ type: 'array', required: true, min: 1, message: '至少上传一张照片', trigger: 'change' }]
+}
+
+// Rescue editor
+const rescueEditorVisible = ref(false)
+const rescueFormRef = ref()
+const rescueEditor = reactive({
+  id: null,
+  location: '',
+  animalCondition: '',
+  contact: '',
+  description: '',
+  imageUrls: []
+})
+const rescueRules = {
+  location: [{ required: true, message: '请输入救助地点', trigger: 'blur' }],
+  animalCondition: [{ required: true, message: '请输入动物情况', trigger: 'blur' }],
+  contact: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
+  description: [{ required: true, message: '请输入求助说明', trigger: 'blur' }]
+}
+
+// Status dialog
+const statusDialogVisible = ref(false)
+const statusTargetType = ref('animal')
+const statusTarget = ref(null)
+const statusForm = reactive({ newStatus: '' })
+
+const availableStatuses = computed(() => {
+  const options = statusTargetType.value === 'animal' ? animalStatusOptions : rescueStatusOptions
+  return options.filter(item => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
+})
+
 const API_BASE = window.location.origin
 function getFullUrl(url) {
   if (!url) return ''
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-    return url
-  }
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url
   return `${API_BASE}${url}`
 }
+
 const passwordRules = {
   oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
   newPassword: [{ required: true, message: '请输入新密码', trigger: 'blur' }, { min: 6, max: 32, message: '密码长度需为6-32位', trigger: 'blur' }],
   confirmPassword: [{ required: true, message: '请确认密码', trigger: 'blur' }]
 }
 
-async function load() {
+async function loadRecords() {
   try {
-    profile.value = await userApi.profile()
-    Object.assign(profileForm, {
-      nickname: profile.value.nickname,
-      phone: profile.value.phone,
-      avatarUrl: profile.value.avatarUrl || ''
-    })
-    avatarUrls.value = profile.value.avatarUrl ? [profile.value.avatarUrl] : []
     const [myAnimals, myRescues, myApplications] = await Promise.all([
       userApi.animals({ page: 0, size: 20 }),
       userApi.rescues({ page: 0, size: 20 }),
@@ -191,6 +332,122 @@ async function load() {
   }
 }
 
+async function load() {
+  try {
+    profile.value = await userApi.profile()
+    Object.assign(profileForm, {
+      nickname: profile.value.nickname,
+      phone: profile.value.phone,
+      avatarUrl: profile.value.avatarUrl || ''
+    })
+    avatarUrls.value = profile.value.avatarUrl ? [profile.value.avatarUrl] : []
+  } catch (error) {
+    notifyError(error)
+  }
+  await loadRecords()
+}
+
+function onTabChange(name) {
+  if (name === 'animals' || name === 'rescues' || name === 'applications') {
+    loadRecords()
+  }
+}
+
+// --- Animal edit ---
+function openAnimalEditor(row) {
+  Object.assign(animalEditor, {
+    id: row.id,
+    type: row.type,
+    gender: row.gender,
+    age: row.age ?? 0,
+    foundRegion: row.foundRegion || '',
+    healthCondition: row.healthCondition || '',
+    imageUrls: row.imageUrls || [],
+    description: row.description || ''
+  })
+  animalEditorVisible.value = true
+}
+
+async function saveAnimal() {
+  await animalFormRef.value.validate()
+  saving.value = true
+  try {
+    await animalApi.update(animalEditor.id, animalEditor)
+    ElMessage.success('动物档案已更新')
+    animalEditorVisible.value = false
+    loadRecords()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+// --- Rescue edit ---
+function openRescueEditor(row) {
+  Object.assign(rescueEditor, {
+    id: row.id,
+    location: row.location || '',
+    animalCondition: row.animalCondition || '',
+    contact: row.contact || '',
+    description: row.description || '',
+    imageUrls: row.imageUrls || []
+  })
+  rescueEditorVisible.value = true
+}
+
+async function saveRescue() {
+  await rescueFormRef.value.validate()
+  saving.value = true
+  try {
+    await rescueApi.update(rescueEditor.id, rescueEditor)
+    ElMessage.success('救助信息已更新')
+    rescueEditorVisible.value = false
+    loadRecords()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+// --- Status update ---
+function openStatusDialog(type, row) {
+  statusTargetType.value = type
+  statusTarget.value = row
+  statusForm.newStatus = row.status
+  statusDialogVisible.value = true
+}
+
+async function saveStatus() {
+  saving.value = true
+  try {
+    const api = statusTargetType.value === 'animal' ? animalApi : rescueApi
+    await api.updateStatus(statusTarget.value.id, { status: statusForm.newStatus })
+    ElMessage.success('状态已更新')
+    statusDialogVisible.value = false
+    loadRecords()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+// --- Offline ---
+async function offlineRecord(type, row) {
+  try {
+    await ElMessageBox.confirm('下架后该记录将从公开列表中移除，确认继续吗？', '提示', { type: 'warning' })
+    const api = type === 'animal' ? animalApi : rescueApi
+    await api.offline(row.id)
+    ElMessage.success('已下架')
+    loadRecords()
+  } catch (error) {
+    if (error !== 'cancel') notifyError(error)
+  }
+}
+
+// --- Profile ---
 async function saveProfile() {
   saving.value = true
   try {

@@ -22,6 +22,7 @@ export const animalApi = {
   detail: (id) => http.get(`/animals/${id}`),
   create: (data) => http.post('/animals', data),
   update: (id, data) => http.put(`/animals/${id}`, data),
+  updateStatus: (id, data) => http.patch(`/animals/${id}/status`, data),
   offline: (id) => http.delete(`/animals/${id}`)
 }
 
@@ -29,6 +30,7 @@ export const rescueApi = {
   list: (params) => http.get('/rescues', { params }),
   detail: (id) => http.get(`/rescues/${id}`),
   create: (data) => http.post('/rescues', data),
+  update: (id, data) => http.put(`/rescues/${id}`, data),
   updateStatus: (id, data) => http.patch(`/rescues/${id}/status`, data),
   offline: (id) => http.delete(`/rescues/${id}`)
 }

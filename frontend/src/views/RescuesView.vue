@@ -27,7 +27,10 @@
         <p class="muted">{{ rescue.description }}</p>
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
           <div class="meta-line"><Phone :size="16" /> {{ rescue.contact }}</div>
-          <el-button :icon="Eye" @click="openDetail(rescue)">详情</el-button>
+          <div style="display:flex;gap:6px">
+            <el-button v-if="canEdit(rescue)" :icon="Pencil" text size="small" @click="openEdit(rescue)">编辑</el-button>
+            <el-button :icon="Eye" @click="openDetail(rescue)">详情</el-button>
+          </div>
         </div>
       </article>
     </div>
@@ -39,8 +42,14 @@
         <h2>{{ current.location }}</h2>
         <p>{{ current.animalCondition }}</p>
         <p class="muted">{{ current.description }}</p>
+        <p class="meta-line" style="margin:8px 0"><Phone :size="16" /> {{ current.contact }}</p>
         <div class="thumb-grid" v-if="current.imageUrls?.length">
           <img v-for="url in current.imageUrls" :key="url" :src="url" alt="救助图片" />
+        </div>
+        <div v-if="canEdit(current)" style="display:flex;gap:8px;margin-top:16px">
+          <el-button :icon="Pencil" type="primary" @click="detailVisible=false;openEdit(current)">编辑</el-button>
+          <el-button :icon="RefreshCw" @click="openStatus(current)">更新状态</el-button>
+          <el-button :icon="Archive" type="danger" @click="offlineRescue(current)">下架</el-button>
         </div>
       </div>
     </el-dialog>
@@ -68,13 +77,53 @@
         <el-button :loading="saving" :icon="Send" type="primary" @click="submit">提交审核</el-button>
       </template>
     </el-dialog>
+
+    <!-- Edit dialog -->
+    <el-dialog v-model="editVisible" title="编辑救助信息" width="720px" append-to-body>
+      <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-position="top">
+        <el-form-item label="救助地点" prop="location">
+          <el-input v-model="editForm.location" />
+        </el-form-item>
+        <el-form-item label="动物情况" prop="animalCondition">
+          <el-input v-model="editForm.animalCondition" />
+        </el-form-item>
+        <el-form-item label="联系方式" prop="contact">
+          <el-input v-model="editForm.contact" />
+        </el-form-item>
+        <el-form-item label="求助说明" prop="description">
+          <el-input v-model="editForm.description" type="textarea" :rows="4" />
+        </el-form-item>
+        <el-form-item label="现场图片">
+          <ImageUploader v-model="editForm.imageUrls" usage="rescue" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="saveEdit">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Status dialog -->
+    <el-dialog v-model="statusVisible" title="更新状态" width="460px" append-to-body>
+      <el-form label-position="top">
+        <el-form-item label="新状态">
+          <el-select v-model="newStatus" style="width: 100%">
+            <el-option v-for="item in editableStatuses" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="statusVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="saveStatus">更新</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Eye, LogIn, Phone, Plus, Search, Send } from 'lucide-vue-next'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Archive, Eye, LogIn, Pencil, Phone, Plus, RefreshCw, Search, Send } from 'lucide-vue-next'
 import EmptyState from '../components/EmptyState.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import StatusTag from '../components/StatusTag.vue'
@@ -89,17 +138,30 @@ const loading = ref(false)
 const saving = ref(false)
 const detailVisible = ref(false)
 const dialogVisible = ref(false)
+const editVisible = ref(false)
+const statusVisible = ref(false)
 const current = ref(null)
+const statusTarget = ref(null)
+const newStatus = ref('')
 const rescues = ref([])
 const formRef = ref()
+const editFormRef = ref()
 const publicRescueStatuses = rescueStatusOptions.filter((item) => ['PENDING_PROCESS', 'PROCESSING', 'COMPLETED'].includes(item.value))
+const editableStatuses = rescueStatusOptions.filter(item => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
 const filters = reactive({ keyword: '', region: '', status: '' })
 const form = reactive({ location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
+const editForm = reactive({ id: null, location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
 const rules = {
   location: [{ required: true, message: '请输入救助地点', trigger: 'blur' }],
   animalCondition: [{ required: true, message: '请输入动物情况', trigger: 'blur' }],
   contact: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
   description: [{ required: true, message: '请输入求助说明', trigger: 'blur' }]
+}
+const editRules = { ...rules }
+
+function canEdit(record) {
+  if (!auth.state.user) return false
+  return auth.state.user.id === record.publisherId || auth.isAdmin.value
 }
 
 async function load() {
@@ -121,6 +183,65 @@ async function openDetail(rescue) {
     current.value = rescue
   }
   detailVisible.value = true
+}
+
+function openEdit(rescue) {
+  Object.assign(editForm, {
+    id: rescue.id,
+    location: rescue.location || '',
+    animalCondition: rescue.animalCondition || '',
+    contact: rescue.contact || '',
+    description: rescue.description || '',
+    imageUrls: rescue.imageUrls || []
+  })
+  editVisible.value = true
+}
+
+async function saveEdit() {
+  await editFormRef.value.validate()
+  saving.value = true
+  try {
+    await rescueApi.update(editForm.id, editForm)
+    ElMessage.success('救助信息已更新')
+    editVisible.value = false
+    load()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+function openStatus(rescue) {
+  statusTarget.value = rescue
+  newStatus.value = rescue.status
+  statusVisible.value = true
+}
+
+async function saveStatus() {
+  saving.value = true
+  try {
+    await rescueApi.updateStatus(statusTarget.value.id, { status: newStatus.value })
+    ElMessage.success('状态已更新')
+    statusVisible.value = false
+    load()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function offlineRescue(rescue) {
+  try {
+    await ElMessageBox.confirm('下架后该救助信息将从公开列表中移除，确认继续吗？', '提示', { type: 'warning' })
+    await rescueApi.offline(rescue.id)
+    ElMessage.success('已下架')
+    detailVisible.value = false
+    load()
+  } catch (error) {
+    if (error !== 'cancel') notifyError(error)
+  }
 }
 
 async function submit() {

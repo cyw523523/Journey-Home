@@ -119,10 +119,8 @@ public class AnimalService {
 
     @Transactional
     public AnimalDtos.AnimalResponse updateStatus(Long id, AnimalDtos.UpdateAnimalStatusRequest request) {
-        if (SecuritySupport.requireUser().role() != UserRole.ADMIN) {
-            throw new BusinessException(HttpStatus.FORBIDDEN, "当前账号无权限操作");
-        }
         Animal animal = getEntity(id);
+        SecuritySupport.requireOwnerOrAdmin(animal.getPublisher().getId());
         animal.setStatus(request.status());
         return mapper.toAnimalResponse(animal);
     }
