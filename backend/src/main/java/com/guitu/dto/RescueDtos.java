@@ -3,6 +3,7 @@ package com.guitu.dto;
 import com.guitu.domain.enums.RescueStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -13,28 +14,29 @@ public final class RescueDtos {
     }
 
     public record SaveRescueRequest(
-            @NotBlank(message = "救助地点不能为空")
-            @Size(max = 255, message = "救助地点长度不能超过255")
+            @NotBlank(message = "Location is required")
+            @Size(max = 255, message = "Location must be at most 255 characters")
             String location,
 
-            @NotBlank(message = "动物情况不能为空")
-            @Size(max = 500, message = "动物情况长度不能超过500")
+            @NotBlank(message = "Animal condition is required")
+            @Size(max = 500, message = "Animal condition must be at most 500 characters")
             String animalCondition,
 
-            @NotBlank(message = "联系方式不能为空")
-            @Size(max = 64, message = "联系方式长度不能超过64")
+            @NotBlank(message = "Contact is required")
+            @Pattern(regexp = "^1[3-9]\\d{9}$", message = "Contact format is invalid")
+            @Size(max = 64, message = "Contact must be at most 64 characters")
             String contact,
 
-            @NotBlank(message = "求助说明不能为空")
-            @Size(max = 1000, message = "求助说明长度不能超过1000")
+            @NotBlank(message = "Description is required")
+            @Size(max = 1000, message = "Description must be at most 1000 characters")
             String description,
 
-            List<@Size(max = 500, message = "图片路径长度不能超过500") String> imageUrls
+            List<@Size(max = 500, message = "Image URL must be at most 500 characters") String> imageUrls
     ) {
     }
 
     public record UpdateRescueStatusRequest(
-            @NotNull(message = "救助状态不能为空")
+            @NotNull(message = "Status is required")
             RescueStatus status
     ) {
     }

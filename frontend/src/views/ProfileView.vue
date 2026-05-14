@@ -3,17 +3,9 @@
     <div class="section-head">
       <div>
         <h1>个人中心</h1>
-        <p>维护资料，查看当前账号自己的发布记录和领养申请进度。</p>
+        <p>维护资料，查看自己的发布记录、领养申请、通知、举报和申诉进度。</p>
       </div>
     </div>
-
-    <el-alert
-      v-if="auth.isAdmin.value"
-      title="当前登录的是管理员账号。这里显示的是管理员账号自己发布过的动物、救助和申请记录；审核、用户管理、公告和统计请到管理员后台查看。"
-      type="warning"
-      :closable="false"
-      style="margin-bottom: 16px"
-    />
 
     <div class="profile-grid">
       <aside class="sidebar-panel surface">
@@ -22,7 +14,7 @@
           <h2>{{ profile.nickname }}</h2>
           <StatusTag :value="profile.status" :text="profile.statusText" :options="userStatusOptions" />
         </div>
-        <el-form ref="profileRef" :model="profileForm" label-position="top">
+        <el-form :model="profileForm" label-position="top">
           <el-form-item label="昵称">
             <el-input v-model="profileForm.nickname" />
           </el-form-item>
@@ -37,94 +29,155 @@
       </aside>
 
       <main class="content-panel surface">
-        <el-tabs v-model="tab" @tab-change="onTabChange">
+        <el-tabs v-model="tab">
           <el-tab-pane label="动物档案" name="animals">
-            <el-alert
-              title="这里显示的是当前账号自己发布的动物档案，包括待审核、已驳回和已通过状态。"
-              type="info"
-              :closable="false"
-              style="margin-bottom: 14px"
-            />
             <el-table :data="animals" stripe>
               <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="typeText" label="类型" width="100" />
+              <el-table-column prop="typeText" label="类型" width="120" />
               <el-table-column prop="foundRegion" label="发现地区" />
-              <el-table-column label="状态" width="120">
+              <el-table-column label="状态" width="140">
                 <template #default="{ row }">
                   <StatusTag :value="row.status" :text="row.statusText" :options="animalStatusOptions" />
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="200">
+              <el-table-column label="操作" width="280">
                 <template #default="{ row }">
-                  <el-button size="small" :icon="Pencil" text @click="openAnimalEditor(row)">编辑</el-button>
-                  <el-button size="small" :icon="RefreshCw" text @click="openStatusDialog('animal', row)">状态</el-button>
-                  <el-button size="small" :icon="Archive" text type="danger" @click="offlineRecord('animal', row)">下架</el-button>
+                  <el-button size="small" text @click="openAnimalEditor(row)">编辑</el-button>
+                  <el-button size="small" text @click="openStatusDialog('animal', row)">状态</el-button>
+                  <el-button size="small" text type="danger" @click="offlineRecord('animal', row)">下架</el-button>
+                  <el-button v-if="['REJECTED', 'OFFLINE'].includes(row.status)" size="small" text type="warning" @click="openAppeal('ANIMAL', row.id)">申诉</el-button>
                 </template>
               </el-table-column>
-              <template #empty>
-                <EmptyState
-                  :title="auth.isAdmin.value ? '管理员账号还没有发布过动物档案' : '你还没有发布过动物档案'"
-                  :description="auth.isAdmin.value ? '这是正常的。管理员主要在后台做审核和管理；只有管理员账号自己发布过档案，这里才会显示。' : '去「动物档案」页点击「发布档案」，提交后就会在这里看到记录。'"
-                />
-              </template>
             </el-table>
           </el-tab-pane>
+
           <el-tab-pane label="救助信息" name="rescues">
-            <el-alert
-              title="这里显示的是当前账号自己发布的救助信息。"
-              type="info"
-              :closable="false"
-              style="margin-bottom: 14px"
-            />
             <el-table :data="rescues" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="location" label="地点" />
               <el-table-column prop="animalCondition" label="动物情况" />
-              <el-table-column label="状态" width="120">
+              <el-table-column label="状态" width="140">
                 <template #default="{ row }">
                   <StatusTag :value="row.status" :text="row.statusText" :options="rescueStatusOptions" />
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="200">
+              <el-table-column label="操作" width="280">
                 <template #default="{ row }">
-                  <el-button size="small" :icon="Pencil" text @click="openRescueEditor(row)">编辑</el-button>
-                  <el-button size="small" :icon="RefreshCw" text @click="openStatusDialog('rescue', row)">状态</el-button>
-                  <el-button size="small" :icon="Archive" text type="danger" @click="offlineRecord('rescue', row)">下架</el-button>
+                  <el-button size="small" text @click="openRescueEditor(row)">编辑</el-button>
+                  <el-button size="small" text @click="openStatusDialog('rescue', row)">状态</el-button>
+                  <el-button size="small" text type="danger" @click="offlineRecord('rescue', row)">下架</el-button>
+                  <el-button v-if="['REJECTED', 'OFFLINE'].includes(row.status)" size="small" text type="warning" @click="openAppeal('RESCUE', row.id)">申诉</el-button>
                 </template>
               </el-table-column>
-              <template #empty>
-                <EmptyState
-                  :title="auth.isAdmin.value ? '管理员账号还没有发布过救助信息' : '你还没有发布过救助信息'"
-                  :description="auth.isAdmin.value ? '管理员后台负责审核和管理；只有管理员账号自己发过救助信息，这里才会显示。' : '去「救助信息」页发布后，这里会显示你的记录和审核状态。'"
-                />
-              </template>
             </el-table>
           </el-tab-pane>
+
           <el-tab-pane label="领养申请" name="applications">
-            <el-alert
-              title="这里显示的是当前账号提交过的领养申请和审核结果。"
-              type="info"
-              :closable="false"
-              style="margin-bottom: 14px"
-            />
             <el-table :data="applications" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="animalTypeText" label="动物" width="120" />
               <el-table-column prop="reason" label="领养理由" />
-              <el-table-column label="状态" width="120">
+              <el-table-column label="状态" width="140">
                 <template #default="{ row }">
                   <StatusTag :value="row.status" :text="row.statusText" :options="applyStatusOptions" />
                 </template>
               </el-table-column>
               <el-table-column prop="auditOpinion" label="审核意见" />
-              <template #empty>
-                <EmptyState
-                  :title="auth.isAdmin.value ? '管理员账号还没有提交过领养申请' : '你还没有提交过领养申请'"
-                  :description="auth.isAdmin.value ? '管理员一般不会用管理员账号去提交领养申请，所以这里为空是正常的。' : '在动物详情页点击「提交领养申请」后，这里会看到进度。'"
-                />
-              </template>
+              <el-table-column label="操作" width="220">
+                <template #default="{ row }">
+                  <el-button v-if="row.status === 'PENDING_REVIEW'" size="small" text type="danger" @click="cancelApplication(row)">取消</el-button>
+                  <el-button v-if="row.status === 'REJECTED'" size="small" text type="warning" @click="openAppeal('ADOPT_APPLY', row.id)">申诉</el-button>
+                </template>
+              </el-table-column>
             </el-table>
           </el-tab-pane>
+
+          <el-tab-pane label="社区帖子" name="communityPosts">
+            <el-table :data="communityPosts" stripe>
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="title" label="标题" />
+              <el-table-column label="状态" width="140">
+                <template #default="{ row }">
+                  <StatusTag :value="row.status" :text="row.statusText" :options="communityPostStatusOptions" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="180">
+                <template #default="{ row }">
+                  <el-button v-if="['REJECTED', 'OFFLINE'].includes(row.status)" size="small" text type="warning" @click="openAppeal('COMMUNITY_POST', row.id)">申诉</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <el-tab-pane label="社区评论" name="communityComments">
+            <el-table :data="communityComments" stripe>
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="content" label="评论内容" />
+              <el-table-column label="状态" width="140">
+                <template #default="{ row }">
+                  <StatusTag :value="row.status" :text="row.statusText" :options="communityCommentStatusOptions" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="180">
+                <template #default="{ row }">
+                  <el-button v-if="['REJECTED', 'OFFLINE'].includes(row.status)" size="small" text type="warning" @click="openAppeal('COMMUNITY_COMMENT', row.id)">申诉</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <el-tab-pane :label="`站内通知${notificationSummary.unreadCount ? `(${notificationSummary.unreadCount})` : ''}`" name="notifications">
+            <div class="toolbar" style="justify-content:flex-end;margin-bottom:12px">
+              <el-button text @click="markAllRead">全部已读</el-button>
+            </div>
+            <el-table :data="notifications" stripe>
+              <el-table-column prop="title" label="标题" width="220" />
+              <el-table-column prop="content" label="内容" />
+              <el-table-column label="状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="row.readFlag ? 'info' : 'success'">{{ row.readFlag ? '已读' : '未读' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="createdAt" label="时间" width="180">
+                <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="100">
+                <template #default="{ row }">
+                  <el-button v-if="!row.readFlag" size="small" text @click="markRead(row.id)">设为已读</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <el-tab-pane label="我的举报" name="reports">
+            <el-table :data="reports" stripe>
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="targetTypeText" label="举报对象" width="120" />
+              <el-table-column prop="reasonTypeText" label="原因" width="120" />
+              <el-table-column prop="description" label="说明" />
+              <el-table-column label="状态" width="140">
+                <template #default="{ row }">
+                  <StatusTag :value="row.status" :text="row.statusText" :options="reportStatusOptions" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="resolutionOpinion" label="处理结果" />
+            </el-table>
+          </el-tab-pane>
+
+          <el-tab-pane label="我的申诉" name="appeals">
+            <el-table :data="appeals" stripe>
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="targetTypeText" label="申诉对象" width="120" />
+              <el-table-column prop="reason" label="申诉原因" />
+              <el-table-column label="状态" width="150">
+                <template #default="{ row }">
+                  <StatusTag :value="row.status" :text="row.statusText" :options="appealStatusOptions" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="finalReviewOpinion" label="复核结果" />
+            </el-table>
+          </el-tab-pane>
+
           <el-tab-pane label="修改密码" name="password">
             <el-form ref="passwordRef" :model="passwordForm" :rules="passwordRules" label-position="top" style="max-width: 460px">
               <el-form-item label="原密码" prop="oldPassword">
@@ -143,7 +196,6 @@
       </main>
     </div>
 
-    <!-- Animal edit dialog -->
     <el-dialog v-model="animalEditorVisible" title="编辑动物档案" width="720px" append-to-body>
       <el-form ref="animalFormRef" :model="animalEditor" :rules="animalRules" label-position="top">
         <el-row :gutter="12">
@@ -186,7 +238,6 @@
       </template>
     </el-dialog>
 
-    <!-- Rescue edit dialog -->
     <el-dialog v-model="rescueEditorVisible" title="编辑救助信息" width="720px" append-to-body>
       <el-form ref="rescueFormRef" :model="rescueEditor" :rules="rescueRules" label-position="top">
         <el-form-item label="救助地点" prop="location">
@@ -211,12 +262,8 @@
       </template>
     </el-dialog>
 
-    <!-- Status update dialog -->
     <el-dialog v-model="statusDialogVisible" title="更新状态" width="460px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="当前状态">
-          <StatusTag :value="statusTarget?.status" :text="statusTarget?.statusText" :options="statusTargetType === 'animal' ? animalStatusOptions : rescueStatusOptions" />
-        </el-form-item>
         <el-form-item label="新状态">
           <el-select v-model="statusForm.newStatus" style="width: 100%">
             <el-option v-for="item in availableStatuses" :key="item.value" :label="item.label" :value="item.value" />
@@ -228,20 +275,47 @@
         <el-button :loading="saving" type="primary" @click="saveStatus">更新</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="appealVisible" title="提交申诉" width="560px" append-to-body>
+      <el-form ref="appealFormRef" :model="appealForm" :rules="appealRules" label-position="top">
+        <el-form-item label="申诉对象">
+          <el-input :model-value="optionText(appealTargetOptions, appealForm.targetType)" disabled />
+        </el-form-item>
+        <el-form-item label="申诉理由" prop="reason">
+          <el-input v-model="appealForm.reason" type="textarea" :rows="5" maxlength="1000" show-word-limit />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="appealVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="submitAppeal">提交申诉</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Archive, LockKeyhole, Pencil, RefreshCw, Save } from 'lucide-vue-next'
+import { Archive, LockKeyhole, Save } from 'lucide-vue-next'
 import StatusTag from '../components/StatusTag.vue'
 import ImageUploader from '../components/ImageUploader.vue'
-import EmptyState from '../components/EmptyState.vue'
-import { animalApi, rescueApi, userApi } from '../api'
+import { adoptionApi, animalApi, appealApi, communityApi, notificationApi, reportApi, rescueApi, userApi } from '../api'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
-import { animalStatusOptions, animalTypeOptions, applyStatusOptions, genderOptions, rescueStatusOptions, userStatusOptions } from '../utils/status'
+import {
+  animalStatusOptions,
+  communityCommentStatusOptions,
+  communityPostStatusOptions,
+  animalTypeOptions,
+  appealStatusOptions,
+  appealTargetOptions,
+  applyStatusOptions,
+  genderOptions,
+  optionText,
+  reportStatusOptions,
+  rescueStatusOptions,
+  userStatusOptions
+} from '../utils/status'
 
 const auth = useAuth()
 const tab = ref('animals')
@@ -250,58 +324,60 @@ const profile = ref(auth.state.user || {})
 const animals = ref([])
 const rescues = ref([])
 const applications = ref([])
+const communityPosts = ref([])
+const communityComments = ref([])
+const notifications = ref([])
+const notificationSummary = ref({ unreadCount: 0 })
+const reports = ref([])
+const appeals = ref([])
 const passwordRef = ref()
+const animalFormRef = ref()
+const rescueFormRef = ref()
+const appealFormRef = ref()
 const avatarUrls = ref([])
 const profileForm = reactive({ nickname: '', phone: '', avatarUrl: '' })
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
 
-// Animal editor
 const animalEditorVisible = ref(false)
-const animalFormRef = ref()
-const animalEditor = reactive({
-  id: null,
-  type: 'CAT',
-  gender: 'UNKNOWN',
-  age: 0,
-  foundRegion: '',
-  healthCondition: '',
-  imageUrls: [],
-  description: ''
-})
+const rescueEditorVisible = ref(false)
+const statusDialogVisible = ref(false)
+const appealVisible = ref(false)
+const statusTargetType = ref('animal')
+const statusTarget = ref(null)
+const statusForm = reactive({ newStatus: '' })
+const animalEditor = reactive({ id: null, type: 'CAT', gender: 'UNKNOWN', age: 0, foundRegion: '', healthCondition: '', imageUrls: [], description: '' })
+const rescueEditor = reactive({ id: null, location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
+const appealForm = reactive({ targetType: 'ANIMAL', targetId: null, reason: '' })
+
 const animalRules = {
   type: [{ required: true, message: '请选择动物类型', trigger: 'change' }],
   gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
   foundRegion: [{ required: true, message: '请输入发现地区', trigger: 'blur' }],
   imageUrls: [{ type: 'array', required: true, min: 1, message: '至少上传一张照片', trigger: 'change' }]
 }
-
-// Rescue editor
-const rescueEditorVisible = ref(false)
-const rescueFormRef = ref()
-const rescueEditor = reactive({
-  id: null,
-  location: '',
-  animalCondition: '',
-  contact: '',
-  description: '',
-  imageUrls: []
-})
 const rescueRules = {
   location: [{ required: true, message: '请输入救助地点', trigger: 'blur' }],
   animalCondition: [{ required: true, message: '请输入动物情况', trigger: 'blur' }],
   contact: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
   description: [{ required: true, message: '请输入求助说明', trigger: 'blur' }]
 }
-
-// Status dialog
-const statusDialogVisible = ref(false)
-const statusTargetType = ref('animal')
-const statusTarget = ref(null)
-const statusForm = reactive({ newStatus: '' })
+const appealRules = {
+  reason: [{ required: true, message: '请填写申诉理由', trigger: 'blur' }]
+}
+const passwordRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [{ required: true, message: '请输入新密码', trigger: 'blur' }, { min: 6, max: 32, message: '密码长度需为 6-32 位', trigger: 'blur' }],
+  confirmPassword: [{ required: true, message: '请确认密码', trigger: 'blur' }]
+}
 
 const availableStatuses = computed(() => {
-  const options = statusTargetType.value === 'animal' ? animalStatusOptions : rescueStatusOptions
-  return options.filter(item => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
+  if (statusTargetType.value === 'animal') {
+    if (auth.isAdmin.value) {
+      return animalStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
+    }
+    return animalStatusOptions.filter((item) => ['WAITING_RESCUE', 'RESCUING', 'OFFLINE'].includes(item.value))
+  }
+  return rescueStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
 })
 
 const API_BASE = window.location.origin
@@ -311,22 +387,32 @@ function getFullUrl(url) {
   return `${API_BASE}${url}`
 }
 
-const passwordRules = {
-  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
-  newPassword: [{ required: true, message: '请输入新密码', trigger: 'blur' }, { min: 6, max: 32, message: '密码长度需为6-32位', trigger: 'blur' }],
-  confirmPassword: [{ required: true, message: '请确认密码', trigger: 'blur' }]
+function formatTime(value) {
+  return value ? new Date(value).toLocaleString() : '-'
 }
 
 async function loadRecords() {
   try {
-    const [myAnimals, myRescues, myApplications] = await Promise.all([
+    const [myAnimals, myRescues, myApplications, myCommunityPosts, myCommunityComments, myNotifications, notificationSummaryData, myReports, myAppeals] = await Promise.all([
       userApi.animals({ page: 0, size: 20 }),
       userApi.rescues({ page: 0, size: 20 }),
-      userApi.applications({ page: 0, size: 20 })
+      userApi.applications({ page: 0, size: 20 }),
+      communityApi.myPosts({ page: 0, size: 20 }),
+      communityApi.myComments({ page: 0, size: 20 }),
+      notificationApi.list({ page: 0, size: 20 }),
+      notificationApi.summary(),
+      reportApi.list({ page: 0, size: 20 }),
+      appealApi.list({ page: 0, size: 20 })
     ])
     animals.value = myAnimals.content || []
     rescues.value = myRescues.content || []
     applications.value = myApplications.content || []
+    communityPosts.value = myCommunityPosts.content || []
+    communityComments.value = myCommunityComments.content || []
+    notifications.value = myNotifications.content || []
+    notificationSummary.value = notificationSummaryData || { unreadCount: 0 }
+    reports.value = myReports.content || []
+    appeals.value = myAppeals.content || []
   } catch (error) {
     notifyError(error)
   }
@@ -347,13 +433,35 @@ async function load() {
   await loadRecords()
 }
 
-function onTabChange(name) {
-  if (name === 'animals' || name === 'rescues' || name === 'applications') {
-    loadRecords()
+async function saveProfile() {
+  saving.value = true
+  try {
+    profileForm.avatarUrl = avatarUrls.value[0] || ''
+    profile.value = await userApi.update(profileForm)
+    auth.state.user = profile.value
+    localStorage.setItem('guitu_user', JSON.stringify(profile.value))
+    ElMessage.success('资料已更新')
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
   }
 }
 
-// --- Animal edit ---
+async function changePassword() {
+  await passwordRef.value.validate()
+  saving.value = true
+  try {
+    await userApi.changePassword(passwordForm)
+    ElMessage.success('密码修改成功')
+    Object.assign(passwordForm, { oldPassword: '', newPassword: '', confirmPassword: '' })
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
 function openAnimalEditor(row) {
   Object.assign(animalEditor, {
     id: row.id,
@@ -368,22 +476,6 @@ function openAnimalEditor(row) {
   animalEditorVisible.value = true
 }
 
-async function saveAnimal() {
-  await animalFormRef.value.validate()
-  saving.value = true
-  try {
-    await animalApi.update(animalEditor.id, animalEditor)
-    ElMessage.success('动物档案已更新')
-    animalEditorVisible.value = false
-    loadRecords()
-  } catch (error) {
-    notifyError(error)
-  } finally {
-    saving.value = false
-  }
-}
-
-// --- Rescue edit ---
 function openRescueEditor(row) {
   Object.assign(rescueEditor, {
     id: row.id,
@@ -396,14 +488,14 @@ function openRescueEditor(row) {
   rescueEditorVisible.value = true
 }
 
-async function saveRescue() {
-  await rescueFormRef.value.validate()
+async function saveAnimal() {
+  await animalFormRef.value.validate()
   saving.value = true
   try {
-    await rescueApi.update(rescueEditor.id, rescueEditor)
-    ElMessage.success('救助信息已更新')
-    rescueEditorVisible.value = false
-    loadRecords()
+    await animalApi.update(animalEditor.id, animalEditor)
+    ElMessage.success('动物档案已更新')
+    animalEditorVisible.value = false
+    await loadRecords()
   } catch (error) {
     notifyError(error)
   } finally {
@@ -411,7 +503,21 @@ async function saveRescue() {
   }
 }
 
-// --- Status update ---
+async function saveRescue() {
+  await rescueFormRef.value.validate()
+  saving.value = true
+  try {
+    await rescueApi.update(rescueEditor.id, rescueEditor)
+    ElMessage.success('救助信息已更新')
+    rescueEditorVisible.value = false
+    await loadRecords()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
 function openStatusDialog(type, row) {
   statusTargetType.value = type
   statusTarget.value = row
@@ -422,11 +528,14 @@ function openStatusDialog(type, row) {
 async function saveStatus() {
   saving.value = true
   try {
-    const api = statusTargetType.value === 'animal' ? animalApi : rescueApi
-    await api.updateStatus(statusTarget.value.id, { status: statusForm.newStatus })
+    if (statusTargetType.value === 'animal') {
+      await animalApi.updateStatus(statusTarget.value.id, { status: statusForm.newStatus })
+    } else {
+      await rescueApi.updateStatus(statusTarget.value.id, { status: statusForm.newStatus })
+    }
     ElMessage.success('状态已更新')
     statusDialogVisible.value = false
-    loadRecords()
+    await loadRecords()
   } catch (error) {
     notifyError(error)
   } finally {
@@ -434,47 +543,62 @@ async function saveStatus() {
   }
 }
 
-// --- Offline ---
 async function offlineRecord(type, row) {
   try {
-    await ElMessageBox.confirm('下架后该记录将从公开列表中移除，确认继续吗？', '提示', { type: 'warning' })
-    const api = type === 'animal' ? animalApi : rescueApi
-    await api.offline(row.id)
+    await ElMessageBox.confirm('确认下架这条记录吗？', '提示', { type: 'warning' })
+    if (type === 'animal') {
+      await animalApi.offline(row.id)
+    } else {
+      await rescueApi.offline(row.id)
+    }
     ElMessage.success('已下架')
-    loadRecords()
+    await loadRecords()
   } catch (error) {
     if (error !== 'cancel') notifyError(error)
   }
 }
 
-// --- Profile ---
-async function saveProfile() {
-  saving.value = true
+async function cancelApplication(row) {
   try {
-    profileForm.avatarUrl = avatarUrls.value[0] || ''
-    const updatedProfile = await userApi.update(profileForm)
-    profile.value = updatedProfile
-    auth.state.user = updatedProfile
-    localStorage.setItem('guitu_user', JSON.stringify(updatedProfile))
-    ElMessage.success('资料已更新')
+    await adoptionApi.cancel(row.id)
+    ElMessage.success('申请已取消')
+    await loadRecords()
   } catch (error) {
     notifyError(error)
-  } finally {
-    saving.value = false
   }
 }
 
-async function changePassword() {
-  await passwordRef.value.validate()
-  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    ElMessage.warning('两次输入的密码不一致')
-    return
+async function markRead(id) {
+  try {
+    await notificationApi.markRead(id)
+    await loadRecords()
+  } catch (error) {
+    notifyError(error)
   }
+}
+
+async function markAllRead() {
+  try {
+    await notificationApi.markAllRead()
+    await loadRecords()
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+function openAppeal(targetType, targetId) {
+  Object.assign(appealForm, { targetType, targetId, reason: '' })
+  appealVisible.value = true
+}
+
+async function submitAppeal() {
+  await appealFormRef.value.validate()
   saving.value = true
   try {
-    await userApi.changePassword(passwordForm)
-    ElMessage.success('密码已更新')
-    Object.assign(passwordForm, { oldPassword: '', newPassword: '', confirmPassword: '' })
+    await appealApi.create(appealForm)
+    ElMessage.success('申诉已提交')
+    appealVisible.value = false
+    await loadRecords()
   } catch (error) {
     notifyError(error)
   } finally {

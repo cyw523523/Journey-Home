@@ -10,6 +10,7 @@ import com.guitu.exception.BusinessException;
 import com.guitu.mapper.DtoMapper;
 import com.guitu.repository.RescueRepository;
 import com.guitu.security.SecuritySupport;
+import org.springframework.cache.annotation.Cacheable;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,26 +29,45 @@ public class RescueService {
     private final RescueRepository rescueRepository;
     private final UserService userService;
     private final DtoMapper mapper;
+    private final ContentModerationService moderationService;
+    private final CacheInvalidationService cacheInvalidationService;
 
-    public RescueService(RescueRepository rescueRepository, UserService userService, DtoMapper mapper) {
+    public RescueService(
+            RescueRepository rescueRepository,
+            UserService userService,
+            DtoMapper mapper,
+            ContentModerationService moderationService,
+            CacheInvalidationService cacheInvalidationService
+    ) {
         this.rescueRepository = rescueRepository;
         this.userService = userService;
         this.mapper = mapper;
+        this.moderationService = moderationService;
+        this.cacheInvalidationService = cacheInvalidationService;
     }
 
     @Transactional(readOnly = true)
     public PageResponse<RescueDtos.RescueResponse> listPublic(String keyword, String region, RescueStatus status, int page, int size) {
         Page<Rescue> result = rescueRepository.findAll(publicSpec(keyword, region, status), pageRequest(page, size));
-        return PageResponse.from(result, mapper::toRescueResponse);
+        boolean loggedIn = SecuritySupport.currentUser().isPresent();
+        return PageResponse.from(result, rescue -> {
+            RescueDtos.RescueResponse response = mapper.toRescueResponse(rescue);
+            return loggedIn ? response : toPublicResponse(response);
+        });
     }
 
+    @Cacheable("latestRescues")
     @Transactional(readOnly = true)
     public List<RescueDtos.RescueResponse> latestPublic(int size) {
         Page<Rescue> result = rescueRepository.findAll(
                 publicSpec(null, null, null),
                 PageRequest.of(0, Math.max(1, size), Sort.by(Sort.Direction.DESC, "createdAt"))
         );
-        return result.getContent().stream().map(mapper::toRescueResponse).toList();
+        boolean loggedIn = SecuritySupport.currentUser().isPresent();
+        return result.getContent().stream()
+                .map(mapper::toRescueResponse)
+                .map(response -> loggedIn ? response : toPublicResponse(response))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -69,31 +89,37 @@ public class RescueService {
     public RescueDtos.RescueResponse detail(Long id) {
         Rescue rescue = getEntity(id);
         if (!rescue.getStatus().isPublicVisible() && !canAccessPrivate(rescue)) {
-            throw new BusinessException(HttpStatus.NOT_FOUND, "救助信息不存在或暂不可访问");
+            throw new BusinessException(HttpStatus.NOT_FOUND, "Rescue record is not available");
         }
-        return mapper.toRescueResponse(rescue);
+        RescueDtos.RescueResponse response = mapper.toRescueResponse(rescue);
+        return canAccessPrivate(rescue) ? response : toPublicResponse(response);
     }
 
     @Transactional
     public RescueDtos.RescueResponse create(RescueDtos.SaveRescueRequest request) {
         User publisher = userService.currentUser();
+        moderationService.validateText("Rescue content", request.location(), request.animalCondition(), request.description(), request.contact());
         Rescue rescue = new Rescue();
         fillRescue(rescue, request);
         rescue.setStatus(RescueStatus.PENDING_REVIEW);
         rescue.setReviewComment(null);
         rescue.setPublisher(publisher);
-        return mapper.toRescueResponse(rescueRepository.save(rescue));
+        RescueDtos.RescueResponse response = mapper.toRescueResponse(rescueRepository.save(rescue));
+        cacheInvalidationService.evictPublicCaches();
+        return response;
     }
 
     @Transactional
     public RescueDtos.RescueResponse update(Long id, RescueDtos.SaveRescueRequest request) {
         Rescue rescue = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(rescue.getPublisher().getId());
+        moderationService.validateText("Rescue content", request.location(), request.animalCondition(), request.description(), request.contact());
         fillRescue(rescue, request);
         if (!SecuritySupport.isAdmin()) {
             rescue.setStatus(RescueStatus.PENDING_REVIEW);
             rescue.setReviewComment(null);
         }
+        cacheInvalidationService.evictPublicCaches();
         return mapper.toRescueResponse(rescue);
     }
 
@@ -102,6 +128,7 @@ public class RescueService {
         Rescue rescue = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(rescue.getPublisher().getId());
         rescue.setStatus(RescueStatus.OFFLINE);
+        cacheInvalidationService.evictPublicCaches();
     }
 
     @Transactional
@@ -109,16 +136,17 @@ public class RescueService {
         Rescue rescue = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(rescue.getPublisher().getId());
         if (request.status() == RescueStatus.PENDING_REVIEW || request.status() == RescueStatus.REJECTED) {
-            throw new BusinessException("该救助状态不能由普通状态更新接口设置");
+            throw new BusinessException("This rescue status cannot be set through the normal status update endpoint");
         }
         rescue.setStatus(request.status());
+        cacheInvalidationService.evictPublicCaches();
         return mapper.toRescueResponse(rescue);
     }
 
     @Transactional(readOnly = true)
     public Rescue getEntity(Long id) {
         return rescueRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "救助信息不存在或已下架"));
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "Rescue record does not exist"));
     }
 
     private void fillRescue(Rescue rescue, RescueDtos.SaveRescueRequest request) {
@@ -133,9 +161,35 @@ public class RescueService {
     }
 
     private boolean canAccessPrivate(Rescue rescue) {
-        return SecuritySupport.currentUser()
-                .map(principal -> principal.role() == UserRole.ADMIN || principal.id().equals(rescue.getPublisher().getId()))
-                .orElse(false);
+        return SecuritySupport.currentUser().isPresent();
+    }
+
+    private RescueDtos.RescueResponse toPublicResponse(RescueDtos.RescueResponse response) {
+        return new RescueDtos.RescueResponse(
+                response.id(),
+                response.location(),
+                response.animalCondition(),
+                maskContact(response.contact()),
+                response.description(),
+                response.imageUrls(),
+                response.status(),
+                response.statusText(),
+                response.reviewComment(),
+                response.publisherId(),
+                response.publisherNickname(),
+                response.createdAt(),
+                response.updatedAt()
+        );
+    }
+
+    private String maskContact(String contact) {
+        if (contact == null || contact.isBlank()) {
+            return "";
+        }
+        if (contact.length() >= 11) {
+            return contact.substring(0, 3) + "****" + contact.substring(contact.length() - 4);
+        }
+        return "Contact hidden";
     }
 
     private Specification<Rescue> publicSpec(String keyword, String region, RescueStatus status) {

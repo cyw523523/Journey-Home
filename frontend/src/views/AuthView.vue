@@ -1,6 +1,6 @@
 <template>
   <section class="view-narrow page auth-layout">
-    <div class="auth-art surface">
+    <div class="auth-art">
       <p class="eyebrow"><ShieldCheck :size="16" /> {{ $t('auth.loginSubtitle') }}</p>
       <h1>{{ $t('auth.loginTitle') }}</h1>
     </div>

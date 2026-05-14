@@ -3,6 +3,7 @@ package com.guitu.dto;
 import com.guitu.domain.enums.ApplyStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -12,27 +13,28 @@ public final class AdoptApplyDtos {
     }
 
     public record CreateApplyRequest(
-            @NotNull(message = "动物编号不能为空")
+            @NotNull(message = "Animal id is required")
             Long animalId,
 
-            @NotBlank(message = "申请人姓名不能为空")
-            @Size(max = 64, message = "申请人姓名长度不能超过64")
+            @NotBlank(message = "Applicant name is required")
+            @Size(max = 64, message = "Applicant name must be at most 64 characters")
             String applicantName,
 
-            @NotBlank(message = "联系方式不能为空")
-            @Size(max = 64, message = "联系方式长度不能超过64")
+            @NotBlank(message = "Contact is required")
+            @Pattern(regexp = "^1[3-9]\\d{9}$", message = "Contact format is invalid")
+            @Size(max = 64, message = "Contact must be at most 64 characters")
             String contact,
 
-            @NotBlank(message = "领养理由不能为空")
-            @Size(max = 1000, message = "领养理由长度不能超过1000")
+            @NotBlank(message = "Reason is required")
+            @Size(max = 1000, message = "Reason must be at most 1000 characters")
             String reason,
 
-            @NotBlank(message = "居住条件不能为空")
-            @Size(max = 1000, message = "居住条件长度不能超过1000")
+            @NotBlank(message = "Living condition is required")
+            @Size(max = 1000, message = "Living condition must be at most 1000 characters")
             String livingCondition,
 
-            @NotBlank(message = "饲养经验不能为空")
-            @Size(max = 1000, message = "饲养经验长度不能超过1000")
+            @NotBlank(message = "Experience is required")
+            @Size(max = 1000, message = "Experience must be at most 1000 characters")
             String experience
     ) {
     }

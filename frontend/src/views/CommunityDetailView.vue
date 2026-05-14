@@ -14,10 +14,20 @@
                 </el-avatar>
                 {{ detail.post.authorNickname }}
               </RouterLink>
-               · {{ detail.post.authorRoleText }} · {{ formatTime(detail.post.createdAt) }}
+              · {{ detail.post.authorRoleText }} · {{ formatTime(detail.post.createdAt) }}
             </p>
           </div>
-          <StatusTag :value="detail.post.status" :text="detail.post.statusText" :options="communityPostStatusOptions" />
+          <div style="display:flex;align-items:center;gap:8px">
+            <StatusTag :value="detail.post.status" :text="detail.post.statusText" :options="communityPostStatusOptions" />
+            <el-button
+              v-if="auth.isLoggedIn.value && auth.state.user?.id !== detail.post.authorId"
+              text
+              type="danger"
+              @click="openReport('COMMUNITY_POST', detail.post.id)"
+            >
+              举报
+            </el-button>
+          </div>
         </div>
 
         <div class="community-detail-content">{{ detail.post.content }}</div>
@@ -83,6 +93,15 @@
                 </div>
                 <div style="display:flex;gap:4px">
                   <el-button v-if="auth.isLoggedIn.value" text size="small" @click="replyTo(comment)">回复</el-button>
+                  <el-button
+                    v-if="auth.isLoggedIn.value && auth.state.user?.id !== comment.authorId"
+                    text
+                    size="small"
+                    type="danger"
+                    @click="openReport('COMMUNITY_COMMENT', comment.id)"
+                  >
+                    举报
+                  </el-button>
                   <el-button v-if="canManageComment(comment)" text size="small" type="danger" @click="removeComment(comment.id)">
                     {{ $t('community.delete') }}
                   </el-button>
@@ -111,6 +130,12 @@
       :title="$t('community.notFound')"
       :description="$t('community.notFoundDesc')"
     />
+    <ReportDialog
+      v-model="reportVisible"
+      :target-type="reportTarget.type"
+      :target-id="reportTarget.id || 0"
+      @submitted="load"
+    />
   </section>
 </template>
 
@@ -122,6 +147,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import EmptyState from '../components/EmptyState.vue'
 import EmojiPicker from '../components/EmojiPicker.vue'
 import ImageUploader from '../components/ImageUploader.vue'
+import ReportDialog from '../components/ReportDialog.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { communityApi } from '../api'
 import { notifyError } from '../api/http'
@@ -134,6 +160,8 @@ const loading = ref(false)
 const commenting = ref(false)
 const detail = ref(null)
 const replyingTo = ref(null)
+const reportVisible = ref(false)
+const reportTarget = ref({ type: 'COMMUNITY_POST', id: 0 })
 
 const commentForm = reactive({
   content: '',
@@ -156,7 +184,7 @@ const commentsWithDepth = computed(() => {
     }
     return depths[comment.id]
   }
-  return comments.map(c => ({ ...c, depth: Math.min(getDepth(c), 3) }))
+  return comments.map((c) => ({ ...c, depth: Math.min(getDepth(c), 3) }))
 })
 
 const API_BASE = window.location.origin
@@ -188,6 +216,11 @@ function cancelReply() {
   commentForm.imageUrls = []
 }
 
+function openReport(type, id) {
+  reportTarget.value = { type, id }
+  reportVisible.value = true
+}
+
 async function load() {
   loading.value = true
   try {
@@ -216,7 +249,7 @@ async function submitComment() {
     commentForm.imageUrls = []
     commentForm.parentCommentId = null
     replyingTo.value = null
-    ElMessage.success('评论已发布')
+    ElMessage.success('评论已提交')
     await load()
   } catch (error) {
     notifyError(error)

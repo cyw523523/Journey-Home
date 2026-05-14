@@ -2,6 +2,7 @@ package com.guitu.service;
 
 import com.guitu.common.PageResponse;
 import com.guitu.domain.User;
+import com.guitu.domain.enums.NotificationType;
 import com.guitu.domain.enums.UserRole;
 import com.guitu.domain.enums.UserStatus;
 import com.guitu.dto.UserDtos;
@@ -25,10 +26,14 @@ import java.util.List;
 public class AdminUserService {
     private final UserRepository userRepository;
     private final DtoMapper mapper;
+    private final NotificationService notificationService;
+    private final CacheInvalidationService cacheInvalidationService;
 
-    public AdminUserService(UserRepository userRepository, DtoMapper mapper) {
+    public AdminUserService(UserRepository userRepository, DtoMapper mapper, NotificationService notificationService, CacheInvalidationService cacheInvalidationService) {
         this.userRepository = userRepository;
         this.mapper = mapper;
+        this.notificationService = notificationService;
+        this.cacheInvalidationService = cacheInvalidationService;
     }
 
     @Transactional(readOnly = true)
@@ -40,9 +45,18 @@ public class AdminUserService {
     @Transactional
     public UserDtos.UserProfile update(Long id, UserDtos.AdminUpdateUserRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "用户不存在"));
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "User does not exist"));
         user.setRole(request.role());
         user.setStatus(request.status());
+        notificationService.notifyUser(
+                user,
+                NotificationType.ACCOUNT_ACTION,
+                "Account status updated",
+                "Your account role or status has been updated by an administrator.",
+                "USER",
+                user.getId()
+        );
+        cacheInvalidationService.evictPublicCaches();
         return mapper.toUserProfile(user);
     }
 

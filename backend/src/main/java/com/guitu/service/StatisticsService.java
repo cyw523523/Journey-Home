@@ -9,6 +9,7 @@ import com.guitu.repository.AdoptApplyRepository;
 import com.guitu.repository.AnimalRepository;
 import com.guitu.repository.RescueRepository;
 import com.guitu.repository.UserRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class StatisticsService {
         this.noticeService = noticeService;
     }
 
+    @Cacheable("adminOverview")
     @Transactional(readOnly = true)
     public StatsDtos.OverviewResponse overview() {
         long pending = animalRepository.countByStatusIn(List.of(AnimalStatus.PENDING_REVIEW))
@@ -56,6 +58,7 @@ public class StatisticsService {
         );
     }
 
+    @Cacheable("animalStatusDistribution")
     @Transactional(readOnly = true)
     public List<StatsDtos.StatusCount> animalStatusDistribution() {
         return animalRepository.countGroupByStatus().stream()
@@ -66,6 +69,7 @@ public class StatisticsService {
                 .toList();
     }
 
+    @Cacheable("rescueStatusDistribution")
     @Transactional(readOnly = true)
     public List<StatsDtos.StatusCount> rescueStatusDistribution() {
         return rescueRepository.countGroupByStatus().stream()
@@ -76,6 +80,7 @@ public class StatisticsService {
                 .toList();
     }
 
+    @Cacheable("applyStatusDistribution")
     @Transactional(readOnly = true)
     public List<StatsDtos.StatusCount> applyStatusDistribution() {
         return adoptApplyRepository.countGroupByStatus().stream()
@@ -86,6 +91,7 @@ public class StatisticsService {
                 .toList();
     }
 
+    @Cacheable("homeOverview")
     @Transactional(readOnly = true)
     public StatsDtos.HomeOverviewResponse homeOverview() {
         return new StatsDtos.HomeOverviewResponse(

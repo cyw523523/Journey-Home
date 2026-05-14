@@ -21,6 +21,8 @@ public interface AdoptApplyRepository extends JpaRepository<AdoptApply, Long>, J
 
     long countByStatus(ApplyStatus status);
 
+    List<AdoptApply> findByAnimalIdAndStatusAndIdNot(Long animalId, ApplyStatus status, Long id);
+
     @Query("select a.status, count(a) from AdoptApply a group by a.status")
     List<Object[]> countGroupByStatus();
 }

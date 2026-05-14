@@ -3,7 +3,7 @@
     <div class="section-head">
       <div>
         <h1>救助信息</h1>
-        <p>发布发现地点、动物情况和联系方式，审核通过后公开展示。</p>
+        <p>发布发现地点、动物情况和联系方式，审核通过后会公开展示给更多人查看。</p>
       </div>
       <el-button v-if="auth.isLoggedIn.value" :icon="Plus" type="primary" size="large" @click="dialogVisible = true">发布救助</el-button>
       <el-button v-else :icon="LogIn" size="large" @click="$router.push('/auth')">登录后发布</el-button>
@@ -43,13 +43,26 @@
         <p>{{ current.animalCondition }}</p>
         <p class="muted">{{ current.description }}</p>
         <p class="meta-line" style="margin:8px 0"><Phone :size="16" /> {{ current.contact }}</p>
-        <div class="thumb-grid" v-if="current.imageUrls?.length">
-          <img v-for="url in current.imageUrls" :key="url" :src="url" alt="救助图片" />
+        <div class="thumb-grid rescue-preview-grid" v-if="current.imageUrls?.length">
+          <el-image
+            v-for="(url, index) in current.imageUrls"
+            :key="`${url}-${index}`"
+            class="rescue-preview-image"
+            :src="url"
+            fit="cover"
+            :preview-src-list="current.imageUrls"
+            :initial-index="index"
+            preview-teleported
+            hide-on-click-modal
+          />
         </div>
         <div v-if="canEdit(current)" style="display:flex;gap:8px;margin-top:16px">
-          <el-button :icon="Pencil" type="primary" @click="detailVisible=false;openEdit(current)">编辑</el-button>
+          <el-button :icon="Pencil" type="primary" @click="detailVisible = false; openEdit(current)">编辑</el-button>
           <el-button :icon="RefreshCw" @click="openStatus(current)">更新状态</el-button>
           <el-button :icon="Archive" type="danger" @click="offlineRescue(current)">下架</el-button>
+        </div>
+        <div v-else style="margin-top:16px">
+          <el-button type="danger" plain @click="reportVisible = true">举报该救助信息</el-button>
         </div>
       </div>
     </el-dialog>
@@ -78,7 +91,6 @@
       </template>
     </el-dialog>
 
-    <!-- Edit dialog -->
     <el-dialog v-model="editVisible" title="编辑救助信息" width="720px" append-to-body>
       <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-position="top">
         <el-form-item label="救助地点" prop="location">
@@ -103,7 +115,6 @@
       </template>
     </el-dialog>
 
-    <!-- Status dialog -->
     <el-dialog v-model="statusVisible" title="更新状态" width="460px" append-to-body>
       <el-form label-position="top">
         <el-form-item label="新状态">
@@ -117,15 +128,19 @@
         <el-button :loading="saving" type="primary" @click="saveStatus">更新</el-button>
       </template>
     </el-dialog>
+
+    <ReportDialog v-model="reportVisible" target-type="RESCUE" :target-id="current?.id || 0" />
   </section>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Archive, Eye, LogIn, Pencil, Phone, Plus, RefreshCw, Search, Send } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '../components/EmptyState.vue'
 import ImageUploader from '../components/ImageUploader.vue'
+import ReportDialog from '../components/ReportDialog.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { rescueApi } from '../api'
 import { notifyError } from '../api/http'
@@ -134,12 +149,15 @@ import { rescueStatusOptions } from '../utils/status'
 import { useAuth } from '../stores/auth'
 
 const auth = useAuth()
+const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const detailVisible = ref(false)
 const dialogVisible = ref(false)
 const editVisible = ref(false)
 const statusVisible = ref(false)
+const reportVisible = ref(false)
 const current = ref(null)
 const statusTarget = ref(null)
 const newStatus = ref('')
@@ -147,7 +165,7 @@ const rescues = ref([])
 const formRef = ref()
 const editFormRef = ref()
 const publicRescueStatuses = rescueStatusOptions.filter((item) => ['PENDING_PROCESS', 'PROCESSING', 'COMPLETED'].includes(item.value))
-const editableStatuses = rescueStatusOptions.filter(item => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
+const editableStatuses = rescueStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
 const filters = reactive({ keyword: '', region: '', status: '' })
 const form = reactive({ location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
 const editForm = reactive({ id: null, location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
@@ -183,6 +201,27 @@ async function openDetail(rescue) {
     current.value = rescue
   }
   detailVisible.value = true
+  syncDetailQuery(current.value?.id || rescue.id)
+}
+
+function syncDetailQuery(rescueId) {
+  const nextId = String(rescueId)
+  if (route.query.detail === nextId) return
+  router.replace({ query: { ...route.query, detail: nextId } })
+}
+
+function clearDetailQuery() {
+  if (!route.query.detail) return
+  const nextQuery = { ...route.query }
+  delete nextQuery.detail
+  router.replace({ query: nextQuery })
+}
+
+async function openDetailFromQuery() {
+  const rescueId = Number(route.query.detail)
+  if (!rescueId || Number.isNaN(rescueId)) return
+  if (detailVisible.value && current.value?.id === rescueId) return
+  await openDetail({ id: rescueId })
 }
 
 function openEdit(rescue) {
@@ -260,5 +299,16 @@ async function submit() {
   }
 }
 
-onMounted(load)
+watch(() => route.query.detail, () => {
+  openDetailFromQuery()
+})
+
+watch(detailVisible, (visible) => {
+  if (!visible) clearDetailQuery()
+})
+
+onMounted(async () => {
+  await load()
+  await openDetailFromQuery()
+})
 </script>

@@ -38,6 +38,37 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+
+          <el-dropdown v-if="auth.isLoggedIn.value" @visible-change="handleNotificationVisible">
+            <button class="user-chip notification-chip">
+              <Bell :size="17" />
+              <span>通知</span>
+              <el-badge v-if="notificationSummary.unreadCount" :value="notificationSummary.unreadCount" />
+            </button>
+            <template #dropdown>
+              <div class="notification-menu">
+                <div class="notification-head">
+                  <strong>站内通知</strong>
+                  <el-button text size="small" @click.stop="markAllRead">全部已读</el-button>
+                </div>
+                <div v-if="notifications.length" class="notification-list">
+                  <button
+                    v-for="item in notifications"
+                    :key="item.id"
+                    class="notification-item"
+                    :class="{ unread: !item.readFlag }"
+                    @click="openNotification(item)"
+                  >
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.content }}</span>
+                    <small>{{ formatTime(item.createdAt) }}</small>
+                  </button>
+                </div>
+                <div v-else class="notification-empty">暂无通知</div>
+              </div>
+            </template>
+          </el-dropdown>
+
           <el-button v-if="!auth.isLoggedIn.value" :icon="LogIn" type="primary" @click="$router.push('/auth')">
             {{ $t('nav.login') }}
           </el-button>
@@ -65,15 +96,19 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Globe, HeartHandshake, LogIn, UserRound } from 'lucide-vue-next'
+import { Bell, Globe, HeartHandshake, LogIn, UserRound } from 'lucide-vue-next'
+import { notificationApi } from '../api'
+import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 
 const { locale, t } = useI18n()
 const auth = useAuth()
 const router = useRouter()
+const notifications = ref([])
+const notificationSummary = ref({ unreadCount: 0 })
 
 const currentLanguageLabel = computed(() => {
   return locale.value === 'zh' ? t('common.chinese') : t('common.english')
@@ -88,4 +123,111 @@ function logout() {
   auth.logout()
   router.push('/')
 }
+
+function formatTime(value) {
+  return value ? new Date(value).toLocaleString() : '-'
+}
+
+async function loadNotifications() {
+  if (!auth.isLoggedIn.value) return
+  try {
+    const [listData, summaryData] = await Promise.all([
+      notificationApi.list({ page: 0, size: 6 }),
+      notificationApi.summary()
+    ])
+    notifications.value = listData.content || []
+    notificationSummary.value = summaryData || { unreadCount: 0 }
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+async function handleNotificationVisible(visible) {
+  if (visible) {
+    await loadNotifications()
+  }
+}
+
+async function markAllRead() {
+  try {
+    await notificationApi.markAllRead()
+    await loadNotifications()
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+async function openNotification(item) {
+  try {
+    if (!item.readFlag) {
+      await notificationApi.markRead(item.id)
+    }
+    await loadNotifications()
+    router.push('/profile')
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+watch(() => auth.isLoggedIn.value, (loggedIn) => {
+  if (loggedIn) {
+    loadNotifications()
+  } else {
+    notifications.value = []
+    notificationSummary.value = { unreadCount: 0 }
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  if (auth.isLoggedIn.value) {
+    loadNotifications()
+  }
+})
 </script>
+
+<style scoped>
+.notification-chip {
+  position: relative;
+}
+
+.notification-menu {
+  width: 320px;
+  padding: 10px;
+}
+
+.notification-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.notification-list {
+  display: grid;
+  gap: 8px;
+}
+
+.notification-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(20, 39, 52, 0.08);
+  background: white;
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.notification-item.unread {
+  border-color: rgba(34, 110, 90, 0.28);
+  background: rgba(242, 248, 246, 0.9);
+}
+
+.notification-empty {
+  color: var(--el-text-color-secondary);
+  text-align: center;
+  padding: 16px 8px;
+}
+</style>

@@ -1,8 +1,10 @@
 package com.guitu.domain.enums;
 
 public enum CommunityPostStatus {
-    PUBLISHED("已发布"),
-    OFFLINE("已下架");
+    PENDING_REVIEW("Pending review"),
+    PUBLISHED("Published"),
+    REJECTED("Rejected"),
+    OFFLINE("Offline");
 
     private final String label;
 

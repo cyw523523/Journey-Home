@@ -50,12 +50,33 @@ export const noticeApi = {
 
 export const communityApi = {
   list: (params) => http.get('/community/posts', { params }),
+  myPosts: (params) => http.get('/community/mine/posts', { params }),
+  myComments: (params) => http.get('/community/mine/comments', { params }),
   detail: (id) => http.get(`/community/posts/${id}`),
   create: (data) => http.post('/community/posts', data),
   update: (id, data) => http.put(`/community/posts/${id}`, data),
   delete: (id) => http.delete(`/community/posts/${id}`),
   createComment: (id, data) => http.post(`/community/posts/${id}/comments`, data),
   deleteComment: (id) => http.delete(`/community/comments/${id}`)
+}
+
+export const reportApi = {
+  create: (data) => http.post('/reports', data),
+  list: (params) => http.get('/reports', { params }),
+  detail: (id) => http.get(`/reports/${id}`)
+}
+
+export const appealApi = {
+  create: (data) => http.post('/appeals', data),
+  list: (params) => http.get('/appeals', { params }),
+  detail: (id) => http.get(`/appeals/${id}`)
+}
+
+export const notificationApi = {
+  list: (params) => http.get('/notifications', { params }),
+  summary: () => http.get('/notifications/summary'),
+  markRead: (id) => http.patch(`/notifications/${id}/read`),
+  markAllRead: () => http.patch('/notifications/read-all')
 }
 
 export const homeApi = {
@@ -78,5 +99,11 @@ export const adminApi = {
   createNotice: (data) => http.post('/admin/notices', data),
   updateNotice: (id, data) => http.put(`/admin/notices/${id}`, data),
   offlineNotice: (id) => http.patch(`/admin/notices/${id}/offline`),
-  deleteNotice: (id) => http.delete(`/admin/notices/${id}`)
+  deleteNotice: (id) => http.delete(`/admin/notices/${id}`),
+  reports: (params) => http.get('/admin/reports', { params }),
+  reportDetail: (id) => http.get(`/admin/reports/${id}`),
+  resolveReport: (id, data) => http.patch(`/admin/reports/${id}`, data),
+  appeals: (params) => http.get('/admin/appeals', { params }),
+  appealDetail: (id) => http.get(`/admin/appeals/${id}`),
+  reviewAppeal: (id, data) => http.patch(`/admin/appeals/${id}`, data)
 }

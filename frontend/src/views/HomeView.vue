@@ -203,7 +203,16 @@
     </div>
 
     <div class="grid rescue-grid">
-      <article v-for="rescue in rescues" :key="rescue.id" class="rescue-card lift-card">
+      <article
+        v-for="rescue in rescues"
+        :key="rescue.id"
+        class="rescue-card lift-card"
+        role="button"
+        tabindex="0"
+        @click="openRescueDetail(rescue.id)"
+        @keydown.enter.prevent="openRescueDetail(rescue.id)"
+        @keydown.space.prevent="openRescueDetail(rescue.id)"
+      >
         <StatusTag :value="rescue.status" :text="rescue.statusText" :options="rescueStatusOptions" />
         <h3>{{ rescue.location }}</h3>
         <p>{{ rescue.animalCondition }}</p>
@@ -471,6 +480,10 @@ const heroGlowStyle = computed(() => ({
 
 function goSearch() {
   router.push({ name: 'animals', query: { keyword: keyword.value } })
+}
+
+function openRescueDetail(rescueId) {
+  router.push({ name: 'rescues', query: { detail: rescueId } })
 }
 
 function handleHeroMove(event) {

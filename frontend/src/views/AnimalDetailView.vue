@@ -42,6 +42,7 @@
             <el-button :icon="RefreshCw" @click="openStatus">更新状态</el-button>
             <el-button :icon="Archive" type="danger" @click="offline">下架</el-button>
           </template>
+          <el-button v-else type="danger" plain @click="reportVisible = true">举报</el-button>
           <el-button
             v-if="animal.status === 'WAITING_ADOPTION'"
             :icon="HeartHandshake"
@@ -109,6 +110,8 @@
         <el-button :loading="saving" type="primary" @click="saveStatus">更新</el-button>
       </template>
     </el-dialog>
+
+    <ReportDialog v-model="reportVisible" target-type="ANIMAL" :target-id="animal.id || route.params.id" />
   </section>
 </template>
 
@@ -117,6 +120,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { Archive, ArrowLeft, HeartHandshake, PawPrint, Pencil, RefreshCw } from 'lucide-vue-next'
+import ReportDialog from '../components/ReportDialog.vue'
 import StatusTag from '../components/StatusTag.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import { animalApi } from '../api'
@@ -133,6 +137,7 @@ const saving = ref(false)
 const animal = ref({})
 const editorVisible = ref(false)
 const statusVisible = ref(false)
+const reportVisible = ref(false)
 const newStatus = ref('')
 const formRef = ref()
 
@@ -159,7 +164,10 @@ const isOwnerOrAdmin = computed(() => {
 })
 
 const availableStatuses = computed(() => {
-  return animalStatusOptions.filter(item => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
+  if (auth.isAdmin.value) {
+    return animalStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
+  }
+  return animalStatusOptions.filter((item) => ['WAITING_RESCUE', 'RESCUING', 'OFFLINE'].includes(item.value))
 })
 
 function apply() {

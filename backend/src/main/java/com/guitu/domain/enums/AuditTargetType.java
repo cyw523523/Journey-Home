@@ -1,9 +1,11 @@
 package com.guitu.domain.enums;
 
 public enum AuditTargetType {
-    ANIMAL("动物档案"),
-    RESCUE("救助信息"),
-    ADOPT_APPLY("领养申请");
+    ANIMAL("Animal profile"),
+    RESCUE("Rescue post"),
+    ADOPT_APPLY("Adoption application"),
+    COMMUNITY_POST("Community post"),
+    COMMUNITY_COMMENT("Community comment");
 
     private final String label;
 

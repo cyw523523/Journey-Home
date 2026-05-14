@@ -22,8 +22,12 @@
           <span class="stat-label">发布的救助信息</span>
         </div>
       </div>
+      <div v-if="auth.isLoggedIn.value && auth.state.user?.id !== profile.id" style="margin-top: 18px">
+        <el-button type="danger" plain @click="reportVisible = true">举报该用户</el-button>
+      </div>
     </div>
     <EmptyState v-else title="用户不存在" description="该用户不存在或已注销" />
+    <ReportDialog v-model="reportVisible" target-type="USER" :target-id="route.params.id" />
   </section>
 </template>
 
@@ -31,14 +35,18 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import EmptyState from '../components/EmptyState.vue'
+import ReportDialog from '../components/ReportDialog.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { userApi } from '../api'
 import { notifyError } from '../api/http'
+import { useAuth } from '../stores/auth'
 import { roleOptions } from '../utils/status'
 
 const route = useRoute()
+const auth = useAuth()
 const loading = ref(false)
 const profile = ref(null)
+const reportVisible = ref(false)
 
 const API_BASE = window.location.origin
 

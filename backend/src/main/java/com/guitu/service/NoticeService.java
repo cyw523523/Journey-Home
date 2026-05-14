@@ -8,6 +8,7 @@ import com.guitu.dto.NoticeDtos;
 import com.guitu.exception.BusinessException;
 import com.guitu.mapper.DtoMapper;
 import com.guitu.repository.NoticeRepository;
+import org.springframework.cache.annotation.Cacheable;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,11 +28,21 @@ public class NoticeService {
     private final NoticeRepository noticeRepository;
     private final UserService userService;
     private final DtoMapper mapper;
+    private final ContentModerationService moderationService;
+    private final CacheInvalidationService cacheInvalidationService;
 
-    public NoticeService(NoticeRepository noticeRepository, UserService userService, DtoMapper mapper) {
+    public NoticeService(
+            NoticeRepository noticeRepository,
+            UserService userService,
+            DtoMapper mapper,
+            ContentModerationService moderationService,
+            CacheInvalidationService cacheInvalidationService
+    ) {
         this.noticeRepository = noticeRepository;
         this.userService = userService;
         this.mapper = mapper;
+        this.moderationService = moderationService;
+        this.cacheInvalidationService = cacheInvalidationService;
     }
 
     @Transactional(readOnly = true)
@@ -46,6 +57,7 @@ public class NoticeService {
         return PageResponse.from(result, mapper::toNoticeResponse);
     }
 
+    @Cacheable("latestNotices")
     @Transactional(readOnly = true)
     public List<NoticeDtos.NoticeResponse> latestPublic(int size) {
         Page<Notice> result = noticeRepository.findAll(
@@ -72,16 +84,21 @@ public class NoticeService {
     @Transactional
     public NoticeDtos.NoticeResponse create(NoticeDtos.SaveNoticeRequest request) {
         User publisher = userService.currentUser();
+        moderationService.validateText("Notice content", request.title(), request.content());
         Notice notice = new Notice();
         notice.setPublisher(publisher);
         fillNotice(notice, request);
-        return mapper.toNoticeResponse(noticeRepository.save(notice));
+        NoticeDtos.NoticeResponse response = mapper.toNoticeResponse(noticeRepository.save(notice));
+        cacheInvalidationService.evictPublicCaches();
+        return response;
     }
 
     @Transactional
     public NoticeDtos.NoticeResponse update(Long id, NoticeDtos.SaveNoticeRequest request) {
         Notice notice = getEntity(id);
+        moderationService.validateText("Notice content", request.title(), request.content());
         fillNotice(notice, request);
+        cacheInvalidationService.evictPublicCaches();
         return mapper.toNoticeResponse(notice);
     }
 
@@ -89,11 +106,13 @@ public class NoticeService {
     public void offline(Long id) {
         Notice notice = getEntity(id);
         notice.setStatus(NoticeStatus.OFFLINE);
+        cacheInvalidationService.evictPublicCaches();
     }
 
     @Transactional
     public void delete(Long id) {
         noticeRepository.delete(getEntity(id));
+        cacheInvalidationService.evictPublicCaches();
     }
 
     @Transactional(readOnly = true)

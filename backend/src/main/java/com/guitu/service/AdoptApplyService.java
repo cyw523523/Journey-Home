@@ -6,6 +6,7 @@ import com.guitu.domain.Animal;
 import com.guitu.domain.User;
 import com.guitu.domain.enums.AnimalStatus;
 import com.guitu.domain.enums.ApplyStatus;
+import com.guitu.domain.enums.NotificationType;
 import com.guitu.dto.AdoptApplyDtos;
 import com.guitu.exception.BusinessException;
 import com.guitu.mapper.DtoMapper;
@@ -21,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,25 +32,40 @@ public class AdoptApplyService {
     private final AnimalService animalService;
     private final UserService userService;
     private final DtoMapper mapper;
+    private final AntiAbuseService antiAbuseService;
+    private final ContentModerationService moderationService;
+    private final NotificationService notificationService;
+    private final CacheInvalidationService cacheInvalidationService;
 
     public AdoptApplyService(
             AdoptApplyRepository adoptApplyRepository,
             AnimalService animalService,
             UserService userService,
-            DtoMapper mapper
+            DtoMapper mapper,
+            AntiAbuseService antiAbuseService,
+            ContentModerationService moderationService,
+            NotificationService notificationService,
+            CacheInvalidationService cacheInvalidationService
     ) {
         this.adoptApplyRepository = adoptApplyRepository;
         this.animalService = animalService;
         this.userService = userService;
         this.mapper = mapper;
+        this.antiAbuseService = antiAbuseService;
+        this.moderationService = moderationService;
+        this.notificationService = notificationService;
+        this.cacheInvalidationService = cacheInvalidationService;
     }
 
     @Transactional
     public AdoptApplyDtos.ApplyResponse create(AdoptApplyDtos.CreateApplyRequest request) {
         User applicant = userService.currentUser();
+        antiAbuseService.check("adoption-apply", applicant.getId().toString(), 4, Duration.ofHours(6), "Too many adoption applications, please try again later");
+        moderationService.validateText("Application content", request.applicantName(), request.contact(), request.reason(), request.livingCondition(), request.experience());
+
         Animal animal = animalService.getEntity(request.animalId());
         if (animal.getStatus() != AnimalStatus.WAITING_ADOPTION) {
-            throw new BusinessException("该动物当前不可申请领养");
+            throw new BusinessException("This animal is not open for adoption right now");
         }
         boolean duplicated = adoptApplyRepository.existsByAnimalIdAndApplicantIdAndStatus(
                 animal.getId(),
@@ -56,7 +73,7 @@ public class AdoptApplyService {
                 ApplyStatus.PENDING_REVIEW
         );
         if (duplicated) {
-            throw new BusinessException("请勿重复提交申请");
+            throw new BusinessException("Please do not submit duplicate applications");
         }
 
         AdoptApply apply = new AdoptApply();
@@ -68,7 +85,11 @@ public class AdoptApplyService {
         apply.setLivingCondition(request.livingCondition());
         apply.setExperience(request.experience());
         apply.setStatus(ApplyStatus.PENDING_REVIEW);
-        return mapper.toApplyResponse(adoptApplyRepository.save(apply));
+        AdoptApply saved = adoptApplyRepository.save(apply);
+        notificationService.notifyUser(applicant, NotificationType.AUDIT_RESULT, "Adoption application submitted", "Your application has been submitted and is waiting for admin review.", "ADOPT_APPLY", saved.getId());
+        notificationService.notifyAdmins(NotificationType.AUDIT_RESULT, "New adoption application pending review", "A new adoption application is waiting for review.", "ADOPT_APPLY", saved.getId());
+        cacheInvalidationService.evictPublicCaches();
+        return mapper.toApplyResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -88,7 +109,7 @@ public class AdoptApplyService {
     public AdoptApplyDtos.ApplyResponse detail(Long id) {
         AdoptApply apply = getEntity(id);
         if (!SecuritySupport.requireUser().id().equals(apply.getApplicant().getId()) && !SecuritySupport.isAdmin()) {
-            throw new BusinessException(HttpStatus.FORBIDDEN, "当前账号无权限操作");
+            throw new BusinessException(HttpStatus.FORBIDDEN, "Current user cannot access this application");
         }
         return mapper.toApplyResponse(apply);
     }
@@ -97,18 +118,20 @@ public class AdoptApplyService {
     public void cancel(Long id) {
         AdoptApply apply = getEntity(id);
         if (!SecuritySupport.requireUser().id().equals(apply.getApplicant().getId())) {
-            throw new BusinessException(HttpStatus.FORBIDDEN, "当前账号无权限操作");
+            throw new BusinessException(HttpStatus.FORBIDDEN, "Current user cannot cancel this application");
         }
         if (apply.getStatus() != ApplyStatus.PENDING_REVIEW) {
-            throw new BusinessException("仅允许取消待审核申请");
+            throw new BusinessException("Only pending applications can be canceled");
         }
         apply.setStatus(ApplyStatus.CANCELED);
+        notificationService.notifyUser(apply.getApplicant(), NotificationType.AUDIT_RESULT, "Adoption application canceled", "Your application has been canceled.", "ADOPT_APPLY", apply.getId());
+        cacheInvalidationService.evictPublicCaches();
     }
 
     @Transactional(readOnly = true)
     public AdoptApply getEntity(Long id) {
         return adoptApplyRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "领养申请不存在"));
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "Adoption application does not exist"));
     }
 
     private Specification<AdoptApply> applySpec(Long applicantId, ApplyStatus status) {

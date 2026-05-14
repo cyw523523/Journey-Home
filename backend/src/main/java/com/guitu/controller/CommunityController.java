@@ -33,6 +33,22 @@ public class CommunityController {
         return ApiResponse.ok(communityService.listPublic(keyword, page, size));
     }
 
+    @GetMapping("/mine/posts")
+    public ApiResponse<PageResponse<CommunityDtos.CommunityPostResponse>> listMyPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.ok(communityService.listMine(page, size));
+    }
+
+    @GetMapping("/mine/comments")
+    public ApiResponse<PageResponse<CommunityDtos.CommunityCommentResponse>> listMyComments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.ok(communityService.listMyComments(page, size));
+    }
+
     @GetMapping("/posts/{id}")
     public ApiResponse<CommunityDtos.CommunityPostDetailResponse> detail(@PathVariable Long id) {
         return ApiResponse.ok(communityService.detailPublic(id));

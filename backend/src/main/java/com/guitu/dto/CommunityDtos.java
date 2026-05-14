@@ -1,5 +1,6 @@
 package com.guitu.dto;
 
+import com.guitu.domain.enums.CommunityCommentStatus;
 import com.guitu.domain.enums.CommunityPostStatus;
 import com.guitu.domain.enums.UserRole;
 import jakarta.validation.constraints.NotBlank;
@@ -13,24 +14,24 @@ public final class CommunityDtos {
     }
 
     public record SavePostRequest(
-            @NotBlank(message = "帖子标题不能为空")
-            @Size(max = 120, message = "帖子标题长度不能超过120")
+            @NotBlank(message = "Post title is required")
+            @Size(max = 120, message = "Post title must be at most 120 characters")
             String title,
 
-            @NotBlank(message = "帖子内容不能为空")
-            @Size(max = 5000, message = "帖子内容长度不能超过5000")
+            @NotBlank(message = "Post content is required")
+            @Size(max = 5000, message = "Post content must be at most 5000 characters")
             String content,
 
-            List<@Size(max = 500, message = "图片路径长度不能超过500") String> imageUrls
+            List<@Size(max = 500, message = "Image URL must be at most 500 characters") String> imageUrls
     ) {
     }
 
     public record SaveCommentRequest(
-            @NotBlank(message = "评论内容不能为空")
-            @Size(max = 2000, message = "评论内容长度不能超过2000")
+            @NotBlank(message = "Comment content is required")
+            @Size(max = 2000, message = "Comment content must be at most 2000 characters")
             String content,
 
-            List<@Size(max = 500, message = "图片路径长度不能超过500") String> imageUrls,
+            List<@Size(max = 500, message = "Image URL must be at most 500 characters") String> imageUrls,
 
             Long parentCommentId
     ) {
@@ -67,6 +68,8 @@ public final class CommunityDtos {
             String authorRoleText,
             String content,
             List<String> imageUrls,
+            CommunityCommentStatus status,
+            String statusText,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) {

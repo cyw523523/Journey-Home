@@ -1,18 +1,24 @@
 package com.guitu.mapper;
 
 import com.guitu.domain.AdoptApply;
+import com.guitu.domain.AppealRecord;
 import com.guitu.domain.Animal;
 import com.guitu.domain.AuditLog;
+import com.guitu.domain.ContentReport;
 import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
 import com.guitu.domain.Notice;
 import com.guitu.domain.Rescue;
+import com.guitu.domain.SystemNotification;
 import com.guitu.domain.User;
 import com.guitu.dto.AdoptApplyDtos;
+import com.guitu.dto.AppealDtos;
 import com.guitu.dto.AnimalDtos;
 import com.guitu.dto.AuditDtos;
 import com.guitu.dto.CommunityDtos;
+import com.guitu.dto.NotificationDtos;
 import com.guitu.dto.NoticeDtos;
+import com.guitu.dto.ReportDtos;
 import com.guitu.dto.RescueDtos;
 import com.guitu.dto.UserDtos;
 import org.springframework.stereotype.Component;
@@ -142,8 +148,73 @@ public class DtoMapper {
                 comment.getAuthor().getRole().getLabel(),
                 comment.getContent(),
                 comment.getImageUrls(),
+                comment.getStatus(),
+                comment.getStatus().getLabel(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt()
+        );
+    }
+
+    public ReportDtos.ReportResponse toReportResponse(ContentReport report) {
+        return new ReportDtos.ReportResponse(
+                report.getId(),
+                report.getTargetType(),
+                report.getTargetType().getLabel(),
+                report.getTargetId(),
+                report.getReporter().getId(),
+                report.getReporter().getNickname(),
+                report.getTargetOwner() != null ? report.getTargetOwner().getId() : null,
+                report.getTargetOwner() != null ? report.getTargetOwner().getNickname() : null,
+                report.getReasonType(),
+                report.getReasonType().getLabel(),
+                report.getDescription(),
+                report.getEvidenceImageUrls(),
+                report.getStatus(),
+                report.getStatus().getLabel(),
+                report.getResolutionAction(),
+                report.getResolutionAction() != null ? report.getResolutionAction().getLabel() : null,
+                report.getResolutionOpinion(),
+                report.getReviewer() != null ? report.getReviewer().getId() : null,
+                report.getReviewer() != null ? report.getReviewer().getNickname() : null,
+                report.getReviewedAt(),
+                report.getCreatedAt()
+        );
+    }
+
+    public NotificationDtos.NotificationResponse toNotificationResponse(SystemNotification notification) {
+        return new NotificationDtos.NotificationResponse(
+                notification.getId(),
+                notification.getType(),
+                notification.getType().getLabel(),
+                notification.getTitle(),
+                notification.getContent(),
+                notification.getRelatedTargetType(),
+                notification.getRelatedTargetId(),
+                notification.isReadFlag(),
+                notification.getReadAt(),
+                notification.getCreatedAt()
+        );
+    }
+
+    public AppealDtos.AppealResponse toAppealResponse(AppealRecord appeal) {
+        return new AppealDtos.AppealResponse(
+                appeal.getId(),
+                appeal.getApplicant().getId(),
+                appeal.getApplicant().getNickname(),
+                appeal.getTargetType(),
+                appeal.getTargetType().getLabel(),
+                appeal.getTargetId(),
+                appeal.getReason(),
+                appeal.getStatus(),
+                appeal.getStatus().getLabel(),
+                appeal.getFirstReviewer() != null ? appeal.getFirstReviewer().getId() : null,
+                appeal.getFirstReviewer() != null ? appeal.getFirstReviewer().getNickname() : null,
+                appeal.getFirstReviewOpinion(),
+                appeal.getSecondReviewer() != null ? appeal.getSecondReviewer().getId() : null,
+                appeal.getSecondReviewer() != null ? appeal.getSecondReviewer().getNickname() : null,
+                appeal.getFinalReviewOpinion(),
+                appeal.getReviewedAt(),
+                appeal.getCreatedAt()
         );
     }
 
