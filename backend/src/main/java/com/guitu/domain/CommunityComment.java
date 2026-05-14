@@ -1,6 +1,8 @@
 package com.guitu.domain;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -10,6 +12,9 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -25,7 +30,16 @@ public class CommunityComment extends BaseEntity {
     @JoinColumn(name = "author_id")
     private User author;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_comment_id")
+    private CommunityComment parentComment;
+
     @Lob
     @Column(nullable = false)
     private String content;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "community_comment_images", joinColumns = @JoinColumn(name = "comment_id"))
+    @Column(name = "image_url", length = 500)
+    private List<String> imageUrls = new ArrayList<>();
 }

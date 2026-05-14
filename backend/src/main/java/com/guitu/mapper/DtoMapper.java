@@ -116,10 +116,12 @@ public class DtoMapper {
                 post.getContent(),
                 post.getAuthor().getId(),
                 post.getAuthor().getNickname(),
+                post.getAuthor().getAvatarUrl(),
                 post.getAuthor().getRole(),
                 post.getAuthor().getRole().getLabel(),
                 post.getStatus(),
                 post.getStatus().getLabel(),
+                post.getImageUrls(),
                 commentCount,
                 post.getCreatedAt(),
                 post.getUpdatedAt()
@@ -130,11 +132,16 @@ public class DtoMapper {
         return new CommunityDtos.CommunityCommentResponse(
                 comment.getId(),
                 comment.getPost().getId(),
+                comment.getParentComment() != null ? comment.getParentComment().getId() : null,
+                comment.getParentComment() != null ? comment.getParentComment().getAuthor().getId() : null,
+                comment.getParentComment() != null ? comment.getParentComment().getAuthor().getNickname() : null,
                 comment.getAuthor().getId(),
                 comment.getAuthor().getNickname(),
+                comment.getAuthor().getAvatarUrl(),
                 comment.getAuthor().getRole(),
                 comment.getAuthor().getRole().getLabel(),
                 comment.getContent(),
+                comment.getImageUrls(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt()
         );

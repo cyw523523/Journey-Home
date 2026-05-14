@@ -4,6 +4,8 @@ import com.guitu.domain.User;
 import com.guitu.dto.UserDtos;
 import com.guitu.exception.BusinessException;
 import com.guitu.mapper.DtoMapper;
+import com.guitu.repository.AnimalRepository;
+import com.guitu.repository.RescueRepository;
 import com.guitu.repository.UserRepository;
 import com.guitu.security.SecuritySupport;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,11 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final AnimalRepository animalRepository;
+    private final RescueRepository rescueRepository;
     private final PasswordEncoder passwordEncoder;
     private final DtoMapper mapper;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, DtoMapper mapper) {
+    public UserService(UserRepository userRepository, AnimalRepository animalRepository, RescueRepository rescueRepository, PasswordEncoder passwordEncoder, DtoMapper mapper) {
         this.userRepository = userRepository;
+        this.animalRepository = animalRepository;
+        this.rescueRepository = rescueRepository;
         this.passwordEncoder = passwordEncoder;
         this.mapper = mapper;
     }
@@ -51,6 +57,21 @@ public class UserService {
             throw new BusinessException("原密码错误");
         }
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+    }
+
+    @Transactional(readOnly = true)
+    public UserDtos.PublicUserProfile getPublicProfile(Long id) {
+        User user = getById(id);
+        return new UserDtos.PublicUserProfile(
+                user.getId(),
+                user.getNickname(),
+                user.getAvatarUrl(),
+                user.getRole(),
+                user.getRole().getLabel(),
+                animalRepository.countByPublisherId(user.getId()),
+                rescueRepository.countByPublisherId(user.getId()),
+                user.getCreatedAt()
+        );
     }
 
     @Transactional(readOnly = true)

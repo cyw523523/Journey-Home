@@ -2344,3 +2344,100 @@ body::before {
     font-size: 30px;
   }
 }
+
+/* Community enhancements */
+.author-link {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+.author-link:hover {
+  color: var(--primary);
+}
+
+.post-title-link {
+  cursor: pointer;
+}
+
+.post-card-images {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.post-card-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.more-images {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.04);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.community-detail-images {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.community-detail-thumb {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.comment-images-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.comment-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* User public profile */
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.user-profile-header h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+.user-profile-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+.user-profile-stats .stat-item {
+  text-align: center;
+  padding: 20px;
+}
+.user-profile-stats .stat-num {
+  display: block;
+  font-size: 36px;
+  font-weight: 800;
+}
+.user-profile-stats .stat-label {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+}

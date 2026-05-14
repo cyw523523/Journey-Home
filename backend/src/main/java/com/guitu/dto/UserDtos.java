@@ -61,4 +61,16 @@ public final class UserDtos {
             UserStatus status
     ) {
     }
+
+    public record PublicUserProfile(
+            Long id,
+            String nickname,
+            String avatarUrl,
+            UserRole role,
+            String roleText,
+            long animalCount,
+            long rescueCount,
+            LocalDateTime createdAt
+    ) {
+    }
 }

@@ -13,7 +13,8 @@ export const userApi = {
   changePassword: (data) => http.put('/users/me/password', data),
   animals: (params) => http.get('/users/me/animals', { params }),
   rescues: (params) => http.get('/users/me/rescues', { params }),
-  applications: (params) => http.get('/users/me/applications', { params })
+  applications: (params) => http.get('/users/me/applications', { params }),
+  publicProfile: (id) => http.get(`/users/${id}`)
 }
 
 export const animalApi = {

@@ -29,14 +29,24 @@
       <article v-for="post in posts" :key="post.id" class="community-card lift-card">
         <div class="community-card-head">
           <div>
-            <h3 @click="$router.push(`/community/${post.id}`)">{{ post.title }}</h3>
-            <p class="muted">
-              {{ $t('community.author') }}：{{ post.authorNickname }} · {{ post.authorRoleText }} · {{ formatTime(post.createdAt) }}
+            <h3 class="post-title-link" @click="$router.push(`/community/${post.id}`)">{{ post.title }}</h3>
+            <p class="muted author-line">
+              <RouterLink :to="'/users/' + post.authorId" class="author-link">
+                <el-avatar :src="getFullUrl(post.authorAvatarUrl)" :size="22" style="margin-right:4px;vertical-align:middle">
+                  {{ post.authorNickname?.slice(0, 1) }}
+                </el-avatar>
+                {{ post.authorNickname }}
+              </RouterLink>
+               · {{ post.authorRoleText }} · {{ formatTime(post.createdAt) }}
             </p>
           </div>
           <StatusTag :value="post.status" :text="post.statusText" :options="communityPostStatusOptions" />
         </div>
         <p class="community-card-content">{{ excerpt(post.content) }}</p>
+        <div v-if="post.imageUrls?.length" class="post-card-images">
+          <img v-for="url in post.imageUrls.slice(0, 4)" :key="url" :src="getFullUrl(url)" class="post-card-thumb" />
+          <span v-if="post.imageUrls.length > 4" class="more-images">+{{ post.imageUrls.length - 4 }}</span>
+        </div>
         <div class="community-card-foot">
           <span class="muted">{{ post.commentCount }} {{ $t('community.commentCount') }}</span>
           <div class="community-actions">
@@ -63,14 +73,21 @@
           <el-input v-model="editor.title" maxlength="120" show-word-limit :placeholder="$t('community.titlePlaceholder')" />
         </el-form-item>
         <el-form-item :label="$t('community.contentField')" prop="content">
-          <el-input
-            v-model="editor.content"
-            type="textarea"
-            :rows="10"
-            maxlength="5000"
-            show-word-limit
-            :placeholder="$t('community.contentPlaceholder')"
-          />
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <el-input
+              v-model="editor.content"
+              type="textarea"
+              :rows="10"
+              maxlength="5000"
+              show-word-limit
+              :placeholder="$t('community.contentPlaceholder')"
+              style="flex:1"
+            />
+            <EmojiPicker @select="(emoji) => editor.content += emoji" />
+          </div>
+        </el-form-item>
+        <el-form-item label="图片">
+          <ImageUploader v-model="editor.imageUrls" usage="community-post" :limit="6" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -87,7 +104,10 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { LogIn, Search, Send, SquarePen } from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
 import EmptyState from '../components/EmptyState.vue'
+import EmojiPicker from '../components/EmojiPicker.vue'
+import ImageUploader from '../components/ImageUploader.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { communityApi } from '../api'
 import { notifyError } from '../api/http'
@@ -108,12 +128,21 @@ const formRef = ref()
 
 const editor = reactive({
   title: '',
-  content: ''
+  content: '',
+  imageUrls: []
 })
 
 const rules = {
   title: [{ required: true, message: '请输入帖子标题', trigger: 'blur' }],
   content: [{ required: true, message: '请输入帖子内容', trigger: 'blur' }]
+}
+
+const API_BASE = window.location.origin
+
+function getFullUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url
+  return `${API_BASE}${url}`
 }
 
 function formatTime(value) {
@@ -134,6 +163,7 @@ function openEditor(post = null) {
   editingId.value = post?.id || null
   editor.title = post?.title || ''
   editor.content = post?.content || ''
+  editor.imageUrls = post?.imageUrls || []
   editorVisible.value = true
 }
 
@@ -171,6 +201,7 @@ async function submitPost() {
     editingId.value = null
     editor.title = ''
     editor.content = ''
+    editor.imageUrls = []
     page.value = 1
     await load()
   } catch (error) {

@@ -11,6 +11,7 @@ const routes = [
   { path: '/animals', name: 'animals', component: () => import('../views/AnimalsView.vue') },
   { path: '/animals/:id', name: 'animal-detail', component: () => import('../views/AnimalDetailView.vue') },
   { path: '/rescues', name: 'rescues', component: () => import('../views/RescuesView.vue') },
+  { path: '/users/:id', name: 'user-profile', component: () => import('../views/UserProfileView.vue') },
   { path: '/adoptions/new/:animalId', name: 'adoption-new', component: () => import('../views/AdoptionApplyView.vue'), meta: { requiresAuth: true } },
   { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
   { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } }

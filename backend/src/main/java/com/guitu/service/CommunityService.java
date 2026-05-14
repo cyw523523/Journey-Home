@@ -68,6 +68,9 @@ public class CommunityService {
         post.setTitle(request.title().trim());
         post.setContent(request.content().trim());
         post.setStatus(CommunityPostStatus.PUBLISHED);
+        if (request.imageUrls() != null) {
+            post.getImageUrls().addAll(request.imageUrls());
+        }
         CommunityPost saved = communityPostRepository.save(post);
         return mapper.toCommunityPostResponse(saved, 0);
     }
@@ -79,6 +82,10 @@ public class CommunityService {
         ensurePostEditable(post, currentUser);
         post.setTitle(request.title().trim());
         post.setContent(request.content().trim());
+        post.getImageUrls().clear();
+        if (request.imageUrls() != null) {
+            post.getImageUrls().addAll(request.imageUrls());
+        }
         return mapper.toCommunityPostResponse(post, communityCommentRepository.countByPostId(post.getId()));
     }
 
@@ -98,6 +105,14 @@ public class CommunityService {
         comment.setPost(post);
         comment.setAuthor(currentUser);
         comment.setContent(request.content().trim());
+        if (request.parentCommentId() != null) {
+            CommunityComment parent = communityCommentRepository.findById(request.parentCommentId())
+                    .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "父评论不存在"));
+            comment.setParentComment(parent);
+        }
+        if (request.imageUrls() != null) {
+            comment.getImageUrls().addAll(request.imageUrls());
+        }
         return mapper.toCommunityCommentResponse(communityCommentRepository.save(comment));
     }
 

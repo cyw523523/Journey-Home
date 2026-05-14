@@ -19,14 +19,20 @@ public final class CommunityDtos {
 
             @NotBlank(message = "帖子内容不能为空")
             @Size(max = 5000, message = "帖子内容长度不能超过5000")
-            String content
+            String content,
+
+            List<@Size(max = 500, message = "图片路径长度不能超过500") String> imageUrls
     ) {
     }
 
     public record SaveCommentRequest(
             @NotBlank(message = "评论内容不能为空")
             @Size(max = 2000, message = "评论内容长度不能超过2000")
-            String content
+            String content,
+
+            List<@Size(max = 500, message = "图片路径长度不能超过500") String> imageUrls,
+
+            Long parentCommentId
     ) {
     }
 
@@ -36,10 +42,12 @@ public final class CommunityDtos {
             String content,
             Long authorId,
             String authorNickname,
+            String authorAvatarUrl,
             UserRole authorRole,
             String authorRoleText,
             CommunityPostStatus status,
             String statusText,
+            List<String> imageUrls,
             long commentCount,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
@@ -49,11 +57,16 @@ public final class CommunityDtos {
     public record CommunityCommentResponse(
             Long id,
             Long postId,
+            Long parentCommentId,
+            Long replyToAuthorId,
+            String replyToAuthorNickname,
             Long authorId,
             String authorNickname,
+            String authorAvatarUrl,
             UserRole authorRole,
             String authorRoleText,
             String content,
+            List<String> imageUrls,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) {

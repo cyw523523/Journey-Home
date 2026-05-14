@@ -79,8 +79,9 @@
             <el-table-column prop="targetId" :label="$t('admin.businessId')" width="100" />
             <el-table-column prop="title" :label="$t('admin.content')" />
             <el-table-column prop="publisherOrApplicant" :label="$t('admin.publisherOrApplicant')" width="150" />
-            <el-table-column :label="$t('admin.action')" width="210">
+            <el-table-column :label="$t('admin.action')" width="310">
               <template #default="{ row }">
+                <el-button size="small" :icon="Eye" text type="info" @click="openDetail(row)">详情</el-button>
                 <el-button size="small" :icon="Check" type="primary" @click="openAudit(row, 'APPROVE')">{{ $t('admin.approve') }}</el-button>
                 <el-button size="small" :icon="X" @click="openAudit(row, 'REJECT')">{{ $t('admin.reject') }}</el-button>
               </template>
@@ -167,6 +168,59 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="detailDialog" :title="'审核详情 - ' + detailTargetType" width="720px" append-to-body>
+      <el-skeleton v-if="detailLoading" :rows="8" animated />
+      <template v-else-if="detailData">
+        <div v-if="detailTargetType === 'ANIMAL'" class="audit-detail-grid">
+          <div class="detail-item"><label>类型</label><span>{{ detailData.typeText }}</span></div>
+          <div class="detail-item"><label>性别</label><span>{{ detailData.genderText }}</span></div>
+          <div class="detail-item"><label>年龄</label><span>{{ detailData.age ?? '未知' }}</span></div>
+          <div class="detail-item"><label>发现地区</label><span>{{ detailData.foundRegion }}</span></div>
+          <div class="detail-item"><label>健康情况</label><span>{{ detailData.healthCondition || '-' }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="animalStatusOptions" /></div>
+          <div class="detail-item"><label>发布者</label><span>{{ detailData.publisherNickname }}</span></div>
+          <div class="detail-item full-width"><label>描述</label><p>{{ detailData.description || '-' }}</p></div>
+          <div class="detail-item full-width" v-if="detailData.coverImageUrl">
+            <label>封面图</label><img :src="getFullUrl(detailData.coverImageUrl)" style="max-width:200px;border-radius:8px" />
+          </div>
+          <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
+            <label>图片集</label>
+            <div class="detail-thumb-row">
+              <img v-for="url in detailData.imageUrls" :key="url" :src="getFullUrl(url)" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" />
+            </div>
+          </div>
+        </div>
+        <div v-else-if="detailTargetType === 'RESCUE'" class="audit-detail-grid">
+          <div class="detail-item"><label>地点</label><span>{{ detailData.location }}</span></div>
+          <div class="detail-item"><label>动物情况</label><span>{{ detailData.animalCondition }}</span></div>
+          <div class="detail-item"><label>联系方式</label><span>{{ detailData.contact }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="rescueStatusOptions" /></div>
+          <div class="detail-item"><label>发布者</label><span>{{ detailData.publisherNickname }}</span></div>
+          <div class="detail-item full-width"><label>描述</label><p>{{ detailData.description }}</p></div>
+          <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
+            <label>图片集</label>
+            <div class="detail-thumb-row">
+              <img v-for="url in detailData.imageUrls" :key="url" :src="getFullUrl(url)" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" />
+            </div>
+          </div>
+        </div>
+        <div v-else-if="detailTargetType === 'ADOPT_APPLY'" class="audit-detail-grid">
+          <div class="detail-item"><label>动物ID</label><span>{{ detailData.animalId }}</span></div>
+          <div class="detail-item"><label>动物类型</label><span>{{ detailData.animalTypeText }}</span></div>
+          <div class="detail-item"><label>申请人</label><span>{{ detailData.applicantName }}</span></div>
+          <div class="detail-item"><label>联系方式</label><span>{{ detailData.contact }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="applyStatusOptions" /></div>
+          <div class="detail-item full-width"><label>领养理由</label><p>{{ detailData.reason }}</p></div>
+          <div class="detail-item full-width"><label>居住条件</label><p>{{ detailData.livingCondition }}</p></div>
+          <div class="detail-item full-width"><label>饲养经验</label><p>{{ detailData.experience }}</p></div>
+          <div class="detail-item full-width" v-if="detailData.auditOpinion"><label>审核意见</label><p>{{ detailData.auditOpinion }}</p></div>
+        </div>
+      </template>
+      <template #footer>
+        <el-button @click="detailDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="noticeDialog" :title="$t('admin.noticeDialogTitle')" width="680px" append-to-body>
       <el-form :model="noticeForm" label-position="top">
         <el-form-item :label="$t('admin.noticeTitle')">
@@ -198,6 +252,7 @@ import {
   ChartNoAxesCombined,
   Check,
   ClipboardCheck,
+  Eye,
   HeartHandshake,
   Megaphone,
   Pencil,
@@ -211,7 +266,7 @@ import {
 import StatusTag from '../components/StatusTag.vue'
 import { adminApi } from '../api'
 import { notifyError } from '../api/http'
-import { applyStatusOptions, noticeStatusOptions, roleOptions, userStatusOptions } from '../utils/status'
+import { animalStatusOptions, applyStatusOptions, noticeStatusOptions, rescueStatusOptions, roleOptions, userStatusOptions } from '../utils/status'
 
 const { t } = useI18n()
 const active = ref('dashboard')
@@ -229,6 +284,10 @@ const auditDialog = ref(false)
 const noticeDialog = ref(false)
 const auditForm = reactive({ targetType: '', targetId: null, action: 'APPROVE', opinion: '' })
 const noticeForm = reactive({ id: null, title: '', content: '', status: 'DRAFT' })
+const detailDialog = ref(false)
+const detailLoading = ref(false)
+const detailData = ref(null)
+const detailTargetType = ref('')
 
 async function loadAll() {
   await Promise.all([loadDashboard(), loadPending(), loadUsers(), loadNotices(), loadApplications()])
@@ -280,6 +339,29 @@ async function loadApplications() {
     applications.value = (await adminApi.applications({ page: 0, size: 30 })).content || []
   } catch (error) {
     notifyError(error)
+  }
+}
+
+const API_BASE = window.location.origin
+
+function getFullUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url
+  return `${API_BASE}${url}`
+}
+
+async function openDetail(row) {
+  detailTargetType.value = row.targetType
+  detailData.value = null
+  detailLoading.value = true
+  detailDialog.value = true
+  try {
+    detailData.value = await adminApi.auditDetail(row.targetType, row.targetId)
+  } catch (error) {
+    notifyError(error)
+    detailDialog.value = false
+  } finally {
+    detailLoading.value = false
   }
 }
 
@@ -351,3 +433,29 @@ async function offlineNotice(row) {
 
 onMounted(loadAll)
 </script>
+
+<style scoped>
+.audit-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+.detail-item label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+.detail-thumb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+</style>

@@ -14,6 +14,8 @@ import java.util.List;
 public interface RescueRepository extends JpaRepository<Rescue, Long>, JpaSpecificationExecutor<Rescue> {
     Page<Rescue> findByPublisherId(Long publisherId, Pageable pageable);
 
+    long countByPublisherId(Long publisherId);
+
     long countByStatusIn(Collection<RescueStatus> statuses);
 
     @Query("select r.status, count(r) from Rescue r group by r.status")

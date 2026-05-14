@@ -98,11 +98,25 @@ CREATE TABLE IF NOT EXISTS community_comments (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     post_id BIGINT NOT NULL,
     author_id BIGINT NOT NULL,
+    parent_comment_id BIGINT,
     content TEXT NOT NULL,
     created_at DATETIME,
     updated_at DATETIME,
     CONSTRAINT fk_community_comments_post FOREIGN KEY (post_id) REFERENCES community_posts(id),
-    CONSTRAINT fk_community_comments_author FOREIGN KEY (author_id) REFERENCES users(id)
+    CONSTRAINT fk_community_comments_author FOREIGN KEY (author_id) REFERENCES users(id),
+    CONSTRAINT fk_cc_parent FOREIGN KEY (parent_comment_id) REFERENCES community_comments(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS community_post_images (
+    post_id BIGINT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_cp_images_post FOREIGN KEY (post_id) REFERENCES community_posts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS community_comment_images (
+    comment_id BIGINT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_cc_images_comment FOREIGN KEY (comment_id) REFERENCES community_comments(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS audit_logs (

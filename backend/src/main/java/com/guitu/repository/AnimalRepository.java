@@ -14,6 +14,8 @@ import java.util.List;
 public interface AnimalRepository extends JpaRepository<Animal, Long>, JpaSpecificationExecutor<Animal> {
     Page<Animal> findByPublisherId(Long publisherId, Pageable pageable);
 
+    long countByPublisherId(Long publisherId);
+
     long countByStatusIn(Collection<AnimalStatus> statuses);
 
     @Query("select a.status, count(a) from Animal a group by a.status")
