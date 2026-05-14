@@ -132,7 +132,7 @@
               </div>
               <el-tag type="success" effect="dark">{{ smartMatch.animalTypeText }}</el-tag>
             </div>
-            <div class="ai-answer-content">{{ smartMatch.answer }}</div>
+            <div class="ai-answer-content ai-rich-text" v-html="smartMatchHtml"></div>
           </div>
         </div>
 
@@ -146,7 +146,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Send } from 'lucide-vue-next'
@@ -162,6 +162,7 @@ const matching = ref(false)
 const formRef = ref()
 const animal = ref({})
 const smartMatch = ref(null)
+const smartMatchHtml = computed(() => renderAiAnswer(smartMatch.value?.answer || ''))
 
 const form = reactive({
   animalId: Number(route.params.animalId),
@@ -192,6 +193,96 @@ const rules = {
 function formatTime(value) {
   if (!value) return '刚刚'
   return new Date(value).toLocaleString()
+}
+
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+function renderInline(value) {
+  return escapeHtml(value).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+}
+
+function renderAiAnswer(value) {
+  const lines = value.replace(/\r\n/g, '\n').split('\n')
+  const blocks = []
+  let paragraph = []
+  let listType = null
+  let listItems = []
+
+  function flushParagraph() {
+    if (!paragraph.length) return
+    blocks.push(`<p>${paragraph.map(renderInline).join('<br />')}</p>`)
+    paragraph = []
+  }
+
+  function flushList() {
+    if (!listType || !listItems.length) return
+    const tag = listType === 'ol' ? 'ol' : 'ul'
+    blocks.push(`<${tag}>${listItems.map((item) => `<li>${renderInline(item)}</li>`).join('')}</${tag}>`)
+    listType = null
+    listItems = []
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+
+    if (!line) {
+      flushParagraph()
+      flushList()
+      continue
+    }
+
+    if (/^-{3,}$/.test(line)) {
+      flushParagraph()
+      flushList()
+      blocks.push('<hr />')
+      continue
+    }
+
+    const headingMatch = line.match(/^#{1,6}\s+(.+)$/)
+    if (headingMatch) {
+      flushParagraph()
+      flushList()
+      blocks.push(`<h3>${renderInline(headingMatch[1])}</h3>`)
+      continue
+    }
+
+    const orderedMatch = line.match(/^\d+\.\s+(.+)$/)
+    if (orderedMatch) {
+      flushParagraph()
+      if (listType !== 'ol') {
+        flushList()
+        listType = 'ol'
+      }
+      listItems.push(orderedMatch[1])
+      continue
+    }
+
+    const bulletMatch = line.match(/^[-*]\s+(.+)$/)
+    if (bulletMatch) {
+      flushParagraph()
+      if (listType !== 'ul') {
+        flushList()
+        listType = 'ul'
+      }
+      listItems.push(bulletMatch[1])
+      continue
+    }
+
+    flushList()
+    paragraph.push(line)
+  }
+
+  flushParagraph()
+  flushList()
+
+  return blocks.join('')
 }
 
 async function generateSmartMatch() {

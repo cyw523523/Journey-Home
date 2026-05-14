@@ -15,15 +15,26 @@
 
 ### 1. 数据库
 
-推荐在项目根目录执行：
+方式 A：使用 Docker
 
 ```bash
 docker compose up -d
 ```
 
+方式 B：使用本机已经安装的 MySQL
+
+- 确保 MySQL 服务已启动
+- 手动创建数据库 `guitu`
+- 或者在项目根目录执行：
+
+```powershell
+.\scripts\init-db.ps1 -RootPassword "你的MySQL密码"
+```
+
 默认数据库配置参考：
 
 - [../.env.example](/D:/003softwareEngineering/project/.env.example)
+- [../scripts/init-db.ps1](/D:/003softwareEngineering/project/scripts/init-db.ps1)
 
 ### 2. 可选：配置智谱 AI
 
@@ -47,6 +58,26 @@ $env:ZHIPU_API_URL="https://open.bigmodel.cn/api/paas/v4/chat/completions"
 
 如果不配置 `ZHIPU_API_KEY`，普通业务功能仍可运行，但 AI 建议接口不能使用。
 
+### 3. 数据库说明
+
+后端默认使用持久化 MySQL，不再默认使用内存 H2。只要 MySQL 数据卷还在，重启后端后公告和其他业务数据都会保留。
+
+默认读取这些环境变量：
+
+```text
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=guitu
+DB_USERNAME=root
+DB_PASSWORD=root
+```
+
+如果你只是临时想用 H2，可以显式启用 `h2` profile：
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=h2"
+```
+
 ## 启动方式
 
 进入当前目录：
@@ -54,6 +85,8 @@ $env:ZHIPU_API_URL="https://open.bigmodel.cn/api/paas/v4/chat/completions"
 ```bash
 cd backend
 ```
+
+方式 A：直接启动
 
 如果本机已经安装 Maven：
 
@@ -65,6 +98,20 @@ mvn spring-boot:run
 
 ```powershell
 .\mvnw.cmd spring-boot:run
+```
+
+方式 B：使用脚本启动
+
+在项目根目录执行：
+
+```powershell
+.\scripts\run-backend.ps1 -DbPassword "你的MySQL密码"
+```
+
+如果数据库连接不是默认值，也可以显式指定：
+
+```powershell
+.\scripts\run-backend.ps1 -DbHost "localhost" -DbPort 3306 -DbName "guitu" -DbUser "root" -DbPassword "你的MySQL密码"
 ```
 
 启动成功后访问：
@@ -94,6 +141,12 @@ mvn -q -DskipTests package
 
 ```bash
 mvn -q -DskipTests -o package
+```
+
+也可以在项目根目录执行脚本：
+
+```powershell
+.\scripts\build-backend.ps1
 ```
 
 ## AI 接口说明

@@ -69,6 +69,18 @@ Authorization: Bearer <token>
 | GET   | `/api/adoptions/{id}`        | 申请人/管理员 | 申请详情    |
 | PATCH | `/api/adoptions/{id}/cancel` | 申请人     | 取消待审核申请 |
 
+## 社区交流
+
+| 方法     | 路径                                | 权限      | 说明                             |
+| ------ | --------------------------------- | ------- | ------------------------------ |
+| GET    | `/api/community/posts`            | 游客/用户   | 帖子列表，支持 `keyword/page/size`    |
+| GET    | `/api/community/posts/{id}`       | 游客/用户   | 帖子详情，包含评论列表                    |
+| POST   | `/api/community/posts`            | 登录用户    | 发帖                             |
+| PUT    | `/api/community/posts/{id}`       | 作者/管理员  | 修改帖子                           |
+| DELETE | `/api/community/posts/{id}`       | 作者/管理员  | 下架帖子                           |
+| POST   | `/api/community/posts/{id}/comments` | 登录用户 | 对帖子发表评论                        |
+| DELETE | `/api/community/comments/{id}`    | 评论作者/管理员 | 删除评论                          |
+
 ## 管理员
 
 | 方法     | 路径                                          | 权限  | 说明                    |

@@ -42,10 +42,22 @@
           </div>
         </div>
         <div class="side-list">
+          <div class="side-list-head">
+            <div>
+              <h3>{{ $t('home.latestNotices') }}</h3>
+              <p>{{ $t('home.latestNoticesDesc') }}</p>
+            </div>
+            <el-button text @click="$router.push('/notices')">{{ $t('common.viewAll') }}</el-button>
+          </div>
           <RouterLink v-for="notice in notices" :key="notice.id" class="notice-link" :to="`/notices/${notice.id}`">
             <span>{{ notice.title }}</span>
             <ChevronRight :size="16" />
           </RouterLink>
+          <EmptyState
+            v-if="!notices.length"
+            :title="$t('notices.noData')"
+            :description="$t('notices.noDataDesc')"
+          />
         </div>
       </aside>
     </div>
@@ -91,7 +103,7 @@ import AnimalCard from '../components/AnimalCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { homeApi } from '../api'
-import { demoAnimals, demoImages, demoNotices, demoOverview, demoRescues } from '../data/demoData'
+import { demoAnimals, demoImages, demoOverview, demoRescues } from '../data/demoData'
 import { rescueStatusOptions } from '../utils/status'
 
 const router = useRouter()
@@ -99,7 +111,7 @@ const keyword = ref('')
 const overview = ref(demoOverview)
 const animals = ref(demoAnimals)
 const rescues = ref(demoRescues)
-const notices = ref(demoNotices)
+const notices = ref([])
 
 function goSearch() {
   router.push({ name: 'animals', query: { keyword: keyword.value } })
@@ -111,12 +123,12 @@ onMounted(async () => {
     overview.value = data.overview || demoOverview
     animals.value = data.latestAnimals?.length ? data.latestAnimals : demoAnimals
     rescues.value = data.latestRescues?.length ? data.latestRescues : demoRescues
-    notices.value = data.latestNotices?.length ? data.latestNotices : demoNotices
+    notices.value = data.latestNotices || []
   } catch {
     overview.value = demoOverview
     animals.value = demoAnimals
     rescues.value = demoRescues
-    notices.value = demoNotices
+    notices.value = []
   }
 })
 </script>

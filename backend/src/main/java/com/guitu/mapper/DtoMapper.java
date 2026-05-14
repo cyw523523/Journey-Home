@@ -3,12 +3,15 @@ package com.guitu.mapper;
 import com.guitu.domain.AdoptApply;
 import com.guitu.domain.Animal;
 import com.guitu.domain.AuditLog;
+import com.guitu.domain.CommunityComment;
+import com.guitu.domain.CommunityPost;
 import com.guitu.domain.Notice;
 import com.guitu.domain.Rescue;
 import com.guitu.domain.User;
 import com.guitu.dto.AdoptApplyDtos;
 import com.guitu.dto.AnimalDtos;
 import com.guitu.dto.AuditDtos;
+import com.guitu.dto.CommunityDtos;
 import com.guitu.dto.NoticeDtos;
 import com.guitu.dto.RescueDtos;
 import com.guitu.dto.UserDtos;
@@ -103,6 +106,37 @@ public class DtoMapper {
                 notice.getStatus().getLabel(),
                 notice.getCreatedAt(),
                 notice.getUpdatedAt()
+        );
+    }
+
+    public CommunityDtos.CommunityPostResponse toCommunityPostResponse(CommunityPost post, long commentCount) {
+        return new CommunityDtos.CommunityPostResponse(
+                post.getId(),
+                post.getTitle(),
+                post.getContent(),
+                post.getAuthor().getId(),
+                post.getAuthor().getNickname(),
+                post.getAuthor().getRole(),
+                post.getAuthor().getRole().getLabel(),
+                post.getStatus(),
+                post.getStatus().getLabel(),
+                commentCount,
+                post.getCreatedAt(),
+                post.getUpdatedAt()
+        );
+    }
+
+    public CommunityDtos.CommunityCommentResponse toCommunityCommentResponse(CommunityComment comment) {
+        return new CommunityDtos.CommunityCommentResponse(
+                comment.getId(),
+                comment.getPost().getId(),
+                comment.getAuthor().getId(),
+                comment.getAuthor().getNickname(),
+                comment.getAuthor().getRole(),
+                comment.getAuthor().getRole().getLabel(),
+                comment.getContent(),
+                comment.getCreatedAt(),
+                comment.getUpdatedAt()
         );
     }
 

@@ -83,6 +83,28 @@ CREATE TABLE IF NOT EXISTS notices (
     CONSTRAINT fk_notices_publisher FOREIGN KEY (publisher_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS community_posts (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(120) NOT NULL,
+    content TEXT NOT NULL,
+    author_id BIGINT NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_community_posts_author FOREIGN KEY (author_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS community_comments (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    post_id BIGINT NOT NULL,
+    author_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_community_comments_post FOREIGN KEY (post_id) REFERENCES community_posts(id),
+    CONSTRAINT fk_community_comments_author FOREIGN KEY (author_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS audit_logs (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     target_type VARCHAR(32) NOT NULL,

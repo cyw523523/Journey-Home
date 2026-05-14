@@ -42,6 +42,11 @@ export const noticeStatusOptions = [
   { label: '已下架', value: 'OFFLINE', type: 'warning' }
 ]
 
+export const communityPostStatusOptions = [
+  { label: '已发布', value: 'PUBLISHED', type: 'success' },
+  { label: '已下架', value: 'OFFLINE', type: 'warning' }
+]
+
 export const roleOptions = [
   { label: '普通用户', value: 'USER' },
   { label: '救助发布者', value: 'RESCUER' },

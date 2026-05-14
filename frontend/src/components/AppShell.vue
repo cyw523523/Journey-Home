@@ -11,6 +11,8 @@
 
       <nav class="nav-links">
         <RouterLink to="/">{{ $t('nav.home') }}</RouterLink>
+        <RouterLink to="/community">{{ $t('nav.community') }}</RouterLink>
+        <RouterLink to="/notices">{{ $t('nav.notices') }}</RouterLink>
         <RouterLink to="/animals">{{ $t('nav.animals') }}</RouterLink>
         <RouterLink to="/rescues">{{ $t('nav.rescues') }}</RouterLink>
         <RouterLink v-if="auth.isLoggedIn.value" to="/profile">{{ $t('nav.profile') }}</RouterLink>

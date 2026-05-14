@@ -45,6 +45,16 @@ export const noticeApi = {
   detail: (id) => http.get(`/notices/${id}`)
 }
 
+export const communityApi = {
+  list: (params) => http.get('/community/posts', { params }),
+  detail: (id) => http.get(`/community/posts/${id}`),
+  create: (data) => http.post('/community/posts', data),
+  update: (id, data) => http.put(`/community/posts/${id}`, data),
+  delete: (id) => http.delete(`/community/posts/${id}`),
+  createComment: (id, data) => http.post(`/community/posts/${id}/comments`, data),
+  deleteComment: (id) => http.delete(`/community/comments/${id}`)
+}
+
 export const homeApi = {
   overview: () => http.get('/home/overview')
 }
