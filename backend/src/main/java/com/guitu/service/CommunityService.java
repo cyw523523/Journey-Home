@@ -130,6 +130,11 @@ public class CommunityService {
         }
         post.setStatus(resolvePostStatus(currentUser.getRole() == UserRole.ADMIN, request));
         notifyPostReview(post);
+        if (currentUser.getRole() == UserRole.ADMIN && !post.getAuthor().getId().equals(currentUser.getId())) {
+            notificationService.notifyUser(post.getAuthor(), NotificationType.AUDIT_RESULT,
+                    "ADMIN_EDIT_POST", "管理员编辑了你的社区帖子「" + post.getTitle() + "」",
+                    "COMMUNITY_POST", post.getId());
+        }
         return mapper.toCommunityPostResponse(post, communityCommentRepository.countByPostIdAndStatus(post.getId(), CommunityCommentStatus.PUBLISHED));
     }
 
@@ -175,6 +180,11 @@ public class CommunityService {
             throw new BusinessException(HttpStatus.FORBIDDEN, "Current user cannot delete this comment");
         }
         comment.setStatus(CommunityCommentStatus.OFFLINE);
+        if (currentUser.getRole() == UserRole.ADMIN && !comment.getAuthor().getId().equals(currentUser.getId())) {
+            notificationService.notifyUser(comment.getAuthor(), NotificationType.AUDIT_RESULT,
+                    "ADMIN_DELETE_COMMENT", "管理员删除了你在帖子中的一条评论",
+                    "COMMUNITY_COMMENT", comment.getId());
+        }
     }
 
     @Transactional(readOnly = true)

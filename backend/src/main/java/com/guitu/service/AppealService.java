@@ -238,8 +238,8 @@ public class AppealService {
                 apply.setStatus(ApplyStatus.PENDING_REVIEW);
                 apply.setAuditOpinion("Appeal approved. Returned to review queue.");
             }
-            case COMMUNITY_POST -> communityService.getManagedPost(appeal.getTargetId()).setStatus(CommunityPostStatus.PENDING_REVIEW);
-            case COMMUNITY_COMMENT -> communityService.getManagedComment(appeal.getTargetId()).setStatus(CommunityCommentStatus.PENDING_REVIEW);
+            case COMMUNITY_POST -> communityService.getManagedPost(appeal.getTargetId()).setStatus(CommunityPostStatus.PUBLISHED);
+            case COMMUNITY_COMMENT -> communityService.getManagedComment(appeal.getTargetId()).setStatus(CommunityCommentStatus.PUBLISHED);
             case USER_BAN -> throw new BusinessException("User-ban appeals are not supported in this version");
         }
     }

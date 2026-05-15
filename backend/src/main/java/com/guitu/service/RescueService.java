@@ -3,6 +3,7 @@ package com.guitu.service;
 import com.guitu.common.PageResponse;
 import com.guitu.domain.Rescue;
 import com.guitu.domain.User;
+import com.guitu.domain.enums.NotificationType;
 import com.guitu.domain.enums.RescueStatus;
 import com.guitu.domain.enums.UserRole;
 import com.guitu.dto.RescueDtos;
@@ -31,19 +32,22 @@ public class RescueService {
     private final DtoMapper mapper;
     private final ContentModerationService moderationService;
     private final CacheInvalidationService cacheInvalidationService;
+    private final NotificationService notificationService;
 
     public RescueService(
             RescueRepository rescueRepository,
             UserService userService,
             DtoMapper mapper,
             ContentModerationService moderationService,
-            CacheInvalidationService cacheInvalidationService
+            CacheInvalidationService cacheInvalidationService,
+            NotificationService notificationService
     ) {
         this.rescueRepository = rescueRepository;
         this.userService = userService;
         this.mapper = mapper;
         this.moderationService = moderationService;
         this.cacheInvalidationService = cacheInvalidationService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -118,6 +122,10 @@ public class RescueService {
         if (!SecuritySupport.isAdmin()) {
             rescue.setStatus(RescueStatus.PENDING_REVIEW);
             rescue.setReviewComment(null);
+        } else if (!rescue.getPublisher().getId().equals(SecuritySupport.requireUser().id())) {
+            notificationService.notifyUser(rescue.getPublisher(), NotificationType.AUDIT_RESULT,
+                    "ADMIN_EDIT_RESCUE", "管理员编辑了你的救助信息「" + rescue.getLocation() + "」",
+                    "RESCUE", rescue.getId());
         }
         cacheInvalidationService.evictPublicCaches();
         return mapper.toRescueResponse(rescue);

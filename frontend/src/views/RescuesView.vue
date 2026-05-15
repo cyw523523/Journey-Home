@@ -43,6 +43,7 @@
         <p>{{ current.animalCondition }}</p>
         <p class="muted">{{ current.description }}</p>
         <p class="meta-line" style="margin:8px 0"><Phone :size="16" /> {{ current.contact }}</p>
+        <p class="muted" style="margin-top:8px">发布人：{{ current.publisherNickname || '-' }}</p>
         <div class="thumb-grid rescue-preview-grid" v-if="current.imageUrls?.length">
           <el-image
             v-for="(url, index) in current.imageUrls"

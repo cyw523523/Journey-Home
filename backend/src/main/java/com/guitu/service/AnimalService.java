@@ -6,6 +6,7 @@ import com.guitu.domain.User;
 import com.guitu.domain.enums.AnimalGender;
 import com.guitu.domain.enums.AnimalStatus;
 import com.guitu.domain.enums.AnimalType;
+import com.guitu.domain.enums.NotificationType;
 import com.guitu.domain.enums.UserRole;
 import com.guitu.dto.AnimalDtos;
 import com.guitu.exception.BusinessException;
@@ -43,19 +44,22 @@ public class AnimalService {
     private final DtoMapper mapper;
     private final ContentModerationService moderationService;
     private final CacheInvalidationService cacheInvalidationService;
+    private final NotificationService notificationService;
 
     public AnimalService(
             AnimalRepository animalRepository,
             UserService userService,
             DtoMapper mapper,
             ContentModerationService moderationService,
-            CacheInvalidationService cacheInvalidationService
+            CacheInvalidationService cacheInvalidationService,
+            NotificationService notificationService
     ) {
         this.animalRepository = animalRepository;
         this.userService = userService;
         this.mapper = mapper;
         this.moderationService = moderationService;
         this.cacheInvalidationService = cacheInvalidationService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -132,6 +136,10 @@ public class AnimalService {
         if (!SecuritySupport.isAdmin()) {
             animal.setStatus(AnimalStatus.PENDING_REVIEW);
             animal.setReviewComment(null);
+        } else if (!animal.getPublisher().getId().equals(SecuritySupport.requireUser().id())) {
+            notificationService.notifyUser(animal.getPublisher(), NotificationType.AUDIT_RESULT,
+                    "ADMIN_EDIT_ANIMAL", "管理员编辑了你的动物档案「" + animal.getType().getLabel() + " / " + animal.getFoundRegion() + "」",
+                    "ANIMAL", animal.getId());
         }
         cacheInvalidationService.evictPublicCaches();
         return mapper.toAnimalResponse(animal);

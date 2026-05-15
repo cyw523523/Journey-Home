@@ -476,10 +476,10 @@ onUnmounted(() => {
 .page {
   display: flex;
   flex-direction: column;
-  width: min(1880px, calc(100vw - 8px));
+  width: 100%;
   max-width: none;
-  height: calc(100dvh - 8px);
-  max-height: calc(100dvh - 8px);
+  height: calc(100dvh - 80px);
+  max-height: calc(100dvh - 80px);
   min-height: 0;
   overflow: hidden;
 }
@@ -850,9 +850,8 @@ onUnmounted(() => {
 
 @media (max-width: 980px) {
   .page {
-    width: 100%;
-    height: calc(100dvh - 16px);
-    max-height: calc(100dvh - 16px);
+    height: calc(100dvh - 60px);
+    max-height: calc(100dvh - 60px);
   }
 
   .message-layout {
@@ -873,9 +872,8 @@ onUnmounted(() => {
 
 @media (max-width: 680px) {
   .page {
-    width: 100%;
-    height: calc(100dvh - 12px);
-    max-height: calc(100dvh - 12px);
+    height: calc(100dvh - 50px);
+    max-height: calc(100dvh - 50px);
   }
 
   .conversation-panel-head,
