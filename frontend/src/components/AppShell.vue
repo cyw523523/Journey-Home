@@ -98,6 +98,8 @@
     <main class="page-stage">
       <RouterView />
     </main>
+
+    <AiAssistant v-if="showAiAssistant" />
   </div>
 </template>
 
@@ -110,6 +112,7 @@ import { messageApi, notificationApi } from '../api'
 import { notifyError } from '../api/http'
 import { connectMessageSocket, disconnectMessageSocket, subscribeMessageSocket } from '../services/messageSocket'
 import { useAuth } from '../stores/auth'
+import AiAssistant from './AiAssistant.vue'
 
 const { locale, t } = useI18n()
 const auth = useAuth()
@@ -127,6 +130,10 @@ const currentLanguageLabel = computed(() => {
 const messageLabel = computed(() => {
   const translated = t('nav.messages')
   return translated === 'nav.messages' ? '私信' : translated
+})
+
+const showAiAssistant = computed(() => {
+  return auth.isLoggedIn.value && !auth.isAdmin.value
 })
 
 function changeLanguage(lang) {

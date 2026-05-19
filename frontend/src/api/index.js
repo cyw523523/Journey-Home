@@ -91,6 +91,10 @@ export const homeApi = {
   overview: () => http.get('/home/overview')
 }
 
+export const aiAssistantApi = {
+  chat: (data) => http.post('/ai-assistant/chat', data, { timeout: 60000 })
+}
+
 export const adminApi = {
   overview: () => http.get('/admin/stats/overview'),
   animalStatus: () => http.get('/admin/stats/animals/status'),
