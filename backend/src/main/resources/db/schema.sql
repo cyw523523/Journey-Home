@@ -34,6 +34,25 @@ CREATE TABLE IF NOT EXISTS animal_images (
     CONSTRAINT fk_animal_images_animal FOREIGN KEY (animal_id) REFERENCES animals(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS medical_records (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    animal_id BIGINT NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    record_date DATE NOT NULL,
+    veterinarian_name VARCHAR(64),
+    institution VARCHAR(255),
+    description VARCHAR(500),
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_medical_records_animal FOREIGN KEY (animal_id) REFERENCES animals(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS medical_record_images (
+    medical_record_id BIGINT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_mr_images_record FOREIGN KEY (medical_record_id) REFERENCES medical_records(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS rescues (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     location VARCHAR(255) NOT NULL,

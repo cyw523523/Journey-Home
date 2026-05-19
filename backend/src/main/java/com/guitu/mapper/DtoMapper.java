@@ -9,6 +9,7 @@ import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
 import com.guitu.domain.DirectConversation;
 import com.guitu.domain.DirectMessage;
+import com.guitu.domain.MedicalRecord;
 import com.guitu.domain.Notice;
 import com.guitu.domain.Rescue;
 import com.guitu.domain.SystemNotification;
@@ -19,6 +20,7 @@ import com.guitu.dto.AnimalDtos;
 import com.guitu.dto.AuditDtos;
 import com.guitu.dto.CommunityDtos;
 import com.guitu.dto.DirectMessageDtos;
+import com.guitu.dto.MedicalRecordDtos;
 import com.guitu.dto.NotificationDtos;
 import com.guitu.dto.NoticeDtos;
 import com.guitu.dto.ReportDtos;
@@ -284,6 +286,21 @@ public class DtoMapper {
                 appeal.getFinalReviewOpinion(),
                 appeal.getReviewedAt(),
                 appeal.getCreatedAt()
+        );
+    }
+
+    public MedicalRecordDtos.MedicalRecordResponse toMedicalRecordResponse(MedicalRecord record) {
+        return new MedicalRecordDtos.MedicalRecordResponse(
+                record.getId(),
+                record.getType(),
+                record.getType().getLabel(),
+                record.getRecordDate(),
+                record.getVeterinarianName(),
+                record.getInstitution(),
+                record.getDescription(),
+                record.getImageUrls(),
+                record.getCreatedAt(),
+                record.getUpdatedAt()
         );
     }
 

@@ -30,6 +30,31 @@
           </div>
         </div>
 
+        <div class="medical-section" style="margin-top:18px;border-top:1px solid var(--el-border-color-light);padding-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <h3 style="margin:0;font-size:16px;font-weight:600">医疗记录</h3>
+            <el-button v-if="isOwnerOrAdmin" :icon="Plus" size="small" type="primary" @click="openMedicalEditor(null)">添加记录</el-button>
+          </div>
+          <div v-if="!medicalRecords.length" style="padding:16px;text-align:center;color:var(--el-text-color-secondary);font-size:13px">暂无医疗记录</div>
+          <div v-else class="medical-list">
+            <div v-for="record in medicalRecords" :key="record.id" class="medical-card">
+              <div class="medical-head">
+                <el-tag :type="medicalTypeStyle(record.type)" size="small">{{ record.typeText }}</el-tag>
+                <span class="medical-date">{{ record.recordDate }}</span>
+                <div v-if="isOwnerOrAdmin" style="margin-left:auto;display:flex;gap:4px">
+                  <el-button :icon="Pencil" size="small" text @click="openMedicalEditor(record)">编辑</el-button>
+                  <el-button :icon="Trash2" size="small" text type="danger" @click="deleteMedicalRecord(record.id)">删除</el-button>
+                </div>
+              </div>
+              <p v-if="record.veterinarianName || record.institution" style="margin:6px 0 4px;font-size:13px;color:var(--el-text-color-regular)">{{ [record.veterinarianName, record.institution].filter(Boolean).join(' / ') }}</p>
+              <p v-if="record.description" style="margin:4px 0;font-size:13px;color:var(--el-text-color-secondary);line-height:1.5">{{ record.description }}</p>
+              <div v-if="record.imageUrls?.length" style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+                <img v-for="(url,idx) in record.imageUrls" :key="idx" :src="getFullUrl(url)" style="width:80px;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--el-border-color-lighter)" @click="previewMedicalImage(url)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="mini-row">
           <span>发布人：{{ animal.publisherNickname || '-' }}</span>
           <span>{{ animal.createdAt ? new Date(animal.createdAt).toLocaleDateString() : '' }}</span>
@@ -111,6 +136,47 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="medicalEditorVisible" :title="medicalEditingId ? '编辑医疗记录' : '添加医疗记录'" width="600px" append-to-body>
+      <el-form ref="medicalFormRef" :model="medicalEditor" :rules="medicalRules" label-position="top">
+        <el-row :gutter="12">
+          <el-col :span="12">
+            <el-form-item label="类型" prop="type">
+              <el-select v-model="medicalEditor.type" style="width: 100%">
+                <el-option v-for="item in medicalRecordTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="日期" prop="recordDate">
+              <el-date-picker v-model="medicalEditor.recordDate" type="date" placeholder="选择日期" style="width: 100%" value-format="YYYY-MM-DD" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="12">
+          <el-col :span="12">
+            <el-form-item label="兽医姓名">
+              <el-input v-model="medicalEditor.veterinarianName" placeholder="选填" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="机构名称">
+              <el-input v-model="medicalEditor.institution" placeholder="选填" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="描述">
+          <el-input v-model="medicalEditor.description" type="textarea" :rows="3" placeholder="选填" />
+        </el-form-item>
+        <el-form-item label="佐证图片">
+          <ImageUploader v-model="medicalEditor.imageUrls" usage="medical" :limit="6" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="medicalEditorVisible = false">取消</el-button>
+        <el-button :loading="medicalSaving" type="primary" @click="saveMedicalRecord">保存</el-button>
+      </template>
+    </el-dialog>
+
     <ReportDialog v-model="reportVisible" target-type="ANIMAL" :target-id="animal.id || route.params.id" />
   </section>
 </template>
@@ -119,15 +185,15 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
-import { Archive, ArrowLeft, HeartHandshake, PawPrint, Pencil, RefreshCw } from 'lucide-vue-next'
+import { Archive, ArrowLeft, HeartHandshake, PawPrint, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-vue-next'
 import ReportDialog from '../components/ReportDialog.vue'
 import StatusTag from '../components/StatusTag.vue'
 import ImageUploader from '../components/ImageUploader.vue'
-import { animalApi } from '../api'
+import { animalApi, medicalRecordApi } from '../api'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 import { demoAnimals, demoImages } from '../data/demoData'
-import { animalStatusOptions, animalTypeOptions, genderOptions, optionText } from '../utils/status'
+import { animalStatusOptions, animalTypeOptions, genderOptions, medicalRecordTypeOptions, optionText } from '../utils/status'
 
 const route = useRoute()
 const router = useRouter()
@@ -140,6 +206,25 @@ const statusVisible = ref(false)
 const reportVisible = ref(false)
 const newStatus = ref('')
 const formRef = ref()
+const medicalFormRef = ref()
+const medicalRecords = ref([])
+const medicalEditorVisible = ref(false)
+const medicalEditingId = ref(null)
+const medicalSaving = ref(false)
+
+const medicalEditor = reactive({
+  type: 'VACCINE',
+  recordDate: '',
+  veterinarianName: '',
+  institution: '',
+  description: '',
+  imageUrls: []
+})
+
+const medicalRules = {
+  type: [{ required: true, message: '请选择类型', trigger: 'change' }],
+  recordDate: [{ required: true, message: '请选择日期', trigger: 'change' }]
+}
 
 const editor = reactive({
   type: 'CAT',
@@ -220,6 +305,87 @@ async function saveStatus() {
   }
 }
 
+const API_BASE = window.location.origin
+
+function getFullUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url
+  return `${API_BASE}${url}`
+}
+
+function medicalTypeStyle(type) {
+  const map = { DEWORMING: 'warning', VACCINE: 'primary', NEUTERING: 'danger', TREATMENT: 'success', OTHER: 'info' }
+  return map[type] || 'info'
+}
+
+function previewMedicalImage(url) {
+  window.open(getFullUrl(url), '_blank')
+}
+
+async function fetchMedicalRecords() {
+  try {
+    medicalRecords.value = await medicalRecordApi.list(route.params.id) || []
+  } catch {
+    medicalRecords.value = []
+  }
+}
+
+function openMedicalEditor(record) {
+  if (record) {
+    medicalEditingId.value = record.id
+    Object.assign(medicalEditor, {
+      type: record.type,
+      recordDate: record.recordDate,
+      veterinarianName: record.veterinarianName || '',
+      institution: record.institution || '',
+      description: record.description || '',
+      imageUrls: record.imageUrls || []
+    })
+  } else {
+    medicalEditingId.value = null
+    Object.assign(medicalEditor, {
+      type: 'VACCINE',
+      recordDate: '',
+      veterinarianName: '',
+      institution: '',
+      description: '',
+      imageUrls: []
+    })
+  }
+  medicalEditorVisible.value = true
+}
+
+async function saveMedicalRecord() {
+  await medicalFormRef.value.validate()
+  medicalSaving.value = true
+  try {
+    if (medicalEditingId.value) {
+      await medicalRecordApi.update(route.params.id, medicalEditingId.value, { ...medicalEditor })
+      ElMessage.success('医疗记录已更新')
+    } else {
+      await medicalRecordApi.create(route.params.id, { ...medicalEditor })
+      ElMessage.success('医疗记录已添加')
+    }
+    medicalEditorVisible.value = false
+    await fetchMedicalRecords()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    medicalSaving.value = false
+  }
+}
+
+async function deleteMedicalRecord(recordId) {
+  try {
+    await ElMessageBox.confirm('确认删除这条医疗记录？', '提示', { type: 'warning' })
+    await medicalRecordApi.delete(route.params.id, recordId)
+    ElMessage.success('已删除')
+    await fetchMedicalRecords()
+  } catch (error) {
+    if (error !== 'cancel') notifyError(error)
+  }
+}
+
 async function offline() {
   try {
     await ElMessageBox.confirm('下架后该档案将从公开列表中移除，确认继续吗？', '提示', { type: 'warning' })
@@ -245,5 +411,29 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+  fetchMedicalRecords()
 })
 </script>
+
+<style scoped>
+.medical-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.medical-card {
+  padding: 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-fill-color-light);
+}
+.medical-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.medical-date {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+</style>
