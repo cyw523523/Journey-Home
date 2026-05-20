@@ -167,3 +167,98 @@ CREATE TABLE IF NOT EXISTS direct_message_images (
     image_url VARCHAR(500) NOT NULL,
     CONSTRAINT fk_dm_images_message FOREIGN KEY (message_id) REFERENCES direct_messages(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS supply_demands (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(120) NOT NULL,
+    category VARCHAR(32) NOT NULL,
+    target_quantity INT NOT NULL,
+    current_quantity INT NOT NULL DEFAULT 0,
+    description VARCHAR(1000) NOT NULL,
+    contact_name VARCHAR(255),
+    contact_phone VARCHAR(64),
+    shipping_address VARCHAR(500),
+    status VARCHAR(32) NOT NULL,
+    image_url VARCHAR(500),
+    publisher_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_supply_demands_publisher FOREIGN KEY (publisher_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS donation_records (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    demand_id BIGINT NOT NULL,
+    donor_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    delivery_method VARCHAR(32),
+    tracking_number VARCHAR(500),
+    message VARCHAR(1000),
+    donor_display_name VARCHAR(64),
+    status VARCHAR(32) NOT NULL,
+    completed_at DATETIME,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_donation_records_demand FOREIGN KEY (demand_id) REFERENCES supply_demands(id),
+    CONSTRAINT fk_donation_records_donor FOREIGN KEY (donor_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS volunteer_tasks (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(120) NOT NULL,
+    description VARCHAR(1000) NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    max_volunteers INT NOT NULL DEFAULT 1,
+    current_volunteers INT NOT NULL DEFAULT 0,
+    scheduled_time DATETIME,
+    image_url VARCHAR(500),
+    status VARCHAR(32) NOT NULL,
+    review_comment VARCHAR(500),
+    publisher_id BIGINT NOT NULL,
+    related_rescue_id BIGINT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_vt_publisher FOREIGN KEY (publisher_id) REFERENCES users(id),
+    CONSTRAINT fk_vt_rescue FOREIGN KEY (related_rescue_id) REFERENCES rescues(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS volunteer_applications (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    task_id BIGINT NOT NULL,
+    volunteer_id BIGINT NOT NULL,
+    message VARCHAR(500),
+    status VARCHAR(32) NOT NULL,
+    review_comment VARCHAR(500),
+    completed_at DATETIME,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_va_task FOREIGN KEY (task_id) REFERENCES volunteer_tasks(id),
+    CONSTRAINT fk_va_volunteer FOREIGN KEY (volunteer_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS rescue_stations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL UNIQUE,
+    station_name VARCHAR(120) NOT NULL,
+    description VARCHAR(1000),
+    address VARCHAR(255),
+    contact_phone VARCHAR(64),
+    image_url VARCHAR(500),
+    certification_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    follower_count INT NOT NULL DEFAULT 0,
+    reject_reason TEXT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_rs_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_follows (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    follower_id BIGINT NOT NULL,
+    station_user_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT uf_follower FOREIGN KEY (follower_id) REFERENCES users(id),
+    CONSTRAINT uf_station FOREIGN KEY (station_user_id) REFERENCES users(id),
+    UNIQUE KEY uk_follow (follower_id, station_user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

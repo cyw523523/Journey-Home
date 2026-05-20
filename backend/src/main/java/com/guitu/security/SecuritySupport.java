@@ -28,6 +28,12 @@ public final class SecuritySupport {
         return requireUser().role() == UserRole.ADMIN;
     }
 
+    public static void requireAdmin() {
+        if (!isAdmin()) {
+            throw new BusinessException(HttpStatus.FORBIDDEN, "需要管理员权限");
+        }
+    }
+
     public static void requireOwnerOrAdmin(Long ownerId) {
         SecurityPrincipal principal = requireUser();
         if (!principal.id().equals(ownerId) && principal.role() != UserRole.ADMIN) {

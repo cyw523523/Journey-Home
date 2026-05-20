@@ -18,6 +18,7 @@
           <el-menu-item index="applications"><HeartHandshake />{{ $t('admin.adoptionApplications') }}</el-menu-item>
           <el-menu-item index="reports"><ShieldAlert />举报处理</el-menu-item>
           <el-menu-item index="appeals"><FileCheck2 />申诉复核</el-menu-item>
+          <el-menu-item index="stations"><Building2 />救助站认证</el-menu-item>
         </el-menu>
       </aside>
 
@@ -190,6 +191,46 @@
             </el-table-column>
           </el-table>
         </div>
+
+        <div v-show="active === 'stations'" class="surface form-shell">
+          <div style="display:flex;gap:10px;margin-bottom:12px">
+            <el-select v-model="stationStatusFilter" clearable style="width: 180px" @change="loadStations">
+              <el-option label="待审核" value="PENDING" />
+              <el-option label="已认证" value="APPROVED" />
+              <el-option label="未通过" value="REJECTED" />
+            </el-select>
+            <el-button :icon="RefreshCw" @click="loadStations">刷新</el-button>
+          </div>
+          <el-table :data="stations" stripe>
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column prop="stationName" label="救助站名称" width="160" />
+            <el-table-column prop="nickname" label="申请人" width="120" />
+            <el-table-column prop="address" label="地址" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="contactPhone" label="联系电话" width="120" />
+            <el-table-column label="认证状态" width="120">
+              <template #default="{ row }">
+                <StatusTag :value="row.certificationStatus" :text="row.certificationStatusText"
+                           :options="certStatusOptions" size="small" />
+              </template>
+            </el-table-column>
+            <el-table-column label="粉丝" width="70">
+              <template #default="{ row }">{{ row.followerCount }}</template>
+            </el-table-column>
+            <el-table-column label="申请时间" width="160">
+              <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="200">
+              <template #default="{ row }">
+                <el-button v-if="row.certificationStatus === 'PENDING'" size="small" :icon="Check" type="primary"
+                           text @click="openCertify(row, 'APPROVED')">通过</el-button>
+                <el-button v-if="row.certificationStatus === 'PENDING'" size="small" :icon="X" type="danger"
+                           text @click="openCertify(row, 'REJECTED')">驳回</el-button>
+                <el-button v-if="row.certificationStatus !== 'PENDING'" size="small" :icon="Eye" text
+                           @click="openStationDetail(row)">详情</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </main>
     </div>
 
@@ -342,6 +383,48 @@
         <el-button :loading="saving" type="primary" @click="submitAppealReview">提交</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="certDialog" title="救助站认证" width="560px" append-to-body>
+      <div v-if="certTarget" style="margin-bottom: 12px">
+        <p><strong>{{ certTarget.stationName }}</strong></p>
+        <p class="muted">申请人：{{ certTarget.nickname }}</p>
+        <p class="muted">地址：{{ certTarget.address }}</p>
+        <p class="muted">联系电话：{{ certTarget.contactPhone }}</p>
+      </div>
+      <el-form :model="certForm" label-position="top">
+        <el-form-item label="认证结果">
+          <el-select v-model="certForm.action" style="width: 100%">
+            <el-option label="通过" value="APPROVED" />
+            <el-option label="驳回" value="REJECTED" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="处理意见">
+          <el-input v-model="certForm.opinion" type="textarea" :rows="4" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="certDialog = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="submitCertify">提交</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="stationDetailDialog" title="救助站详情" width="680px" append-to-body>
+      <div v-if="stationDetail" class="audit-detail-grid">
+        <div class="detail-item"><label>救助站名称</label><span>{{ stationDetail.stationName }}</span></div>
+        <div class="detail-item"><label>申请人</label><span>{{ stationDetail.nickname }}</span></div>
+        <div class="detail-item"><label>联系电话</label><span>{{ stationDetail.contactPhone }}</span></div>
+        <div class="detail-item"><label>地址</label><span>{{ stationDetail.address }}</span></div>
+        <div class="detail-item"><label>认证状态</label><StatusTag :value="stationDetail.certificationStatus" :text="stationDetail.certificationStatusText" :options="certStatusOptions" /></div>
+        <div class="detail-item"><label>粉丝数</label><span>{{ stationDetail.followerCount }}</span></div>
+        <div class="detail-item"><label>申请时间</label><span>{{ formatTime(stationDetail.createdAt) }}</span></div>
+        <div class="detail-item full-width"><label>简介</label><p>{{ stationDetail.description || '-' }}</p></div>
+        <div v-if="stationDetail.rejectReason" class="detail-item full-width"><label>驳回理由</label><p>{{ stationDetail.rejectReason }}</p></div>
+        <div v-if="stationDetail.imageUrl" class="detail-item full-width"><label>封面图片</label><img :src="stationDetail.imageUrl" style="max-width:200px;border-radius:8px" /></div>
+      </div>
+      <template #footer>
+        <el-button @click="stationDetailDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -350,6 +433,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Archive,
+  Building2,
   ChartNoAxesCombined,
   Check,
   ClipboardCheck,
@@ -368,6 +452,7 @@ import {
 } from 'lucide-vue-next'
 import StatusTag from '../components/StatusTag.vue'
 import { adminApi } from '../api'
+import { rescueStationApi } from '../api'
 import { notifyError } from '../api/http'
 import {
   animalStatusOptions,
@@ -383,7 +468,8 @@ import {
   reportTargetOptions,
   rescueStatusOptions,
   roleOptions,
-  userStatusOptions
+  userStatusOptions,
+  certificationOptions as certStatusOptions
 } from '../utils/status'
 
 const active = ref('dashboard')
@@ -415,6 +501,15 @@ const detailTargetType = ref('')
 const reportTarget = ref(null)
 const appealTarget = ref(null)
 
+// Rescue station management
+const stations = ref([])
+const stationDetailDialog = ref(false)
+const stationDetail = ref(null)
+const stationStatusFilter = ref('')
+const certDialog = ref(false)
+const certTarget = ref(null)
+const certForm = reactive({ action: 'APPROVED', opinion: '' })
+
 const detailTypeLabels = { ANIMAL: '动物档案', RESCUE: '救助信息', ADOPT_APPLY: '领养申请', COMMUNITY_POST: '社区帖子', COMMUNITY_COMMENT: '社区评论' }
 const detailTargetTypeText = ref('')
 
@@ -437,7 +532,7 @@ const reportForm = reactive({ action: 'DISMISS', opinion: '' })
 const appealForm = reactive({ action: 'ESCALATE', opinion: '' })
 
 async function loadAll() {
-  await Promise.all([loadDashboard(), loadPending(), loadUsers(), loadNotices(), loadApplications(), loadReports(), loadAppeals()])
+  await Promise.all([loadDashboard(), loadPending(), loadUsers(), loadNotices(), loadApplications(), loadReports(), loadAppeals(), loadStations()])
 }
 
 async function loadDashboard() {
@@ -635,6 +730,47 @@ async function submitAppealReview() {
   } finally {
     saving.value = false
   }
+}
+
+// ========== Rescue station management ==========
+
+async function loadStations() {
+  try {
+    const data = await rescueStationApi.adminList({ status: stationStatusFilter.value || undefined, page: 0, size: 30 })
+    stations.value = data.content || []
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+function openCertify(row, action) {
+  certTarget.value = row
+  certForm.action = action
+  certForm.opinion = ''
+  certDialog.value = true
+}
+
+async function submitCertify() {
+  saving.value = true
+  try {
+    await rescueStationApi.certify(certTarget.value.userId, { status: certForm.action, reason: certForm.opinion })
+    ElMessage.success(certForm.action === 'APPROVED' ? '已通过认证' : '已驳回')
+    certDialog.value = false
+    await loadStations()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+function openStationDetail(row) {
+  stationDetail.value = row
+  stationDetailDialog.value = true
+}
+
+function formatTime(value) {
+  return value ? new Date(value).toLocaleString('zh-CN') : '-'
 }
 
 onMounted(loadAll)

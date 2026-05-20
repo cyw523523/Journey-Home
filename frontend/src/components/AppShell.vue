@@ -20,6 +20,10 @@
             <RouterLink to="/notices">{{ $t('nav.notices') }}</RouterLink>
             <RouterLink to="/animals">{{ $t('nav.animals') }}</RouterLink>
             <RouterLink to="/rescues">{{ $t('nav.rescues') }}</RouterLink>
+            <RouterLink to="/donations">{{ $t('nav.donations') }}</RouterLink>
+            <RouterLink to="/volunteer-tasks">{{ $t('nav.volunteerTasks') }}</RouterLink>
+            <RouterLink v-if="auth.isAdmin.value" to="/admin/rescue-stations">{{ $t('nav.rescueStation') }}</RouterLink>
+            <RouterLink v-else to="/rescue-station">{{ $t('nav.rescueStation') }}</RouterLink>
             <RouterLink v-if="auth.isLoggedIn.value" to="/profile">{{ $t('nav.profile') }}</RouterLink>
             <RouterLink v-if="auth.isAdmin.value" to="/admin">{{ $t('nav.admin') }}</RouterLink>
           </nav>

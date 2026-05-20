@@ -9,21 +9,30 @@ import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
 import com.guitu.domain.DirectConversation;
 import com.guitu.domain.DirectMessage;
+import com.guitu.domain.DonationRecord;
 import com.guitu.domain.Notice;
 import com.guitu.domain.Rescue;
+import com.guitu.domain.SupplyDemand;
 import com.guitu.domain.SystemNotification;
 import com.guitu.domain.User;
+import com.guitu.domain.VolunteerApplication;
+import com.guitu.domain.VolunteerTask;
+import com.guitu.domain.RescueStation;
+import com.guitu.domain.UserFollow;
 import com.guitu.dto.AdoptApplyDtos;
 import com.guitu.dto.AppealDtos;
 import com.guitu.dto.AnimalDtos;
 import com.guitu.dto.AuditDtos;
 import com.guitu.dto.CommunityDtos;
 import com.guitu.dto.DirectMessageDtos;
+import com.guitu.dto.DonationDtos;
 import com.guitu.dto.NotificationDtos;
 import com.guitu.dto.NoticeDtos;
 import com.guitu.dto.ReportDtos;
 import com.guitu.dto.RescueDtos;
 import com.guitu.dto.UserDtos;
+import com.guitu.dto.VolunteerTaskDtos;
+import com.guitu.dto.RescueStationDtos;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -299,6 +308,114 @@ public class DtoMapper {
                 log.getAction().getLabel(),
                 log.getOpinion(),
                 log.getAuditTime()
+        );
+    }
+
+    public DonationDtos.SupplyDemandResponse toSupplyDemandResponse(SupplyDemand demand) {
+        return new DonationDtos.SupplyDemandResponse(
+                demand.getId(),
+                demand.getTitle(),
+                demand.getCategory(),
+                demand.getCategory().getLabel(),
+                demand.getTargetQuantity(),
+                demand.getCurrentQuantity(),
+                demand.getDescription(),
+                demand.getContactName(),
+                demand.getContactPhone(),
+                demand.getShippingAddress(),
+                demand.getStatus(),
+                demand.getStatus().getLabel(),
+                demand.getImageUrl(),
+                demand.getPublisher().getId(),
+                demand.getPublisher().getNickname(),
+                demand.getCreatedAt(),
+                demand.getUpdatedAt()
+        );
+    }
+
+    public DonationDtos.DonationRecordResponse toDonationRecordResponse(DonationRecord record) {
+        return new DonationDtos.DonationRecordResponse(
+                record.getId(),
+                record.getDemand().getId(),
+                record.getDemand().getTitle(),
+                record.getDonor().getId(),
+                record.getDonorDisplayName(),
+                record.getQuantity(),
+                record.getDeliveryMethod(),
+                record.getTrackingNumber(),
+                record.getMessage(),
+                record.getStatus(),
+                record.getStatus().getLabel(),
+                record.getCompletedAt(),
+                record.getCreatedAt()
+        );
+    }
+
+    public VolunteerTaskDtos.VolunteerTaskResponse toVolunteerTaskResponse(VolunteerTask task) {
+        return new VolunteerTaskDtos.VolunteerTaskResponse(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getLocation(),
+                task.getMaxVolunteers(),
+                task.getCurrentVolunteers(),
+                task.getScheduledTime(),
+                task.getImageUrl(),
+                task.getStatus(),
+                task.getStatus().getLabel(),
+                task.getReviewComment(),
+                task.getPublisher().getId(),
+                task.getPublisher().getNickname(),
+                task.getRelatedRescue() != null ? task.getRelatedRescue().getId() : null,
+                task.getRelatedRescue() != null ? task.getRelatedRescue().getLocation() : null,
+                task.getCreatedAt(),
+                task.getUpdatedAt()
+        );
+    }
+
+    public VolunteerTaskDtos.ApplicationResponse toApplicationResponse(VolunteerApplication app) {
+        return new VolunteerTaskDtos.ApplicationResponse(
+                app.getId(),
+                app.getTask().getId(),
+                app.getTask().getTitle(),
+                app.getVolunteer().getId(),
+                app.getVolunteer().getNickname(),
+                app.getMessage(),
+                app.getStatus(),
+                app.getStatus().getLabel(),
+                app.getReviewComment(),
+                app.getCompletedAt(),
+                app.getCreatedAt()
+        );
+    }
+
+    public RescueStationDtos.StationResponse toStationResponse(RescueStation station) {
+        return new RescueStationDtos.StationResponse(
+                station.getId(),
+                station.getUser().getId(),
+                station.getUser().getNickname(),
+                station.getUser().getAvatarUrl(),
+                station.getStationName(),
+                station.getDescription(),
+                station.getAddress(),
+                station.getContactPhone(),
+                station.getImageUrl(),
+                station.getCertificationStatus(),
+                station.getCertificationStatus().getLabel(),
+                station.getFollowerCount(),
+                station.getRejectReason(),
+                station.getCreatedAt()
+        );
+    }
+
+    public RescueStationDtos.FollowResponse toFollowResponse(UserFollow follow) {
+        return new RescueStationDtos.FollowResponse(
+                follow.getId(),
+                follow.getFollower().getId(),
+                follow.getFollower().getNickname(),
+                follow.getFollower().getAvatarUrl(),
+                follow.getStationUser() != null ? follow.getStationUser().getNickname() : "",
+                follow.getCreatedAt()
         );
     }
 }

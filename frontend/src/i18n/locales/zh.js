@@ -27,10 +27,14 @@ export default {
     notices: '平台公告',
     animals: '动物档案',
     rescues: '救助信息',
+    donations: '物资捐赠',
+    volunteerTasks: '志愿者任务',
+    rescueStation: '救助站',
     profile: '个人中心',
     admin: '管理员后台',
     login: '登录',
-    logout: '退出登录'
+    logout: '退出登录',
+    messages: '私信'
   },
   home: {
     heroTitle: '归途',

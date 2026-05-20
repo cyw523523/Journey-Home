@@ -95,6 +95,47 @@ export const aiAssistantApi = {
   chat: (data) => http.post('/ai-assistant/chat', data, { timeout: 60000 })
 }
 
+export const donationApi = {
+  list: (params) => http.get('/donations', { params }),
+  detail: (id) => http.get(`/donations/${id}`),
+  records: (id, params) => http.get(`/donations/${id}/records`, { params }),
+  create: (data) => http.post('/donations', data),
+  update: (id, data) => http.put(`/donations/${id}`, data),
+  offline: (id) => http.delete(`/donations/${id}`),
+  donate: (id, data) => http.post(`/donations/${id}/donate`, data),
+  completeDonation: (recordId) => http.patch(`/donations/records/${recordId}/complete`)
+}
+
+export const volunteerTaskApi = {
+  list: (params) => http.get('/volunteer-tasks', { params }),
+  detail: (id) => http.get(`/volunteer-tasks/${id}`),
+  applications: (id, params) => http.get(`/volunteer-tasks/${id}/applications`, { params }),
+  create: (data) => http.post('/volunteer-tasks', data),
+  update: (id, data) => http.put(`/volunteer-tasks/${id}`, data),
+  offline: (id) => http.delete(`/volunteer-tasks/${id}`),
+  updateStatus: (id, data) => http.patch(`/volunteer-tasks/${id}/status`, data),
+  apply: (id, data) => http.post(`/volunteer-tasks/${id}/apply`, data),
+  reviewApplication: (id, data) => http.patch(`/volunteer-tasks/applications/${id}/review`, data),
+  completeApplication: (id) => http.patch(`/volunteer-tasks/applications/${id}/complete`)
+}
+
+export const rescueStationApi = {
+  apply: (data) => http.post('/rescue-stations/apply', data),
+  myStation: () => http.get('/rescue-stations/me'),
+  updateProfile: (data) => http.put('/rescue-stations/me', data),
+  publicStation: (userId) => http.get(`/rescue-stations/${userId}`),
+  follow: (stationUserId) => http.post(`/rescue-stations/${stationUserId}/follow`),
+  unfollow: (stationUserId) => http.delete(`/rescue-stations/${stationUserId}/follow`),
+  isFollowing: (stationUserId) => http.get(`/rescue-stations/${stationUserId}/is-following`),
+  followers: (params) => http.get('/rescue-stations/me/followers', { params }),
+  following: (params) => http.get('/rescue-stations/me/following', { params }),
+  dashboard: () => http.get('/rescue-stations/me/dashboard'),
+  discover: (params) => http.get('/rescue-stations/discover', { params }),
+  // Admin
+  adminList: (params) => http.get('/rescue-stations/admin/list', { params }),
+  certify: (userId, data) => http.post(`/rescue-stations/admin/${userId}/certify`, data)
+}
+
 export const adminApi = {
   overview: () => http.get('/admin/stats/overview'),
   animalStatus: () => http.get('/admin/stats/animals/status'),

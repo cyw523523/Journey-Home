@@ -9,7 +9,10 @@ const state = reactive({
 
 export function useAuth() {
   const isLoggedIn = computed(() => Boolean(state.token))
-  const isAdmin = computed(() => state.user?.role === 'ADMIN')
+  const isAdmin = computed(() => {
+  const role = state.user?.role
+  return role === 'ADMIN' || role?.name === 'ADMIN'
+})
 
   async function login(payload) {
     const data = await authApi.login(payload)

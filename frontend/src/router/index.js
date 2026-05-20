@@ -11,11 +11,15 @@ const routes = [
   { path: '/animals', name: 'animals', component: () => import('../views/AnimalsView.vue') },
   { path: '/animals/:id', name: 'animal-detail', component: () => import('../views/AnimalDetailView.vue') },
   { path: '/rescues', name: 'rescues', component: () => import('../views/RescuesView.vue') },
+  { path: '/donations', name: 'donations', component: () => import('../views/DonationsView.vue') },
+  { path: '/volunteer-tasks', name: 'volunteer-tasks', component: () => import('../views/VolunteerTasksView.vue') },
+  { path: '/rescue-station', name: 'rescue-station', component: () => import('../views/RescueStationView.vue') },
   { path: '/users/:id', name: 'user-profile', component: () => import('../views/UserProfileView.vue') },
   { path: '/messages', name: 'messages', component: () => import('../views/MessagesView.vue'), meta: { requiresAuth: true } },
   { path: '/adoptions/new/:animalId', name: 'adoption-new', component: () => import('../views/AdoptionApplyView.vue'), meta: { requiresAuth: true } },
   { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
-  { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } }
+  { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/rescue-stations', name: 'admin-rescue-stations', component: () => import('../views/AdminRescueStationsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } }
 ]
 
 const router = createRouter({

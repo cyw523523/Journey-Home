@@ -121,6 +121,47 @@ export const appealActionOptions = [
   { label: '驳回申诉', value: 'REJECT' }
 ]
 
+export const supplyCategoryOptions = [
+  { label: '猫粮', value: 'CAT_FOOD' },
+  { label: '狗粮', value: 'DOG_FOOD' },
+  { label: '猫砂', value: 'CAT_LITTER' },
+  { label: '药品', value: 'MEDICINE' },
+  { label: '玩具', value: 'TOYS' },
+  { label: '垫子/窝', value: 'BEDDING' },
+  { label: '清洁用品', value: 'CLEANING' },
+  { label: '其他', value: 'OTHER' }
+]
+
+export const donationStatusOptions = [
+  { label: '待认领', value: 'PENDING', type: 'warning' },
+  { label: '已认领', value: 'CLAIMED', type: 'primary' },
+  { label: '运输中', value: 'IN_TRANSIT', type: 'primary' },
+  { label: '已完成', value: 'COMPLETED', type: 'success' },
+  { label: '已取消', value: 'CANCELLED', type: 'info' }
+]
+
+export const volunteerTaskStatusOptions = [
+  { label: '待审核', value: 'PENDING_REVIEW', type: 'warning' },
+  { label: '招募中', value: 'RECRUITING', type: 'success' },
+  { label: '进行中', value: 'IN_PROGRESS', type: 'primary' },
+  { label: '已完成', value: 'COMPLETED', type: 'success' },
+  { label: '已取消', value: 'CANCELLED', type: 'info' }
+]
+
+export const volunteerApplicationStatusOptions = [
+  { label: '待确认', value: 'PENDING', type: 'warning' },
+  { label: '已通过', value: 'APPROVED', type: 'success' },
+  { label: '已拒绝', value: 'REJECTED', type: 'danger' },
+  { label: '已撤回', value: 'WITHDRAWN', type: 'info' },
+  { label: '已完成', value: 'COMPLETED', type: 'success' }
+]
+
+export const certificationOptions = [
+  { label: '待审核', value: 'PENDING', type: 'warning' },
+  { label: '已认证', value: 'APPROVED', type: 'success' },
+  { label: '未通过', value: 'REJECTED', type: 'danger' }
+]
+
 export function optionText(options, value) {
   return options.find((item) => item.value === value)?.label || value || '-'
 }
