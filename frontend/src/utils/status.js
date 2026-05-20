@@ -162,6 +162,14 @@ export const certificationOptions = [
   { label: '未通过', value: 'REJECTED', type: 'danger' }
 ]
 
+export const medicalRecordTypeOptions = [
+  { label: '驱虫', value: 'DEWORMING' },
+  { label: '疫苗', value: 'VACCINE' },
+  { label: '绝育', value: 'NEUTERING' },
+  { label: '诊疗', value: 'TREATMENT' },
+  { label: '其他', value: 'OTHER' }
+]
+
 export function optionText(options, value) {
   return options.find((item) => item.value === value)?.label || value || '-'
 }

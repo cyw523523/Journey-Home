@@ -1,39 +1,42 @@
 package com.guitu.mapper;
 
+import org.springframework.stereotype.Component;
+
 import com.guitu.domain.AdoptApply;
-import com.guitu.domain.AppealRecord;
 import com.guitu.domain.Animal;
+import com.guitu.domain.AppealRecord;
 import com.guitu.domain.AuditLog;
-import com.guitu.domain.ContentReport;
 import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
+import com.guitu.domain.ContentReport;
 import com.guitu.domain.DirectConversation;
 import com.guitu.domain.DirectMessage;
 import com.guitu.domain.DonationRecord;
+import com.guitu.domain.MedicalRecord;
 import com.guitu.domain.Notice;
 import com.guitu.domain.Rescue;
+import com.guitu.domain.RescueStation;
 import com.guitu.domain.SupplyDemand;
 import com.guitu.domain.SystemNotification;
 import com.guitu.domain.User;
+import com.guitu.domain.UserFollow;
 import com.guitu.domain.VolunteerApplication;
 import com.guitu.domain.VolunteerTask;
-import com.guitu.domain.RescueStation;
-import com.guitu.domain.UserFollow;
 import com.guitu.dto.AdoptApplyDtos;
-import com.guitu.dto.AppealDtos;
 import com.guitu.dto.AnimalDtos;
+import com.guitu.dto.AppealDtos;
 import com.guitu.dto.AuditDtos;
 import com.guitu.dto.CommunityDtos;
 import com.guitu.dto.DirectMessageDtos;
 import com.guitu.dto.DonationDtos;
-import com.guitu.dto.NotificationDtos;
+import com.guitu.dto.MedicalRecordDtos;
 import com.guitu.dto.NoticeDtos;
+import com.guitu.dto.NotificationDtos;
 import com.guitu.dto.ReportDtos;
 import com.guitu.dto.RescueDtos;
+import com.guitu.dto.RescueStationDtos;
 import com.guitu.dto.UserDtos;
 import com.guitu.dto.VolunteerTaskDtos;
-import com.guitu.dto.RescueStationDtos;
-import org.springframework.stereotype.Component;
 
 @Component
 public class DtoMapper {
@@ -293,6 +296,21 @@ public class DtoMapper {
                 appeal.getFinalReviewOpinion(),
                 appeal.getReviewedAt(),
                 appeal.getCreatedAt()
+        );
+    }
+
+    public MedicalRecordDtos.MedicalRecordResponse toMedicalRecordResponse(MedicalRecord record) {
+        return new MedicalRecordDtos.MedicalRecordResponse(
+                record.getId(),
+                record.getType(),
+                record.getType().getLabel(),
+                record.getRecordDate(),
+                record.getVeterinarianName(),
+                record.getInstitution(),
+                record.getDescription(),
+                record.getImageUrls(),
+                record.getCreatedAt(),
+                record.getUpdatedAt()
         );
     }
 
