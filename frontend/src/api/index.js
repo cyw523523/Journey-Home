@@ -72,13 +72,6 @@ export const appealApi = {
   detail: (id) => http.get(`/appeals/${id}`)
 }
 
-export const medicalRecordApi = {
-  list: (animalId) => http.get(`/animals/${animalId}/medical-records`),
-  create: (animalId, data) => http.post(`/animals/${animalId}/medical-records`, data),
-  update: (animalId, recordId, data) => http.put(`/animals/${animalId}/medical-records/${recordId}`, data),
-  delete: (animalId, recordId) => http.delete(`/animals/${animalId}/medical-records/${recordId}`)
-}
-
 export const notificationApi = {
   list: (params) => http.get('/notifications', { params }),
   summary: () => http.get('/notifications/summary'),
