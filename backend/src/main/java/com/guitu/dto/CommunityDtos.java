@@ -80,4 +80,20 @@ public final class CommunityDtos {
             List<CommunityCommentResponse> comments
     ) {
     }
+
+    public record CategoryResponse(
+            Long id, String code, String name, String nameEn,
+            String description, String icon, int sortOrder,
+            boolean enabled, long postCount
+    ) {}
+
+    public record SaveCategoryRequest(
+            @NotBlank String code,
+            @NotBlank String name,
+            String nameEn,
+            String description,
+            String icon,
+            int sortOrder,
+            boolean enabled
+    ) {}
 }
