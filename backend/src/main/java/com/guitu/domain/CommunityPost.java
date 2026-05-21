@@ -1,5 +1,6 @@
 package com.guitu.domain;
 
+import com.guitu.domain.CommunityCategory;
 import com.guitu.domain.enums.CommunityPostStatus;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -44,4 +45,8 @@ public class CommunityPost extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private CommunityPostStatus status = CommunityPostStatus.PUBLISHED;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private CommunityCategory category;
 }

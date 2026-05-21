@@ -34,6 +34,7 @@ public class CommunityService {
     private final AntiAbuseService antiAbuseService;
     private final ContentModerationService moderationService;
     private final NotificationService notificationService;
+    private final CommunityCategoryService categoryService;
 
     public CommunityService(
             com.guitu.repository.CommunityPostRepository communityPostRepository,
@@ -42,7 +43,8 @@ public class CommunityService {
             DtoMapper mapper,
             AntiAbuseService antiAbuseService,
             ContentModerationService moderationService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            CommunityCategoryService categoryService
     ) {
         this.communityPostRepository = communityPostRepository;
         this.communityCommentRepository = communityCommentRepository;
@@ -51,6 +53,7 @@ public class CommunityService {
         this.antiAbuseService = antiAbuseService;
         this.moderationService = moderationService;
         this.notificationService = notificationService;
+        this.categoryService = categoryService;
     }
 
     @Transactional(readOnly = true)
@@ -105,6 +108,7 @@ public class CommunityService {
         post.setTitle(request.title().trim());
         post.setContent(request.content().trim());
         post.setStatus(resolvePostStatus(false, request));
+        post.setCategory(categoryService.getEntity(request.categoryId()));
         post.getImageUrls().clear();
         if (request.imageUrls() != null) {
             post.getImageUrls().addAll(request.imageUrls());
@@ -124,6 +128,9 @@ public class CommunityService {
 
         post.setTitle(request.title().trim());
         post.setContent(request.content().trim());
+        if (request.categoryId() != null) {
+            post.setCategory(categoryService.getEntity(request.categoryId()));
+        }
         post.getImageUrls().clear();
         if (request.imageUrls() != null) {
             post.getImageUrls().addAll(request.imageUrls());

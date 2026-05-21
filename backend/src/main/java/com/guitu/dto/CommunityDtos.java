@@ -4,6 +4,7 @@ import com.guitu.domain.enums.CommunityCommentStatus;
 import com.guitu.domain.enums.CommunityPostStatus;
 import com.guitu.domain.enums.UserRole;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,9 @@ public final class CommunityDtos {
             @NotBlank(message = "Post content is required")
             @Size(max = 5000, message = "Post content must be at most 5000 characters")
             String content,
+
+            @NotNull(message = "Category is required")
+            Long categoryId,
 
             List<@Size(max = 500, message = "Image URL must be at most 500 characters") String> imageUrls
     ) {
@@ -51,7 +55,10 @@ public final class CommunityDtos {
             List<String> imageUrls,
             long commentCount,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            LocalDateTime updatedAt,
+            Long categoryId,
+            String categoryCode,
+            String categoryName
     ) {
     }
 

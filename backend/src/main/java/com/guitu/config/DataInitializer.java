@@ -1,13 +1,17 @@
 package com.guitu.config;
 
 import com.guitu.domain.CommunityCategory;
+import com.guitu.domain.CommunityPost;
 import com.guitu.domain.RescueStation;
 import com.guitu.domain.User;
 import com.guitu.domain.enums.CertificationStatus;
 import com.guitu.domain.enums.UserRole;
 import com.guitu.repository.CommunityCategoryRepository;
+import com.guitu.repository.CommunityPostRepository;
 import com.guitu.repository.RescueStationRepository;
 import com.guitu.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -15,15 +19,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+
     private final UserRepository userRepository;
     private final RescueStationRepository stationRepository;
     private final CommunityCategoryRepository categoryRepository;
+    private final CommunityPostRepository postRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(UserRepository userRepository, RescueStationRepository stationRepository, CommunityCategoryRepository categoryRepository, PasswordEncoder passwordEncoder) {
+    public DataInitializer(UserRepository userRepository, RescueStationRepository stationRepository, CommunityCategoryRepository categoryRepository, CommunityPostRepository postRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.stationRepository = stationRepository;
         this.categoryRepository = categoryRepository;
+        this.postRepository = postRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -135,6 +143,18 @@ public class DataInitializer implements CommandLineRunner {
             c6.setCode("chat"); c6.setName("闲聊灌水"); c6.setNameEn("Chat");
             c6.setDescription("随便聊聊，但请保持友善"); c6.setIcon("MessageCircle"); c6.setSortOrder(6);
             categoryRepository.save(c6);
+        }
+
+        // Migrate existing posts without category to default "chat" category
+        List<CommunityPost> orphanPosts = postRepository.findAll().stream()
+            .filter(p -> p.getCategory() == null).toList();
+        if (!orphanPosts.isEmpty()) {
+            CommunityCategory defaultCategory = categoryRepository.findByCode("chat").orElseThrow();
+            for (CommunityPost post : orphanPosts) {
+                post.setCategory(defaultCategory);
+            }
+            postRepository.saveAll(orphanPosts);
+            log.info("Migrated {} orphan posts to default category 'chat'", orphanPosts.size());
         }
     }
 }
