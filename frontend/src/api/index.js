@@ -57,7 +57,9 @@ export const communityApi = {
   update: (id, data) => http.put(`/community/posts/${id}`, data),
   delete: (id) => http.delete(`/community/posts/${id}`),
   createComment: (id, data) => http.post(`/community/posts/${id}/comments`, data),
-  deleteComment: (id) => http.delete(`/community/comments/${id}`)
+  deleteComment: (id) => http.delete(`/community/comments/${id}`),
+  toggleLike: (data) => http.post('/community/likes', data),
+  toggleFavorite: (id) => http.post(`/community/posts/${id}/favorite`)
 }
 
 export const reportApi = {

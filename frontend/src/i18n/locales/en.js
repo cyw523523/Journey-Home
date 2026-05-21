@@ -108,7 +108,10 @@ export default {
     requiredTitle: 'Please enter a post title',
     requiredContent: 'Please enter post content',
     notFound: 'Post not found',
-    notFoundDesc: 'This post may have been taken offline or the link is no longer valid.'
+    notFoundDesc: 'This post may have been taken offline or the link is no longer valid.',
+    post: {
+      favorite: 'Favorite'
+    }
   },
   notices: {
     title: 'Platform Notices',
