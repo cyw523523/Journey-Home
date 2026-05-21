@@ -3,6 +3,7 @@ package com.guitu.service;
 import com.guitu.common.PageResponse;
 import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
+import com.guitu.domain.CommunityUserFollow;
 import com.guitu.domain.User;
 import com.guitu.domain.enums.CommunityCommentStatus;
 import com.guitu.domain.enums.CommunityPostStatus;
@@ -39,6 +40,7 @@ public class CommunityService {
     private final NotificationService notificationService;
     private final CommunityCategoryService categoryService;
     private final CommunityPostViewLogRepository viewLogRepo;
+    private final CommunityFollowService followService;
 
     public CommunityService(
             com.guitu.repository.CommunityPostRepository communityPostRepository,
@@ -49,7 +51,8 @@ public class CommunityService {
             ContentModerationService moderationService,
             NotificationService notificationService,
             CommunityCategoryService categoryService,
-            CommunityPostViewLogRepository viewLogRepo
+            CommunityPostViewLogRepository viewLogRepo,
+            CommunityFollowService followService
     ) {
         this.communityPostRepository = communityPostRepository;
         this.communityCommentRepository = communityCommentRepository;
@@ -60,14 +63,35 @@ public class CommunityService {
         this.notificationService = notificationService;
         this.categoryService = categoryService;
         this.viewLogRepo = viewLogRepo;
+        this.followService = followService;
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<CommunityDtos.CommunityPostResponse> listPublic(String keyword, int page, int size) {
-        Page<CommunityPost> result = communityPostRepository.findAll(publicSpec(keyword), pageRequest(page, size));
-        return PageResponse.from(result, post ->
-                mapper.toCommunityPostResponse(post, communityCommentRepository.countByPostIdAndStatus(post.getId(), CommunityCommentStatus.PUBLISHED))
-        );
+    public PageResponse<CommunityDtos.CommunityPostResponse> listPublic(String keyword, Long categoryId, Long authorId, String sort, int page, int size) {
+        Sort sortObj;
+        switch (sort != null ? sort : "latest_active") {
+            case "hot": sortObj = Sort.by(Sort.Direction.DESC, "likeCount"); break;
+            case "created": sortObj = Sort.by(Sort.Direction.DESC, "createdAt"); break;
+            default: sortObj = Sort.by(Sort.Direction.DESC, "lastActiveAt"); break;
+        }
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+        Page<CommunityPost> result = communityPostRepository.findAll(publicSpec(keyword, categoryId, authorId), pageable);
+        return PageResponse.from(result, post -> mapper.toCommunityPostResponse(post, post.getCommentCount()));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CommunityDtos.CommunityPostResponse> feedFollowing(int page, int size) {
+        Long userId = userService.currentUser().getId();
+        Page<CommunityUserFollow> follows = followService.listFollowing(userId, PageRequest.of(0, 200));
+        List<Long> followeeIds = follows.getContent().stream()
+                .map(f -> f.getFollowee().getId())
+                .toList();
+        if (followeeIds.isEmpty()) {
+            return new PageResponse<>(List.of(), 0, 0, page, size);
+        }
+        Page<CommunityPost> posts = communityPostRepository.findByAuthorIdInAndStatusOrderByLastActiveAtDesc(
+                followeeIds, CommunityPostStatus.PUBLISHED, PageRequest.of(page, size));
+        return PageResponse.from(posts, post -> mapper.toCommunityPostResponse(post, post.getCommentCount()));
     }
 
     @Transactional(readOnly = true)
@@ -340,7 +364,7 @@ public class CommunityService {
         }
     }
 
-    private Specification<CommunityPost> publicSpec(String keyword) {
+    private Specification<CommunityPost> publicSpec(String keyword, Long categoryId, Long authorId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), CommunityPostStatus.PUBLISHED));
@@ -351,6 +375,12 @@ public class CommunityService {
                         cb.like(root.get("content"), like),
                         cb.like(root.join("author").get("nickname"), like)
                 ));
+            }
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            }
+            if (authorId != null) {
+                predicates.add(cb.equal(root.get("author").get("id"), authorId));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };

@@ -52,10 +52,21 @@ public class CommunityController {
     @GetMapping("/posts")
     public ApiResponse<PageResponse<CommunityDtos.CommunityPostResponse>> listPosts(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long authorId,
+            @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ApiResponse.ok(communityService.listPublic(keyword, page, size));
+        return ApiResponse.ok(communityService.listPublic(keyword, categoryId, authorId, sort, page, size));
+    }
+
+    @GetMapping("/feed/following")
+    public ApiResponse<PageResponse<CommunityDtos.CommunityPostResponse>> feedFollowing(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.ok(communityService.feedFollowing(page, size));
     }
 
     @GetMapping("/mine/posts")

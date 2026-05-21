@@ -4,7 +4,7 @@ import { useAuth } from '../stores/auth'
 const routes = [
   { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
   { path: '/auth', name: 'auth', component: () => import('../views/AuthView.vue') },
-  { path: '/community', name: 'community', component: () => import('../views/CommunityView.vue') },
+  { path: '/community', name: 'community', component: () => import('../views/CommunityHomeView.vue') },
   { path: '/community/c/:code', name: 'community-category', component: () => import('../views/CommunityCategoryView.vue') },
   { path: '/community/:id', name: 'community-detail', component: () => import('../views/CommunityDetailView.vue') },
   { path: '/notices', name: 'notices', component: () => import('../views/NoticeListView.vue') },

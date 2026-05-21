@@ -109,6 +109,11 @@ export default {
     requiredContent: 'Please enter post content',
     notFound: 'Post not found',
     notFoundDesc: 'This post may have been taken offline or the link is no longer valid.',
+    tab: {
+      latest: 'Latest',
+      hot: 'Hot',
+      following: 'Following'
+    },
     post: {
       favorite: 'Favorite'
     }

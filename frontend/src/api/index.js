@@ -57,6 +57,7 @@ export const noticeApi = {
 
 export const communityApi = {
   list: (params) => http.get('/community/posts', { params }),
+  feedFollowing: (params) => http.get('/community/feed/following', { params }),
   myPosts: (params) => http.get('/community/mine/posts', { params }),
   myComments: (params) => http.get('/community/mine/comments', { params }),
   detail: (id) => http.get(`/community/posts/${id}`),

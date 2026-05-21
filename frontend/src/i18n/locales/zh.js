@@ -95,6 +95,11 @@ export default {
     requiredContent: '请输入帖子内容',
     notFound: '帖子不存在',
     notFoundDesc: '这篇帖子可能已经下架，或链接已经失效。',
+    tab: {
+      latest: '最新',
+      hot: '最热',
+      following: '关注'
+    },
     post: {
       favorite: '收藏'
     }
