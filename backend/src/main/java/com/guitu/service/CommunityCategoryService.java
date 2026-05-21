@@ -10,38 +10,40 @@ import java.util.List;
 
 @Service
 public class CommunityCategoryService {
-    private final CommunityCategoryRepository repo;
+    private final CommunityCategoryRepository categoryRepository;
 
-    public CommunityCategoryService(CommunityCategoryRepository repo) { this.repo = repo; }
+    public CommunityCategoryService(CommunityCategoryRepository categoryRepository) { this.categoryRepository = categoryRepository; }
 
     public List<CategoryResponse> listEnabled() {
-        return repo.findByEnabledTrueOrderBySortOrderAsc().stream()
+        return categoryRepository.findByEnabledTrueOrderBySortOrderAsc().stream()
             .map(this::toResponse).toList();
     }
 
     public List<CategoryResponse> listAll() {
-        return repo.findAll().stream().map(this::toResponse).toList();
+        return categoryRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     @Transactional
     public CategoryResponse create(SaveCategoryRequest req) {
-        if (repo.existsByCode(req.code()))
+        if (categoryRepository.existsByCode(req.code()))
             throw new BusinessException("版块代码已存在");
         CommunityCategory c = new CommunityCategory();
         apply(c, req);
-        return toResponse(repo.save(c));
+        return toResponse(categoryRepository.save(c));
     }
 
     @Transactional
     public CategoryResponse update(Long id, SaveCategoryRequest req) {
-        CommunityCategory c = repo.findById(id)
+        CommunityCategory c = categoryRepository.findById(id)
             .orElseThrow(() -> new BusinessException("版块不存在"));
+        if (!c.getCode().equals(req.code()) && categoryRepository.existsByCode(req.code()))
+            throw new BusinessException("版块代码已存在");
         apply(c, req);
-        return toResponse(repo.save(c));
+        return toResponse(categoryRepository.save(c));
     }
 
     public CommunityCategory getEntity(Long id) {
-        return repo.findById(id)
+        return categoryRepository.findById(id)
             .orElseThrow(() -> new BusinessException("版块不存在"));
     }
 

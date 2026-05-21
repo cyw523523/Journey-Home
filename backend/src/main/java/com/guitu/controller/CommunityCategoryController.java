@@ -8,28 +8,29 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 public class CommunityCategoryController {
-    private final CommunityCategoryService service;
+    private final CommunityCategoryService categoryService;
 
-    public CommunityCategoryController(CommunityCategoryService service) { this.service = service; }
+    public CommunityCategoryController(CommunityCategoryService categoryService) { this.categoryService = categoryService; }
 
-    @GetMapping("/api/community/categories")
+    @GetMapping("/community/categories")
     public ApiResponse<List<CategoryResponse>> listEnabled() {
-        return ApiResponse.ok(service.listEnabled());
+        return ApiResponse.ok(categoryService.listEnabled());
     }
 
-    @GetMapping("/api/admin/community/categories")
+    @GetMapping("/admin/community/categories")
     public ApiResponse<List<CategoryResponse>> listAll() {
-        return ApiResponse.ok(service.listAll());
+        return ApiResponse.ok(categoryService.listAll());
     }
 
-    @PostMapping("/api/admin/community/categories")
+    @PostMapping("/admin/community/categories")
     public ApiResponse<CategoryResponse> create(@Valid @RequestBody SaveCategoryRequest req) {
-        return ApiResponse.ok(service.create(req));
+        return ApiResponse.ok(categoryService.create(req));
     }
 
-    @PutMapping("/api/admin/community/categories/{id}")
+    @PutMapping("/admin/community/categories/{id}")
     public ApiResponse<CategoryResponse> update(@PathVariable Long id, @Valid @RequestBody SaveCategoryRequest req) {
-        return ApiResponse.ok(service.update(id, req));
+        return ApiResponse.ok(categoryService.update(id, req));
     }
 }
