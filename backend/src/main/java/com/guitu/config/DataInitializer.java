@@ -1,9 +1,11 @@
 package com.guitu.config;
 
+import com.guitu.domain.CommunityCategory;
 import com.guitu.domain.RescueStation;
 import com.guitu.domain.User;
 import com.guitu.domain.enums.CertificationStatus;
 import com.guitu.domain.enums.UserRole;
+import com.guitu.repository.CommunityCategoryRepository;
 import com.guitu.repository.RescueStationRepository;
 import com.guitu.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -15,11 +17,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final RescueStationRepository stationRepository;
+    private final CommunityCategoryRepository categoryRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(UserRepository userRepository, RescueStationRepository stationRepository, PasswordEncoder passwordEncoder) {
+    public DataInitializer(UserRepository userRepository, RescueStationRepository stationRepository, CommunityCategoryRepository categoryRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.stationRepository = stationRepository;
+        this.categoryRepository = categoryRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -99,6 +103,38 @@ public class DataInitializer implements CommandLineRunner {
                 station3.setFollowerCount(0);
                 stationRepository.save(station3);
             }
+        }
+
+        if (categoryRepository.count() == 0) {
+            CommunityCategory c1 = new CommunityCategory();
+            c1.setCode("adoption"); c1.setName("领养经验"); c1.setNameEn("Adoption");
+            c1.setDescription("分享领养流程、经验与心得"); c1.setIcon("HeartHandshake"); c1.setSortOrder(1);
+            categoryRepository.save(c1);
+
+            CommunityCategory c2 = new CommunityCategory();
+            c2.setCode("medical"); c2.setName("医疗护理"); c2.setNameEn("Medical");
+            c2.setDescription("宠物健康、疾病防治与护理知识"); c2.setIcon("Stethoscope"); c2.setSortOrder(2);
+            categoryRepository.save(c2);
+
+            CommunityCategory c3 = new CommunityCategory();
+            c3.setCode("lost"); c3.setName("寻宠送养"); c3.setNameEn("Lost & Found");
+            c3.setDescription("发布走失信息或寻找新主人"); c3.setIcon("Search"); c3.setSortOrder(3);
+            categoryRepository.save(c3);
+
+            CommunityCategory c4 = new CommunityCategory();
+            c4.setCode("rescue"); c4.setName("救助求助"); c4.setNameEn("Rescue");
+            c4.setDescription("发布或响应救助请求"); c4.setIcon("Siren"); c4.setSortOrder(4);
+            categoryRepository.save(c4);
+
+            CommunityCategory c5 = new CommunityCategory();
+            c5.setCode("dailylife"); c5.setName("日常晒宠"); c5.setNameEn("Daily Life");
+            c5.setDescription("分享你家宠物的日常照片和趣事"); c5.setIcon("Camera"); c5.setSortOrder(5);
+            categoryRepository.save(c5);
+
+            CommunityCategory c6 = new CommunityCategory();
+            c6.setCode("chat"); c6.setName("闲聊灌水"); c6.setNameEn("Chat");
+            c6.setDescription("随便聊聊，但请保持友善"); c6.setIcon("MessageCircle"); c6.setSortOrder(6);
+            categoryRepository.save(c6);
         }
     }
 }
