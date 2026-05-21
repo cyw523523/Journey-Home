@@ -1,6 +1,6 @@
 <template>
   <div class="floor-list">
-    <div class="floor-toolbar">
+    <div class="floor-toolbar" v-if="totalComments > 0">
       <span>共 {{ totalComments }} 楼</span>
       <el-button text size="small" :type="onlyAuthor ? 'primary' : ''" @click="toggleOnlyAuthor">只看楼主</el-button>
       <el-button text size="small" :type="desc ? 'primary' : ''" @click="toggleOrder">{{ desc ? '正序' : '倒序' }}</el-button>

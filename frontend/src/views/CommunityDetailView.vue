@@ -5,7 +5,9 @@
       <article class="surface form-shell community-detail-shell">
         <div class="community-detail-head">
           <div>
-            <p class="eyebrow"><MessagesSquare :size="16" /> {{ $t('community.title') }}</p>
+            <p class="eyebrow">
+              <RouterLink to="/community" class="back-link"><ArrowLeft :size="14" /> {{ $t('community.title') }}</RouterLink>
+            </p>
             <h1>{{ detail.post.title }}</h1>
             <p class="muted author-line">
               <RouterLink :to="avatarTarget(detail.post.authorId)" class="chat-avatar-link">
