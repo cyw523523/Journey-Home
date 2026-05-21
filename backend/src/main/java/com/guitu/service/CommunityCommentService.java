@@ -3,7 +3,11 @@ package com.guitu.service;
 import com.guitu.common.PageResponse;
 import com.guitu.domain.*;
 import com.guitu.domain.enums.CommunityCommentStatus;
-import com.guitu.dto.CommunityDtos.*;
+import com.guitu.dto.CommunityDtos.MentionInfo;
+import com.guitu.dto.CommunityDtos.SaveFloorRequest;
+import com.guitu.dto.CommunityDtos.SaveReplyRequest;
+import com.guitu.dto.FloorResponse;
+import com.guitu.dto.ReplyResponse;
 import com.guitu.exception.BusinessException;
 import com.guitu.repository.*;
 import com.guitu.security.SecurityPrincipal;
@@ -89,7 +93,7 @@ public class CommunityCommentService {
         postRepo.save(post);
 
         // Parse mentions (will be enhanced in Task 12)
-        List<MentionInfo> mentions = List.of();
+        List<Map<String, Object>> mentions = List.of();
 
         return toReplyResponse(reply, mentions, principal.id());
     }
@@ -164,7 +168,7 @@ public class CommunityCommentService {
                         .toList());
     }
 
-    private ReplyResponse toReplyResponse(CommunityComment r, List<MentionInfo> mentions,
+    private ReplyResponse toReplyResponse(CommunityComment r, List<Map<String, Object>> mentions,
             Long currentUserId) {
         boolean liked = currentUserId != null
                 && likeService.isLiked(currentUserId, "COMMENT", r.getId());

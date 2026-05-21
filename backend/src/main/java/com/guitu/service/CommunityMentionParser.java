@@ -2,7 +2,6 @@ package com.guitu.service;
 
 import com.guitu.domain.CommunityCommentMention;
 import com.guitu.domain.User;
-import com.guitu.dto.CommunityDtos.MentionInfo;
 import com.guitu.repository.CommunityCommentMentionRepository;
 import com.guitu.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,7 @@ public class CommunityMentionParser {
         this.mentionRepo = mentionRepo;
     }
 
-    public List<MentionInfo> parse(String content, Long commentId) {
+    public List<Map<String, Object>> parse(String content, Long commentId) {
         if (content == null) return List.of();
         Matcher matcher = MENTION_PATTERN.matcher(content);
         Set<String> candidateNicks = new LinkedHashSet<>();
@@ -32,7 +31,7 @@ public class CommunityMentionParser {
         Map<String, User> nickToUser = new HashMap<>();
         for (User u : matched) nickToUser.put(u.getNickname(), u);
 
-        List<MentionInfo> result = new ArrayList<>();
+        List<Map<String, Object>> result = new ArrayList<>();
         for (String nick : candidateNicks) {
             User u = nickToUser.get(nick);
             if (u != null) {
@@ -40,7 +39,10 @@ public class CommunityMentionParser {
                 m.setCommentId(commentId);
                 m.setMentionedUserId(u.getId());
                 mentionRepo.save(m);
-                result.add(new MentionInfo(u.getId(), u.getNickname()));
+                Map<String, Object> info = new HashMap<>();
+                info.put("userId", u.getId());
+                info.put("nickname", u.getNickname());
+                result.add(info);
             }
         }
         return result;

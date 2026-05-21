@@ -6,6 +6,8 @@ import com.guitu.domain.CommunityPost;
 import com.guitu.domain.CommunityUserFollow;
 import com.guitu.domain.User;
 import com.guitu.dto.CommunityDtos;
+import com.guitu.dto.FloorResponse;
+import com.guitu.dto.ReplyResponse;
 import com.guitu.repository.CommunityPostRepository;
 import com.guitu.security.SecuritySupport;
 import com.guitu.service.CommunityCategoryService;
@@ -135,7 +137,7 @@ public class CommunityController {
     // --- Floor / Reply endpoints ---
 
     @GetMapping("/posts/{id}/floors")
-    public ApiResponse<PageResponse<CommunityDtos.FloorResponse>> listFloors(
+    public ApiResponse<PageResponse<FloorResponse>> listFloors(
             @PathVariable Long id,
             @RequestParam(defaultValue = "false") boolean onlyAuthor,
             @RequestParam(defaultValue = "asc") String order,
@@ -149,7 +151,7 @@ public class CommunityController {
     }
 
     @GetMapping("/comments/{floorId}/replies")
-    public ApiResponse<PageResponse<CommunityDtos.ReplyResponse>> listReplies(
+    public ApiResponse<PageResponse<ReplyResponse>> listReplies(
             @PathVariable Long floorId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -159,13 +161,13 @@ public class CommunityController {
     }
 
     @PostMapping("/posts/{id}/floors")
-    public ApiResponse<CommunityDtos.FloorResponse> createFloor(@PathVariable Long id,
+    public ApiResponse<FloorResponse> createFloor(@PathVariable Long id,
             @Valid @RequestBody CommunityDtos.SaveFloorRequest req) {
         return ApiResponse.ok(commentService.createFloor(id, req));
     }
 
     @PostMapping("/comments/{floorId}/replies")
-    public ApiResponse<CommunityDtos.ReplyResponse> createReply(@PathVariable Long floorId,
+    public ApiResponse<ReplyResponse> createReply(@PathVariable Long floorId,
             @Valid @RequestBody CommunityDtos.SaveReplyRequest req) {
         return ApiResponse.ok(commentService.createReply(floorId, req));
     }

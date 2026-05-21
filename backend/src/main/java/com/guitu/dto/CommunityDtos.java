@@ -105,23 +105,7 @@ public final class CommunityDtos {
             boolean enabled
     ) {}
 
-    // --- Floor / Reply system ---
-
-    public record FloorResponse(
-            Long id, Integer floorNo, String content, List<String> imageUrls,
-            Long authorId, String authorNickname, String authorAvatarUrl, String authorRoleText,
-            LocalDateTime createdAt, String status, int likeCount, boolean liked,
-            boolean isPostAuthor, int replyCount,
-            List<ReplyResponse> topReplies
-    ) {}
-
-    public record ReplyResponse(
-            Long id, String content, List<String> imageUrls,
-            Long authorId, String authorNickname, String authorAvatarUrl, String authorRoleText,
-            Long replyToUserId, String replyToUserNickname,
-            LocalDateTime createdAt, String status, int likeCount, boolean liked,
-            List mentions
-    ) {}
+    // --- Floor / Reply request DTOs (responses are top-level records) ---
 
     public record MentionInfo(Long userId, String nickname) {}
 
