@@ -19,6 +19,8 @@
       </el-button>
     </div>
 
+    <CategoryGrid />
+
     <div class="toolbar tool-panel community-toolbar">
       <el-input v-model="keyword" :placeholder="$t('community.keyword')" clearable @keyup.enter="load" />
       <el-button :icon="Search" type="primary" @click="load">{{ $t('community.filter') }}</el-button>
@@ -72,6 +74,11 @@
         <el-form-item :label="$t('community.titleField')" prop="title">
           <el-input v-model="editor.title" maxlength="120" show-word-limit :placeholder="$t('community.titlePlaceholder')" />
         </el-form-item>
+        <el-form-item :label="$t('community.category')" prop="categoryId">
+          <el-select v-model="editor.categoryId" :placeholder="$t('community.selectCategory')">
+            <el-option v-for="cat in categories" :key="cat.id" :label="locale === 'zh' ? cat.name : (cat.nameEn || cat.name)" :value="cat.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item :label="$t('community.contentField')" prop="content">
           <div style="display:flex;align-items:flex-start;gap:8px">
             <el-input
@@ -105,16 +112,20 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { LogIn, Search, Send, SquarePen } from 'lucide-vue-next'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import EmptyState from '../components/EmptyState.vue'
 import EmojiPicker from '../components/EmojiPicker.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import StatusTag from '../components/StatusTag.vue'
-import { communityApi } from '../api'
+import CategoryGrid from '../components/community/CategoryGrid.vue'
+import { communityApi, categoryApi } from '../api'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 import { communityPostStatusOptions } from '../utils/status'
 
 const auth = useAuth()
+const { locale } = useI18n()
+const categories = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const posts = ref([])
@@ -129,12 +140,14 @@ const formRef = ref()
 const editor = reactive({
   title: '',
   content: '',
-  imageUrls: []
+  imageUrls: [],
+  categoryId: null
 })
 
 const rules = {
   title: [{ required: true, message: '请输入帖子标题', trigger: 'blur' }],
-  content: [{ required: true, message: '请输入帖子内容', trigger: 'blur' }]
+  content: [{ required: true, message: '请输入帖子内容', trigger: 'blur' }],
+  categoryId: [{ required: true, message: '请选择版块', trigger: 'change' }]
 }
 
 const API_BASE = window.location.origin
@@ -171,6 +184,7 @@ function openEditor(post = null) {
   editor.title = post?.title || ''
   editor.content = post?.content || ''
   editor.imageUrls = post?.imageUrls || []
+  editor.categoryId = post?.categoryId || null
   editorVisible.value = true
 }
 
@@ -209,6 +223,7 @@ async function submitPost() {
     editor.title = ''
     editor.content = ''
     editor.imageUrls = []
+    editor.categoryId = null
     page.value = 1
     await load()
   } catch (error) {
@@ -233,5 +248,8 @@ async function removePost(post) {
   }
 }
 
-onMounted(load)
+onMounted(async () => {
+  try { categories.value = await categoryApi.list() } catch {}
+  await load()
+})
 </script>

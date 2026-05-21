@@ -136,6 +136,13 @@ export const rescueStationApi = {
   certify: (userId, data) => http.post(`/rescue-stations/admin/${userId}/certify`, data)
 }
 
+export const categoryApi = {
+  list: () => http.get('/community/categories'),
+  listAll: () => http.get('/admin/community/categories'),
+  create: (data) => http.post('/admin/community/categories', data),
+  update: (id, data) => http.put(`/admin/community/categories/${id}`, data)
+}
+
 export const adminApi = {
   overview: () => http.get('/admin/stats/overview'),
   animalStatus: () => http.get('/admin/stats/animals/status'),
