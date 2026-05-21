@@ -11,6 +11,8 @@ import com.guitu.domain.enums.UserRole;
 import com.guitu.dto.CommunityDtos;
 import com.guitu.exception.BusinessException;
 import com.guitu.mapper.DtoMapper;
+import com.guitu.repository.CommunityPostViewLogRepository;
+import com.guitu.security.SecuritySupport;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +38,7 @@ public class CommunityService {
     private final ContentModerationService moderationService;
     private final NotificationService notificationService;
     private final CommunityCategoryService categoryService;
+    private final CommunityPostViewLogRepository viewLogRepo;
 
     public CommunityService(
             com.guitu.repository.CommunityPostRepository communityPostRepository,
@@ -44,7 +48,8 @@ public class CommunityService {
             AntiAbuseService antiAbuseService,
             ContentModerationService moderationService,
             NotificationService notificationService,
-            CommunityCategoryService categoryService
+            CommunityCategoryService categoryService,
+            CommunityPostViewLogRepository viewLogRepo
     ) {
         this.communityPostRepository = communityPostRepository;
         this.communityCommentRepository = communityCommentRepository;
@@ -54,6 +59,7 @@ public class CommunityService {
         this.moderationService = moderationService;
         this.notificationService = notificationService;
         this.categoryService = categoryService;
+        this.viewLogRepo = viewLogRepo;
     }
 
     @Transactional(readOnly = true)
@@ -86,9 +92,21 @@ public class CommunityService {
         return PageResponse.from(result, mapper::toCommunityCommentResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CommunityDtos.CommunityPostDetailResponse detailPublic(Long id) {
         CommunityPost post = getPublicPost(id);
+
+        // Increment view count (async-safe, one per viewer per day)
+        String viewerKey = SecuritySupport.currentUser()
+                .map(u -> "u:" + u.id())
+                .orElse("ip:anon");
+        LocalDate today = LocalDate.now();
+        int affected = viewLogRepo.insertIgnore(post.getId(), viewerKey, today);
+        if (affected > 0) {
+            post.setViewCount(post.getViewCount() + 1);
+            communityPostRepository.save(post);
+        }
+
         return new CommunityDtos.CommunityPostDetailResponse(
                 mapper.toCommunityPostResponse(post, communityCommentRepository.countByPostIdAndStatus(post.getId(), CommunityCommentStatus.PUBLISHED)),
                 communityCommentRepository.findByPostIdAndStatusOrderByCreatedAtAsc(post.getId(), CommunityCommentStatus.PUBLISHED).stream()

@@ -54,6 +54,7 @@ public final class CommunityDtos {
             String statusText,
             List<String> imageUrls,
             long commentCount,
+            int viewCount,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
             Long categoryId,
