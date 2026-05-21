@@ -49,7 +49,7 @@
               <span> · {{ post.authorRoleText }} · {{ formatTime(post.createdAt) }}</span>
             </p>
           </div>
-          <StatusTag :value="post.status" :text="post.statusText" :options="communityPostStatusOptions" />
+          <StatusTag v-if="post.status !== 'PUBLISHED'" :value="post.status" :text="post.statusText" :options="communityPostStatusOptions" />
         </div>
         <p class="community-card-content">{{ excerpt(post.content) }}</p>
         <div v-if="post.imageUrls?.length" class="post-card-images">
@@ -59,7 +59,7 @@
         <div class="community-card-foot">
           <span class="muted">{{ post.commentCount }} {{ $t('community.commentCount') }}</span>
           <div class="community-actions">
-            <el-button text @click="$router.push(`/community/${post.id}`)">{{ $t('notices.readMore') }}</el-button>
+            <el-button text @click="$router.push(`/community/posts/${post.id}`)">{{ $t('notices.readMore') }}</el-button>
             <el-button v-if="canManage(post)" text @click="openEditor(post)">{{ $t('community.edit') }}</el-button>
             <el-button v-if="canManage(post)" text type="danger" @click="removePost(post)">{{ $t('community.delete') }}</el-button>
           </div>

@@ -20,7 +20,7 @@
             </p>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <StatusTag :value="detail.post.status" :text="detail.post.statusText" :options="communityPostStatusOptions" />
+            <StatusTag v-if="detail.post.status !== 'PUBLISHED'" :value="detail.post.status" :text="detail.post.statusText" :options="communityPostStatusOptions" />
             <el-button
               v-if="auth.isLoggedIn.value && auth.state.user?.id !== detail.post.authorId"
               text
@@ -45,10 +45,6 @@
           <FollowUserButton v-if="detail.post.authorId && detail.post.authorId !== auth.state.user?.id" :userId="detail.post.authorId" :initialFollowed="detail.post.authorFollowed" style="margin-left:auto" />
         </div>
 
-        <!-- Comment editor -->
-        <CommentEditor v-if="auth.isLoggedIn.value" :placeholder="replyTarget ? '回复 ' + replyTarget.replyToNickname + '...' : '写下你的评论...'" @submit="handleCommentSubmit" />
-        <el-button v-if="replyTarget" text size="small" @click="replyTarget = null" style="margin-bottom:8px">取消回复</el-button>
-
         <!-- Floor list -->
         <div class="community-comment-block">
           <div class="section-head" style="margin-top: 0">
@@ -60,6 +56,10 @@
           <FloorList ref="floorListRef" :postId="detail.post.id" :totalComments="detail.post.commentCount || 0"
             @reply="handleFloorReply" @reply-to="handleSubReply" />
         </div>
+
+        <!-- Comment editor -->
+        <CommentEditor v-if="auth.isLoggedIn.value" :placeholder="replyTarget ? '回复 ' + replyTarget.replyToNickname + '...' : '写下你的评论...'" @submit="handleCommentSubmit" />
+        <el-button v-if="replyTarget" text size="small" @click="replyTarget = null" style="margin-bottom:8px">取消回复</el-button>
 
         <div style="margin-top: 26px">
           <el-button :icon="ArrowLeft" @click="$router.push('/community')">{{ $t('community.backToList') }}</el-button>

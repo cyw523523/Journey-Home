@@ -120,7 +120,7 @@ public final class CommunityDtos {
             Long authorId, String authorNickname, String authorAvatarUrl, String authorRoleText,
             Long replyToUserId, String replyToUserNickname,
             LocalDateTime createdAt, String status, int likeCount, boolean liked,
-            List<MentionInfo> mentions
+            List mentions
     ) {}
 
     public record MentionInfo(Long userId, String nickname) {}
