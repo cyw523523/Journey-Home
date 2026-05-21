@@ -1,12 +1,14 @@
 package com.guitu.config;
 
 import com.guitu.domain.CommunityCategory;
+import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
 import com.guitu.domain.RescueStation;
 import com.guitu.domain.User;
 import com.guitu.domain.enums.CertificationStatus;
 import com.guitu.domain.enums.UserRole;
 import com.guitu.repository.CommunityCategoryRepository;
+import com.guitu.repository.CommunityCommentRepository;
 import com.guitu.repository.CommunityPostRepository;
 import com.guitu.repository.RescueStationRepository;
 import com.guitu.repository.UserRepository;
@@ -26,13 +28,15 @@ public class DataInitializer implements CommandLineRunner {
     private final RescueStationRepository stationRepository;
     private final CommunityCategoryRepository categoryRepository;
     private final CommunityPostRepository postRepository;
+    private final CommunityCommentRepository commentRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(UserRepository userRepository, RescueStationRepository stationRepository, CommunityCategoryRepository categoryRepository, CommunityPostRepository postRepository, PasswordEncoder passwordEncoder) {
+    public DataInitializer(UserRepository userRepository, RescueStationRepository stationRepository, CommunityCategoryRepository categoryRepository, CommunityPostRepository postRepository, CommunityCommentRepository commentRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.stationRepository = stationRepository;
         this.categoryRepository = categoryRepository;
         this.postRepository = postRepository;
+        this.commentRepository = commentRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -156,6 +160,31 @@ public class DataInitializer implements CommandLineRunner {
             }
             postRepository.saveAll(orphanPosts);
             log.info("Migrated {} orphan posts to default category 'chat'", orphanPosts.size());
+        }
+
+        // Migrate existing comment parentComment to root_comment_id + reply_to_comment_id
+        if (commentRepository.count() > 0) {
+            List<CommunityComment> allComments = commentRepository.findAll();
+            int migrated = 0;
+            for (CommunityComment comment : allComments) {
+                if (comment.getParentComment() != null && comment.getRootComment() == null) {
+                    CommunityComment parent = comment.getParentComment();
+                    if (parent.getParentComment() == null) {
+                        // parent is a floor-level comment
+                        comment.setRootComment(parent);
+                        comment.setReplyToComment(parent);
+                    } else {
+                        // parent is itself a sub-reply — find the root
+                        comment.setRootComment(parent.getRootComment() != null ? parent.getRootComment() : parent.getParentComment());
+                        comment.setReplyToComment(parent);
+                    }
+                    migrated++;
+                }
+            }
+            if (migrated > 0) {
+                commentRepository.saveAll(allComments);
+                log.info("Migrated {} comments to new floor model", migrated);
+            }
         }
     }
 }

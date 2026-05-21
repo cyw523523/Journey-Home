@@ -37,6 +37,17 @@ public class CommunityComment extends BaseEntity {
     @JoinColumn(name = "parent_comment_id")
     private CommunityComment parentComment;
 
+    @Column(nullable = true)
+    private Integer floorNo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "root_comment_id")
+    private CommunityComment rootComment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_comment_id")
+    private CommunityComment replyToComment;
+
     @Lob
     @Column(nullable = false)
     private String content;

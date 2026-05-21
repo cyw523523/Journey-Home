@@ -17,6 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +52,15 @@ public class CommunityPost extends BaseEntity {
 
     @Column(nullable = false)
     private int viewCount = 0;
+
+    @Column(nullable = false)
+    private int commentCount = 0;
+
+    @Column(nullable = false)
+    private int favoriteCount = 0;
+
+    @Column(nullable = false)
+    private LocalDateTime lastActiveAt = LocalDateTime.now();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
