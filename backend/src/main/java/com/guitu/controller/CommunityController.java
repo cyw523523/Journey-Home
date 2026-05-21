@@ -4,9 +4,11 @@ import com.guitu.common.ApiResponse;
 import com.guitu.common.PageResponse;
 import com.guitu.dto.CommunityDtos;
 import com.guitu.security.SecuritySupport;
+import com.guitu.service.CommunityFavoriteService;
 import com.guitu.service.CommunityLikeService;
 import com.guitu.service.CommunityService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,10 +26,12 @@ import java.util.Map;
 public class CommunityController {
     private final CommunityService communityService;
     private final CommunityLikeService likeService;
+    private final CommunityFavoriteService favoriteService;
 
-    public CommunityController(CommunityService communityService, CommunityLikeService likeService) {
+    public CommunityController(CommunityService communityService, CommunityLikeService likeService, CommunityFavoriteService favoriteService) {
         this.communityService = communityService;
         this.likeService = likeService;
+        this.favoriteService = favoriteService;
     }
 
     @GetMapping("/posts")
@@ -106,5 +110,15 @@ public class CommunityController {
         Long targetId = ((Number) body.get("targetId")).longValue();
         String targetType = (String) body.get("targetType");
         return ApiResponse.ok(likeService.toggle(SecuritySupport.requireUser().id(), targetType, targetId));
+    }
+
+    @PostMapping("/posts/{id}/favorite")
+    public ApiResponse<Boolean> favorite(@PathVariable Long id) {
+        return ApiResponse.ok(favoriteService.toggle(SecuritySupport.requireUser().getId(), id));
+    }
+
+    @DeleteMapping("/posts/{id}/favorite")
+    public ApiResponse<Boolean> unfavorite(@PathVariable Long id) {
+        return ApiResponse.ok(favoriteService.toggle(SecuritySupport.requireUser().getId(), id));
     }
 }
