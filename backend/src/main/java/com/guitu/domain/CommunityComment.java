@@ -46,6 +46,9 @@ public class CommunityComment extends BaseEntity {
     @Column(name = "image_url", length = 500)
     private List<String> imageUrls = new ArrayList<>();
 
+    @Column(nullable = false)
+    private int likeCount = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private CommunityCommentStatus status = CommunityCommentStatus.PUBLISHED;

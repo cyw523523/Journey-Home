@@ -3,6 +3,8 @@ package com.guitu.controller;
 import com.guitu.common.ApiResponse;
 import com.guitu.common.PageResponse;
 import com.guitu.dto.CommunityDtos;
+import com.guitu.security.SecuritySupport;
+import com.guitu.service.CommunityLikeService;
 import com.guitu.service.CommunityService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,13 +17,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/community")
 public class CommunityController {
     private final CommunityService communityService;
+    private final CommunityLikeService likeService;
 
-    public CommunityController(CommunityService communityService) {
+    public CommunityController(CommunityService communityService, CommunityLikeService likeService) {
         this.communityService = communityService;
+        this.likeService = likeService;
     }
 
     @GetMapping("/posts")
@@ -85,5 +91,20 @@ public class CommunityController {
     public ApiResponse<Void> deleteComment(@PathVariable Long id) {
         communityService.deleteComment(id);
         return ApiResponse.ok();
+    }
+
+    @PostMapping("/likes")
+    public ApiResponse<Boolean> like(@RequestBody Map<String, Object> body) {
+        Long targetId = ((Number) body.get("targetId")).longValue();
+        String targetType = (String) body.get("targetType");
+        boolean liked = likeService.toggle(SecuritySupport.requireUser().id(), targetType, targetId);
+        return ApiResponse.ok(liked);
+    }
+
+    @DeleteMapping("/likes")
+    public ApiResponse<Boolean> unlike(@RequestBody Map<String, Object> body) {
+        Long targetId = ((Number) body.get("targetId")).longValue();
+        String targetType = (String) body.get("targetType");
+        return ApiResponse.ok(likeService.toggle(SecuritySupport.requireUser().id(), targetType, targetId));
     }
 }

@@ -46,6 +46,9 @@ public class CommunityPost extends BaseEntity {
     @Column(nullable = false, length = 32)
     private CommunityPostStatus status = CommunityPostStatus.PUBLISHED;
 
+    @Column(nullable = false)
+    private int likeCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private CommunityCategory category;
