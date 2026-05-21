@@ -4,8 +4,10 @@ import { useAuth } from '../stores/auth'
 const routes = [
   { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
   { path: '/auth', name: 'auth', component: () => import('../views/AuthView.vue') },
-  { path: '/community', name: 'community', component: () => import('../views/CommunityView.vue') },
-  { path: '/community/:id', name: 'community-detail', component: () => import('../views/CommunityDetailView.vue') },
+  { path: '/community', name: 'community', component: () => import('../views/CommunityHomeView.vue') },
+  { path: '/community/c/:code', name: 'community-category', component: () => import('../views/CommunityCategoryView.vue') },
+  { path: '/community/posts/:id', name: 'community-detail', component: () => import('../views/CommunityDetailView.vue') },
+  { path: '/community/:id', redirect: to => ({ name: 'community-detail', params: { id: to.params.id } }) },
   { path: '/notices', name: 'notices', component: () => import('../views/NoticeListView.vue') },
   { path: '/notices/:id', name: 'notice-detail', component: () => import('../views/NoticeDetailView.vue') },
   { path: '/animals', name: 'animals', component: () => import('../views/AnimalsView.vue') },
@@ -19,6 +21,7 @@ const routes = [
   { path: '/adoptions/new/:animalId', name: 'adoption-new', component: () => import('../views/AdoptionApplyView.vue'), meta: { requiresAuth: true } },
   { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
   { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/community/categories', name: 'admin-categories', component: () => import('../views/AdminCategoriesView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/rescue-stations', name: 'admin-rescue-stations', component: () => import('../views/AdminRescueStationsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } }
 ]
 

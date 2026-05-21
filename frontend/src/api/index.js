@@ -26,6 +26,13 @@ export const animalApi = {
   offline: (id) => http.delete(`/animals/${id}`)
 }
 
+export const medicalRecordApi = {
+  list: (animalId) => http.get(`/animals/${animalId}/medical-records`),
+  create: (animalId, data) => http.post(`/animals/${animalId}/medical-records`, data),
+  update: (animalId, recordId, data) => http.put(`/animals/${animalId}/medical-records/${recordId}`, data),
+  delete: (animalId, recordId) => http.delete(`/animals/${animalId}/medical-records/${recordId}`)
+}
+
 export const rescueApi = {
   list: (params) => http.get('/rescues', { params }),
   detail: (id) => http.get(`/rescues/${id}`),
@@ -50,6 +57,7 @@ export const noticeApi = {
 
 export const communityApi = {
   list: (params) => http.get('/community/posts', { params }),
+  feedFollowing: (params) => http.get('/community/feed/following', { params }),
   myPosts: (params) => http.get('/community/mine/posts', { params }),
   myComments: (params) => http.get('/community/mine/comments', { params }),
   detail: (id) => http.get(`/community/posts/${id}`),
@@ -57,7 +65,13 @@ export const communityApi = {
   update: (id, data) => http.put(`/community/posts/${id}`, data),
   delete: (id) => http.delete(`/community/posts/${id}`),
   createComment: (id, data) => http.post(`/community/posts/${id}/comments`, data),
-  deleteComment: (id) => http.delete(`/community/comments/${id}`)
+  deleteComment: (id) => http.delete(`/community/comments/${id}`),
+  toggleLike: (data) => http.post('/community/likes', data),
+  toggleFavorite: (id) => http.post(`/community/posts/${id}/favorite`),
+  listFloors: (postId, params) => http.get(`/community/posts/${postId}/floors`, { params }),
+  listReplies: (floorId, params) => http.get(`/community/comments/${floorId}/replies`, { params }),
+  createFloor: (postId, data) => http.post(`/community/posts/${postId}/floors`, data),
+  createReply: (floorId, data) => http.post(`/community/comments/${floorId}/replies`, data)
 }
 
 export const reportApi = {
@@ -134,6 +148,13 @@ export const rescueStationApi = {
   // Admin
   adminList: (params) => http.get('/rescue-stations/admin/list', { params }),
   certify: (userId, data) => http.post(`/rescue-stations/admin/${userId}/certify`, data)
+}
+
+export const categoryApi = {
+  list: () => http.get('/community/categories'),
+  listAll: () => http.get('/admin/community/categories'),
+  create: (data) => http.post('/admin/community/categories', data),
+  update: (id, data) => http.put(`/admin/community/categories/${id}`, data)
 }
 
 export const adminApi = {

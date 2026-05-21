@@ -76,6 +76,9 @@ export default {
     commentPlaceholder: '写下你的想法、建议或经验补充',
     sendComment: '发表评论',
     emptyComments: '还没有评论，欢迎来聊聊。',
+    postCount: '个帖子',
+    category: '版块',
+    selectCategory: '请选择版块',
     commentCount: '条评论',
     author: '作者',
     backToList: '返回社区列表',
@@ -91,7 +94,15 @@ export default {
     requiredTitle: '请输入帖子标题',
     requiredContent: '请输入帖子内容',
     notFound: '帖子不存在',
-    notFoundDesc: '这篇帖子可能已经下架，或链接已经失效。'
+    notFoundDesc: '这篇帖子可能已经下架，或链接已经失效。',
+    tab: {
+      latest: '最新',
+      hot: '最热',
+      following: '关注'
+    },
+    post: {
+      favorite: '收藏'
+    }
   },
   notices: {
     title: '平台公告',
@@ -220,6 +231,12 @@ export default {
     APPEAL_CREATED: '新申诉待处理',
     ACCOUNT_ACTION: '账号状态变更',
     COMMENT_REPLY: '评论回复',
+    COMMUNITY_POST_COMMENTED: '有人评论了你的帖子',
+    COMMUNITY_COMMENT_REPLIED: '有人回复了你的评论',
+    COMMUNITY_POST_LIKED: '有人赞了你的帖子',
+    COMMUNITY_COMMENT_LIKED: '有人赞了你的评论',
+    COMMUNITY_MENTIONED: '有人在评论中提到了你',
+    COMMUNITY_FOLLOWED_NEW_POST: '你关注的人发布了新帖子',
     COMMENT_REPLY_COMMENT: '有人回复了你的评论',
     COMMENT_REPLY_POST: '有人评论了你的帖子',
     COMMENT_REPLY_COMMENT_CONTENT: '{nickname} 回复了你的评论：{snippet}',

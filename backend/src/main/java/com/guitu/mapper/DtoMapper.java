@@ -154,8 +154,12 @@ public class DtoMapper {
                 post.getStatus().getLabel(),
                 post.getImageUrls(),
                 commentCount,
+                post.getViewCount(),
                 post.getCreatedAt(),
-                post.getUpdatedAt()
+                post.getUpdatedAt(),
+                post.getCategory() != null ? post.getCategory().getId() : null,
+                post.getCategory() != null ? post.getCategory().getCode() : null,
+                post.getCategory() != null ? post.getCategory().getName() : null
         );
     }
 

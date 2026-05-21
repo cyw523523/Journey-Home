@@ -37,6 +37,17 @@ public class CommunityComment extends BaseEntity {
     @JoinColumn(name = "parent_comment_id")
     private CommunityComment parentComment;
 
+    @Column(nullable = true)
+    private Integer floorNo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "root_comment_id")
+    private CommunityComment rootComment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_comment_id")
+    private CommunityComment replyToComment;
+
     @Lob
     @Column(nullable = false)
     private String content;
@@ -45,6 +56,9 @@ public class CommunityComment extends BaseEntity {
     @CollectionTable(name = "community_comment_images", joinColumns = @JoinColumn(name = "comment_id"))
     @Column(name = "image_url", length = 500)
     private List<String> imageUrls = new ArrayList<>();
+
+    @Column(nullable = false)
+    private int likeCount = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)

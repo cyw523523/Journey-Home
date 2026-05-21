@@ -1,5 +1,6 @@
 package com.guitu.domain;
 
+import com.guitu.domain.CommunityCategory;
 import com.guitu.domain.enums.CommunityPostStatus;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -16,6 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,4 +46,23 @@ public class CommunityPost extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private CommunityPostStatus status = CommunityPostStatus.PUBLISHED;
+
+    @Column(nullable = false)
+    private int likeCount = 0;
+
+    @Column(nullable = false)
+    private int viewCount = 0;
+
+    @Column(nullable = false)
+    private int commentCount = 0;
+
+    @Column(nullable = false)
+    private int favoriteCount = 0;
+
+    @Column(nullable = false)
+    private LocalDateTime lastActiveAt = LocalDateTime.now();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private CommunityCategory category;
 }

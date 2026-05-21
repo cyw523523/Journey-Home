@@ -3,6 +3,7 @@ package com.guitu.service;
 import com.guitu.common.PageResponse;
 import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
+import com.guitu.domain.CommunityUserFollow;
 import com.guitu.domain.User;
 import com.guitu.domain.enums.CommunityCommentStatus;
 import com.guitu.domain.enums.CommunityPostStatus;
@@ -11,6 +12,8 @@ import com.guitu.domain.enums.UserRole;
 import com.guitu.dto.CommunityDtos;
 import com.guitu.exception.BusinessException;
 import com.guitu.mapper.DtoMapper;
+import com.guitu.repository.CommunityPostViewLogRepository;
+import com.guitu.security.SecuritySupport;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +38,10 @@ public class CommunityService {
     private final AntiAbuseService antiAbuseService;
     private final ContentModerationService moderationService;
     private final NotificationService notificationService;
+    private final CommunityCategoryService categoryService;
+    private final CommunityPostViewLogRepository viewLogRepo;
+    private final CommunityFollowService followService;
+    private final CommunityNotificationDispatcher notifDispatcher;
 
     public CommunityService(
             com.guitu.repository.CommunityPostRepository communityPostRepository,
@@ -42,7 +50,11 @@ public class CommunityService {
             DtoMapper mapper,
             AntiAbuseService antiAbuseService,
             ContentModerationService moderationService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            CommunityCategoryService categoryService,
+            CommunityPostViewLogRepository viewLogRepo,
+            CommunityFollowService followService,
+            CommunityNotificationDispatcher notifDispatcher
     ) {
         this.communityPostRepository = communityPostRepository;
         this.communityCommentRepository = communityCommentRepository;
@@ -51,14 +63,38 @@ public class CommunityService {
         this.antiAbuseService = antiAbuseService;
         this.moderationService = moderationService;
         this.notificationService = notificationService;
+        this.categoryService = categoryService;
+        this.viewLogRepo = viewLogRepo;
+        this.followService = followService;
+        this.notifDispatcher = notifDispatcher;
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<CommunityDtos.CommunityPostResponse> listPublic(String keyword, int page, int size) {
-        Page<CommunityPost> result = communityPostRepository.findAll(publicSpec(keyword), pageRequest(page, size));
-        return PageResponse.from(result, post ->
-                mapper.toCommunityPostResponse(post, communityCommentRepository.countByPostIdAndStatus(post.getId(), CommunityCommentStatus.PUBLISHED))
-        );
+    public PageResponse<CommunityDtos.CommunityPostResponse> listPublic(String keyword, Long categoryId, Long authorId, String sort, int page, int size) {
+        Sort sortObj;
+        switch (sort != null ? sort : "latest_active") {
+            case "hot": sortObj = Sort.by(Sort.Direction.DESC, "likeCount"); break;
+            case "created": sortObj = Sort.by(Sort.Direction.DESC, "createdAt"); break;
+            default: sortObj = Sort.by(Sort.Direction.DESC, "lastActiveAt"); break;
+        }
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+        Page<CommunityPost> result = communityPostRepository.findAll(publicSpec(keyword, categoryId, authorId), pageable);
+        return PageResponse.from(result, post -> mapper.toCommunityPostResponse(post, post.getCommentCount()));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CommunityDtos.CommunityPostResponse> feedFollowing(int page, int size) {
+        Long userId = userService.currentUser().getId();
+        Page<CommunityUserFollow> follows = followService.listFollowing(userId, PageRequest.of(0, 200));
+        List<Long> followeeIds = follows.getContent().stream()
+                .map(f -> f.getFollowee().getId())
+                .toList();
+        if (followeeIds.isEmpty()) {
+            return new PageResponse<>(List.of(), 0, 0, page, size);
+        }
+        Page<CommunityPost> posts = communityPostRepository.findByAuthorIdInAndStatusOrderByLastActiveAtDesc(
+                followeeIds, CommunityPostStatus.PUBLISHED, PageRequest.of(page, size));
+        return PageResponse.from(posts, post -> mapper.toCommunityPostResponse(post, post.getCommentCount()));
     }
 
     @Transactional(readOnly = true)
@@ -83,9 +119,21 @@ public class CommunityService {
         return PageResponse.from(result, mapper::toCommunityCommentResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CommunityDtos.CommunityPostDetailResponse detailPublic(Long id) {
         CommunityPost post = getPublicPost(id);
+
+        // Increment view count (async-safe, one per viewer per day)
+        String viewerKey = SecuritySupport.currentUser()
+                .map(u -> "u:" + u.id())
+                .orElse("ip:anon");
+        LocalDate today = LocalDate.now();
+        int affected = viewLogRepo.insertIgnore(post.getId(), viewerKey, today);
+        if (affected > 0) {
+            post.setViewCount(post.getViewCount() + 1);
+            communityPostRepository.save(post);
+        }
+
         return new CommunityDtos.CommunityPostDetailResponse(
                 mapper.toCommunityPostResponse(post, communityCommentRepository.countByPostIdAndStatus(post.getId(), CommunityCommentStatus.PUBLISHED)),
                 communityCommentRepository.findByPostIdAndStatusOrderByCreatedAtAsc(post.getId(), CommunityCommentStatus.PUBLISHED).stream()
@@ -105,12 +153,15 @@ public class CommunityService {
         post.setTitle(request.title().trim());
         post.setContent(request.content().trim());
         post.setStatus(resolvePostStatus(false, request));
+        post.setCategory(categoryService.getEntity(request.categoryId()));
         post.getImageUrls().clear();
         if (request.imageUrls() != null) {
             post.getImageUrls().addAll(request.imageUrls());
         }
         CommunityPost saved = communityPostRepository.save(post);
         notifyPostReview(saved);
+        if (saved.getStatus() == CommunityPostStatus.PUBLISHED)
+            notifDispatcher.broadcastNewPost(currentUser.getId(), saved.getId());
         return mapper.toCommunityPostResponse(saved, 0);
     }
 
@@ -124,6 +175,9 @@ public class CommunityService {
 
         post.setTitle(request.title().trim());
         post.setContent(request.content().trim());
+        if (request.categoryId() != null) {
+            post.setCategory(categoryService.getEntity(request.categoryId()));
+        }
         post.getImageUrls().clear();
         if (request.imageUrls() != null) {
             post.getImageUrls().addAll(request.imageUrls());
@@ -315,7 +369,7 @@ public class CommunityService {
         }
     }
 
-    private Specification<CommunityPost> publicSpec(String keyword) {
+    private Specification<CommunityPost> publicSpec(String keyword, Long categoryId, Long authorId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), CommunityPostStatus.PUBLISHED));
@@ -326,6 +380,12 @@ public class CommunityService {
                         cb.like(root.get("content"), like),
                         cb.like(root.join("author").get("nickname"), like)
                 ));
+            }
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            }
+            if (authorId != null) {
+                predicates.add(cb.equal(root.get("author").get("id"), authorId));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };

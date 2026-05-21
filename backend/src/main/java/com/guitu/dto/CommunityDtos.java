@@ -4,6 +4,7 @@ import com.guitu.domain.enums.CommunityCommentStatus;
 import com.guitu.domain.enums.CommunityPostStatus;
 import com.guitu.domain.enums.UserRole;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,9 @@ public final class CommunityDtos {
             @NotBlank(message = "Post content is required")
             @Size(max = 5000, message = "Post content must be at most 5000 characters")
             String content,
+
+            @NotNull(message = "Category is required")
+            Long categoryId,
 
             List<@Size(max = 500, message = "Image URL must be at most 500 characters") String> imageUrls
     ) {
@@ -50,8 +54,12 @@ public final class CommunityDtos {
             String statusText,
             List<String> imageUrls,
             long commentCount,
+            int viewCount,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            LocalDateTime updatedAt,
+            Long categoryId,
+            String categoryCode,
+            String categoryName
     ) {
     }
 
@@ -80,4 +88,28 @@ public final class CommunityDtos {
             List<CommunityCommentResponse> comments
     ) {
     }
+
+    public record CategoryResponse(
+            Long id, String code, String name, String nameEn,
+            String description, String icon, int sortOrder,
+            boolean enabled, long postCount
+    ) {}
+
+    public record SaveCategoryRequest(
+            @NotBlank String code,
+            @NotBlank String name,
+            String nameEn,
+            String description,
+            String icon,
+            int sortOrder,
+            boolean enabled
+    ) {}
+
+    // --- Floor / Reply request DTOs (responses are top-level records) ---
+
+    public record MentionInfo(Long userId, String nickname) {}
+
+    public record SaveFloorRequest(@NotBlank String content, List<String> imageUrls) {}
+
+    public record SaveReplyRequest(@NotNull Long replyToCommentId, @NotBlank String content, List<String> imageUrls) {}
 }

@@ -2,9 +2,23 @@ package com.guitu.controller;
 
 import com.guitu.common.ApiResponse;
 import com.guitu.common.PageResponse;
+import com.guitu.domain.CommunityPost;
+import com.guitu.domain.CommunityUserFollow;
+import com.guitu.domain.User;
 import com.guitu.dto.CommunityDtos;
+import com.guitu.dto.FloorResponse;
+import com.guitu.dto.ReplyResponse;
+import com.guitu.repository.CommunityPostRepository;
+import com.guitu.security.SecuritySupport;
+import com.guitu.service.CommunityCategoryService;
+import com.guitu.service.CommunityCommentService;
+import com.guitu.service.CommunityFavoriteService;
+import com.guitu.service.CommunityFollowService;
+import com.guitu.service.CommunityLikeService;
 import com.guitu.service.CommunityService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,22 +29,55 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.*;
+
 @RestController
 @RequestMapping("/api/community")
 public class CommunityController {
     private final CommunityService communityService;
+    private final CommunityLikeService likeService;
+    private final CommunityFavoriteService favoriteService;
+    private final CommunityCommentService commentService;
+    private final CommunityFollowService followService;
+    private final CommunityPostRepository postRepo;
+    private final CommunityCategoryService categoryService;
 
-    public CommunityController(CommunityService communityService) {
+    public CommunityController(CommunityService communityService, CommunityLikeService likeService,
+            CommunityFavoriteService favoriteService, CommunityCommentService commentService,
+            CommunityFollowService followService, CommunityPostRepository postRepo,
+            CommunityCategoryService categoryService) {
         this.communityService = communityService;
+        this.likeService = likeService;
+        this.favoriteService = favoriteService;
+        this.commentService = commentService;
+        this.followService = followService;
+        this.postRepo = postRepo;
+        this.categoryService = categoryService;
+    }
+
+    @GetMapping("/categories")
+    public ApiResponse<List<CommunityDtos.CategoryResponse>> listCategories() {
+        return ApiResponse.ok(categoryService.listEnabled());
     }
 
     @GetMapping("/posts")
     public ApiResponse<PageResponse<CommunityDtos.CommunityPostResponse>> listPosts(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long authorId,
+            @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ApiResponse.ok(communityService.listPublic(keyword, page, size));
+        return ApiResponse.ok(communityService.listPublic(keyword, categoryId, authorId, sort, page, size));
+    }
+
+    @GetMapping("/feed/following")
+    public ApiResponse<PageResponse<CommunityDtos.CommunityPostResponse>> feedFollowing(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.ok(communityService.feedFollowing(page, size));
     }
 
     @GetMapping("/mine/posts")
@@ -83,7 +130,124 @@ public class CommunityController {
 
     @DeleteMapping("/comments/{id}")
     public ApiResponse<Void> deleteComment(@PathVariable Long id) {
-        communityService.deleteComment(id);
+        commentService.deleteComment(id);
         return ApiResponse.ok();
+    }
+
+    // --- Floor / Reply endpoints ---
+
+    @GetMapping("/posts/{id}/floors")
+    public ApiResponse<PageResponse<FloorResponse>> listFloors(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "false") boolean onlyAuthor,
+            @RequestParam(defaultValue = "asc") String order,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        CommunityPost p = postRepo.findById(id).orElseThrow();
+        Long currentUserId = SecuritySupport.currentUser()
+                .map(sp -> sp.id()).orElse(null);
+        return ApiResponse.ok(commentService.listFloors(id, currentUserId, onlyAuthor,
+                "desc".equals(order), p.getAuthor().getId(), page, size));
+    }
+
+    @GetMapping("/comments/{floorId}/replies")
+    public ApiResponse<PageResponse<ReplyResponse>> listReplies(
+            @PathVariable Long floorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Long currentUserId = SecuritySupport.currentUser()
+                .map(sp -> sp.id()).orElse(null);
+        return ApiResponse.ok(commentService.listReplies(floorId, currentUserId, page, size));
+    }
+
+    @PostMapping("/posts/{id}/floors")
+    public ApiResponse<FloorResponse> createFloor(@PathVariable Long id,
+            @Valid @RequestBody CommunityDtos.SaveFloorRequest req) {
+        return ApiResponse.ok(commentService.createFloor(id, req));
+    }
+
+    @PostMapping("/comments/{floorId}/replies")
+    public ApiResponse<ReplyResponse> createReply(@PathVariable Long floorId,
+            @Valid @RequestBody CommunityDtos.SaveReplyRequest req) {
+        return ApiResponse.ok(commentService.createReply(floorId, req));
+    }
+
+    // --- Like / Favorite ---
+
+    @PostMapping("/likes")
+    public ApiResponse<Boolean> like(@RequestBody Map<String, Object> body) {
+        Long targetId = ((Number) body.get("targetId")).longValue();
+        String targetType = (String) body.get("targetType");
+        boolean liked = likeService.toggle(SecuritySupport.requireUser().id(), targetType, targetId);
+        return ApiResponse.ok(liked);
+    }
+
+    @DeleteMapping("/likes")
+    public ApiResponse<Boolean> unlike(@RequestBody Map<String, Object> body) {
+        Long targetId = ((Number) body.get("targetId")).longValue();
+        String targetType = (String) body.get("targetType");
+        return ApiResponse.ok(likeService.toggle(SecuritySupport.requireUser().id(), targetType, targetId));
+    }
+
+    @PostMapping("/posts/{id}/favorite")
+    public ApiResponse<Boolean> favorite(@PathVariable Long id) {
+        return ApiResponse.ok(favoriteService.toggle(SecuritySupport.requireUser().id(), id));
+    }
+
+    @DeleteMapping("/posts/{id}/favorite")
+    public ApiResponse<Boolean> unfavorite(@PathVariable Long id) {
+        return ApiResponse.ok(favoriteService.toggle(SecuritySupport.requireUser().id(), id));
+    }
+
+    // --- Follow / Unfollow ---
+
+    @PostMapping("/follows/{userId}")
+    public ApiResponse<Void> follow(@PathVariable Long userId) {
+        followService.follow(SecuritySupport.requireUser().id(), userId);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping("/follows/{userId}")
+    public ApiResponse<Void> unfollow(@PathVariable Long userId) {
+        followService.unfollow(SecuritySupport.requireUser().id(), userId);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping("/users/{id}/followers")
+    public ApiResponse<PageResponse<Map<String, Object>>> listFollowers(@PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        Page<CommunityUserFollow> p = followService.listFollowers(id, PageRequest.of(page, size));
+        return ApiResponse.ok(PageResponse.from(p, f -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("userId", f.getFollower().getId());
+            m.put("nickname", f.getFollower().getNickname());
+            m.put("avatarUrl", f.getFollower().getAvatarUrl());
+            return m;
+        }));
+    }
+
+    @GetMapping("/users/{id}/following")
+    public ApiResponse<PageResponse<Map<String, Object>>> listFollowing(@PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        Page<CommunityUserFollow> p = followService.listFollowing(id, PageRequest.of(page, size));
+        return ApiResponse.ok(PageResponse.from(p, f -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("userId", f.getFollowee().getId());
+            m.put("nickname", f.getFollowee().getNickname());
+            m.put("avatarUrl", f.getFollowee().getAvatarUrl());
+            return m;
+        }));
+    }
+
+    @GetMapping("/mine/follow-status")
+    public ApiResponse<Map<Long, Boolean>> followStatus(@RequestParam String userIds) {
+        Long currentUserId = SecuritySupport.requireUser().id();
+        String[] parts = userIds.split(",");
+        Map<Long, Boolean> result = new HashMap<>();
+        for (String part : parts) {
+            Long id = Long.parseLong(part.trim());
+            result.put(id, followService.isFollowing(currentUserId, id));
+        }
+        return ApiResponse.ok(result);
     }
 }

@@ -21,8 +21,15 @@
 
     <CategoryGrid />
 
-    <div class="toolbar tool-panel community-toolbar">
-      <el-input v-model="keyword" :placeholder="$t('community.keyword')" clearable @keyup.enter="load" />
+    <div class="toolbar tool-panel community-toolbar" style="margin-bottom:16px">
+      <div class="tabs" style="flex:1;display:flex;align-items:center;gap:8px">
+        <el-radio-group v-model="sort" @change="onSortChange">
+          <el-radio-button value="latest_active">{{ $t('community.tab.latest') }}</el-radio-button>
+          <el-radio-button value="hot">{{ $t('community.tab.hot') }}</el-radio-button>
+          <el-radio-button v-if="auth.isLoggedIn.value" value="following">{{ $t('community.tab.following') }}</el-radio-button>
+        </el-radio-group>
+      </div>
+      <el-input v-model="keyword" :placeholder="$t('community.keyword')" clearable @keyup.enter="load" style="max-width:260px" />
       <el-button :icon="Search" type="primary" @click="load">{{ $t('community.filter') }}</el-button>
     </div>
 
@@ -42,7 +49,7 @@
               <span> · {{ post.authorRoleText }} · {{ formatTime(post.createdAt) }}</span>
             </p>
           </div>
-          <StatusTag :value="post.status" :text="post.statusText" :options="communityPostStatusOptions" />
+          <StatusTag v-if="post.status !== 'PUBLISHED'" :value="post.status" :text="post.statusText" :options="communityPostStatusOptions" />
         </div>
         <p class="community-card-content">{{ excerpt(post.content) }}</p>
         <div v-if="post.imageUrls?.length" class="post-card-images">
@@ -52,7 +59,7 @@
         <div class="community-card-foot">
           <span class="muted">{{ post.commentCount }} {{ $t('community.commentCount') }}</span>
           <div class="community-actions">
-            <el-button text @click="$router.push(`/community/${post.id}`)">{{ $t('notices.readMore') }}</el-button>
+            <el-button text @click="$router.push(`/community/posts/${post.id}`)">{{ $t('notices.readMore') }}</el-button>
             <el-button v-if="canManage(post)" text @click="openEditor(post)">{{ $t('community.edit') }}</el-button>
             <el-button v-if="canManage(post)" text type="danger" @click="removePost(post)">{{ $t('community.delete') }}</el-button>
           </div>
@@ -133,6 +140,7 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = 10
 const keyword = ref('')
+const sort = ref('latest_active')
 const editorVisible = ref(false)
 const editingId = ref(null)
 const formRef = ref()
@@ -188,14 +196,25 @@ function openEditor(post = null) {
   editorVisible.value = true
 }
 
+function onSortChange() {
+  page.value = 1
+  load()
+}
+
 async function load() {
   loading.value = true
   try {
-    const data = await communityApi.list({
-      keyword: keyword.value,
-      page: page.value - 1,
-      size: pageSize
-    })
+    let data
+    if (sort.value === 'following') {
+      data = await communityApi.feedFollowing({ page: page.value - 1, size: pageSize })
+    } else {
+      data = await communityApi.list({
+        keyword: keyword.value,
+        sort: sort.value,
+        page: page.value - 1,
+        size: pageSize
+      })
+    }
     posts.value = data.content || []
     total.value = data.totalElements || 0
   } catch (error) {

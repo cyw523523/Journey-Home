@@ -9,3 +9,8 @@ frontend/.npm-cache/
 frontend/*.log
 frontend/*screenshot.png
 .claude
+.claude/
+.playwright-mcp/
+CLAUDE.md
+UI-DESIGN.md
+*.png

@@ -90,6 +90,9 @@ export default {
     commentPlaceholder: 'Share your thoughts, suggestions, or experience',
     sendComment: 'Post Comment',
     emptyComments: 'No comments yet. Start the conversation.',
+    postCount: 'posts',
+    category: 'Category',
+    selectCategory: 'Select a category',
     commentCount: 'comments',
     author: 'Author',
     backToList: 'Back to Community',
@@ -105,7 +108,15 @@ export default {
     requiredTitle: 'Please enter a post title',
     requiredContent: 'Please enter post content',
     notFound: 'Post not found',
-    notFoundDesc: 'This post may have been taken offline or the link is no longer valid.'
+    notFoundDesc: 'This post may have been taken offline or the link is no longer valid.',
+    tab: {
+      latest: 'Latest',
+      hot: 'Hot',
+      following: 'Following'
+    },
+    post: {
+      favorite: 'Favorite'
+    }
   },
   notices: {
     title: 'Platform Notices',
@@ -234,6 +245,12 @@ export default {
     APPEAL_CREATED: 'New appeal pending review',
     ACCOUNT_ACTION: 'Account status changed',
     COMMENT_REPLY: 'Comment reply',
+    COMMUNITY_POST_COMMENTED: 'Someone commented on your post',
+    COMMUNITY_COMMENT_REPLIED: 'Someone replied to your comment',
+    COMMUNITY_POST_LIKED: 'Someone liked your post',
+    COMMUNITY_COMMENT_LIKED: 'Someone liked your comment',
+    COMMUNITY_MENTIONED: 'Someone mentioned you in a comment',
+    COMMUNITY_FOLLOWED_NEW_POST: 'Someone you follow posted',
     COMMENT_REPLY_COMMENT: 'Someone replied to your comment',
     COMMENT_REPLY_POST: 'Someone commented on your post',
     COMMENT_REPLY_COMMENT_CONTENT: '{nickname} replied to your comment: {snippet}',
