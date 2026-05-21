@@ -26,6 +26,13 @@ export const animalApi = {
   offline: (id) => http.delete(`/animals/${id}`)
 }
 
+export const medicalRecordApi = {
+  list: (animalId) => http.get(`/animals/${animalId}/medical-records`),
+  create: (animalId, data) => http.post(`/animals/${animalId}/medical-records`, data),
+  update: (animalId, recordId, data) => http.put(`/animals/${animalId}/medical-records/${recordId}`, data),
+  delete: (animalId, recordId) => http.delete(`/animals/${animalId}/medical-records/${recordId}`)
+}
+
 export const rescueApi = {
   list: (params) => http.get('/rescues', { params }),
   detail: (id) => http.get(`/rescues/${id}`),
@@ -59,7 +66,11 @@ export const communityApi = {
   createComment: (id, data) => http.post(`/community/posts/${id}/comments`, data),
   deleteComment: (id) => http.delete(`/community/comments/${id}`),
   toggleLike: (data) => http.post('/community/likes', data),
-  toggleFavorite: (id) => http.post(`/community/posts/${id}/favorite`)
+  toggleFavorite: (id) => http.post(`/community/posts/${id}/favorite`),
+  listFloors: (postId, params) => http.get(`/community/posts/${postId}/floors`, { params }),
+  listReplies: (floorId, params) => http.get(`/community/comments/${floorId}/replies`, { params }),
+  createFloor: (postId, data) => http.post(`/community/posts/${postId}/floors`, data),
+  createReply: (floorId, data) => http.post(`/community/comments/${floorId}/replies`, data)
 }
 
 export const reportApi = {
