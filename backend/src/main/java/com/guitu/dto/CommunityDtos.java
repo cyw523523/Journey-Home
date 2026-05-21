@@ -104,4 +104,28 @@ public final class CommunityDtos {
             int sortOrder,
             boolean enabled
     ) {}
+
+    // --- Floor / Reply system ---
+
+    public record FloorResponse(
+            Long id, Integer floorNo, String content, List<String> imageUrls,
+            Long authorId, String authorNickname, String authorAvatarUrl, String authorRoleText,
+            LocalDateTime createdAt, String status, int likeCount, boolean liked,
+            boolean isPostAuthor, int replyCount,
+            List<ReplyResponse> topReplies
+    ) {}
+
+    public record ReplyResponse(
+            Long id, String content, List<String> imageUrls,
+            Long authorId, String authorNickname, String authorAvatarUrl, String authorRoleText,
+            Long replyToUserId, String replyToUserNickname,
+            LocalDateTime createdAt, String status, int likeCount, boolean liked,
+            List<MentionInfo> mentions
+    ) {}
+
+    public record MentionInfo(Long userId, String nickname) {}
+
+    public record SaveFloorRequest(@NotBlank String content, List<String> imageUrls) {}
+
+    public record SaveReplyRequest(@NotNull Long replyToCommentId, @NotBlank String content, List<String> imageUrls) {}
 }

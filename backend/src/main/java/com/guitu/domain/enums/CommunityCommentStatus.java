@@ -4,7 +4,8 @@ public enum CommunityCommentStatus {
     PUBLISHED("Published"),
     PENDING_REVIEW("Pending review"),
     REJECTED("Rejected"),
-    OFFLINE("Offline");
+    OFFLINE("Offline"),
+    DELETED("Deleted");
 
     private final String label;
 
