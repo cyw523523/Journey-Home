@@ -8,6 +8,7 @@ import com.guitu.domain.User;
 import com.guitu.dto.CommunityDtos;
 import com.guitu.repository.CommunityPostRepository;
 import com.guitu.security.SecuritySupport;
+import com.guitu.service.CommunityCategoryService;
 import com.guitu.service.CommunityCommentService;
 import com.guitu.service.CommunityFavoriteService;
 import com.guitu.service.CommunityFollowService;
@@ -37,16 +38,24 @@ public class CommunityController {
     private final CommunityCommentService commentService;
     private final CommunityFollowService followService;
     private final CommunityPostRepository postRepo;
+    private final CommunityCategoryService categoryService;
 
     public CommunityController(CommunityService communityService, CommunityLikeService likeService,
             CommunityFavoriteService favoriteService, CommunityCommentService commentService,
-            CommunityFollowService followService, CommunityPostRepository postRepo) {
+            CommunityFollowService followService, CommunityPostRepository postRepo,
+            CommunityCategoryService categoryService) {
         this.communityService = communityService;
         this.likeService = likeService;
         this.favoriteService = favoriteService;
         this.commentService = commentService;
         this.followService = followService;
         this.postRepo = postRepo;
+        this.categoryService = categoryService;
+    }
+
+    @GetMapping("/categories")
+    public ApiResponse<List<CommunityDtos.CategoryResponse>> listCategories() {
+        return ApiResponse.ok(categoryService.listEnabled());
     }
 
     @GetMapping("/posts")
