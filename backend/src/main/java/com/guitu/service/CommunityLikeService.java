@@ -15,12 +15,15 @@ public class CommunityLikeService {
     private final CommunityLikeRepository repo;
     private final CommunityPostRepository postRepo;
     private final CommunityCommentRepository commentRepo;
+    private final CommunityNotificationDispatcher notifDispatcher;
 
     public CommunityLikeService(CommunityLikeRepository repo, CommunityPostRepository postRepo,
-                                CommunityCommentRepository commentRepo) {
+                                CommunityCommentRepository commentRepo,
+                                CommunityNotificationDispatcher notifDispatcher) {
         this.repo = repo;
         this.postRepo = postRepo;
         this.commentRepo = commentRepo;
+        this.notifDispatcher = notifDispatcher;
     }
 
     @Transactional
@@ -40,6 +43,7 @@ public class CommunityLikeService {
                 like.setTargetId(targetId);
                 repo.save(like);
                 updateCount(targetType, targetId, 1);
+                notifyLike(userId, targetType, targetId);
                 return true;
             });
     }
@@ -53,6 +57,20 @@ public class CommunityLikeService {
             .filter(l -> l.getUser().getId().equals(userId))
             .map(CommunityLike::getTargetId)
             .toList();
+    }
+
+    private void notifyLike(Long fromUserId, String targetType, Long targetId) {
+        if ("POST".equals(targetType)) {
+            postRepo.findById(targetId).ifPresent(p -> {
+                if (!p.getAuthor().getId().equals(fromUserId))
+                    notifDispatcher.dispatchPostLiked(p.getAuthor().getId(), targetId, fromUserId);
+            });
+        } else {
+            commentRepo.findById(targetId).ifPresent(c -> {
+                if (!c.getAuthor().getId().equals(fromUserId))
+                    notifDispatcher.dispatchCommentLiked(c.getAuthor().getId(), c.getPost().getId(), targetId, fromUserId);
+            });
+        }
     }
 
     private void updateCount(String targetType, Long targetId, int delta) {

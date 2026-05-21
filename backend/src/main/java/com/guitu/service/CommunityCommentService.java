@@ -26,12 +26,18 @@ public class CommunityCommentService {
     private final CommunityCommentRepository commentRepo;
     private final CommunityPostRepository postRepo;
     private final CommunityLikeService likeService;
+    private final CommunityNotificationDispatcher notifDispatcher;
+    private final CommunityMentionParser mentionParser;
 
     public CommunityCommentService(CommunityCommentRepository commentRepo,
-            CommunityPostRepository postRepo, CommunityLikeService likeService) {
+            CommunityPostRepository postRepo, CommunityLikeService likeService,
+            CommunityNotificationDispatcher notifDispatcher,
+            CommunityMentionParser mentionParser) {
         this.commentRepo = commentRepo;
         this.postRepo = postRepo;
         this.likeService = likeService;
+        this.notifDispatcher = notifDispatcher;
+        this.mentionParser = mentionParser;
     }
 
     @Transactional
@@ -56,6 +62,9 @@ public class CommunityCommentService {
         post.setCommentCount(post.getCommentCount() + 1);
         post.setLastActiveAt(LocalDateTime.now());
         postRepo.save(post);
+
+        if (!post.getAuthor().getId().equals(principal.id()))
+            notifDispatcher.dispatchPostCommented(post.getAuthor().getId(), postId, comment.getId(), principal.id());
 
         return toFloorResponseFull(comment, post.getAuthor().getId(), principal.id(), List.of());
     }
@@ -92,8 +101,17 @@ public class CommunityCommentService {
         post.setLastActiveAt(LocalDateTime.now());
         postRepo.save(post);
 
-        // Parse mentions (will be enhanced in Task 12)
-        List<Map<String, Object>> mentions = List.of();
+        // Notify the author of the replied-to comment
+        if (replyTo.getAuthor() != null && !replyTo.getAuthor().getId().equals(principal.id()))
+            notifDispatcher.dispatchCommentReplied(replyTo.getAuthor().getId(), post.getId(), reply.getId(), principal.id());
+
+        // Parse mentions
+        List<Map<String, Object>> mentions = mentionParser.parse(reply.getContent(), reply.getId());
+        for (Map<String, Object> m : mentions) {
+            Long mentionedUserId = ((Number) m.get("userId")).longValue();
+            if (!mentionedUserId.equals(principal.id()))
+                notifDispatcher.dispatchMentioned(mentionedUserId, post.getId(), reply.getId(), principal.id());
+        }
 
         return toReplyResponse(reply, mentions, principal.id());
     }

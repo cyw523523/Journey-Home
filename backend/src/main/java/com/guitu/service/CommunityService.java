@@ -41,6 +41,7 @@ public class CommunityService {
     private final CommunityCategoryService categoryService;
     private final CommunityPostViewLogRepository viewLogRepo;
     private final CommunityFollowService followService;
+    private final CommunityNotificationDispatcher notifDispatcher;
 
     public CommunityService(
             com.guitu.repository.CommunityPostRepository communityPostRepository,
@@ -52,7 +53,8 @@ public class CommunityService {
             NotificationService notificationService,
             CommunityCategoryService categoryService,
             CommunityPostViewLogRepository viewLogRepo,
-            CommunityFollowService followService
+            CommunityFollowService followService,
+            CommunityNotificationDispatcher notifDispatcher
     ) {
         this.communityPostRepository = communityPostRepository;
         this.communityCommentRepository = communityCommentRepository;
@@ -64,6 +66,7 @@ public class CommunityService {
         this.categoryService = categoryService;
         this.viewLogRepo = viewLogRepo;
         this.followService = followService;
+        this.notifDispatcher = notifDispatcher;
     }
 
     @Transactional(readOnly = true)
@@ -157,6 +160,8 @@ public class CommunityService {
         }
         CommunityPost saved = communityPostRepository.save(post);
         notifyPostReview(saved);
+        if (saved.getStatus() == CommunityPostStatus.PUBLISHED)
+            notifDispatcher.broadcastNewPost(currentUser.getId(), saved.getId());
         return mapper.toCommunityPostResponse(saved, 0);
     }
 
