@@ -122,6 +122,7 @@ export const donationApi = {
 
 export const volunteerTaskApi = {
   list: (params) => http.get('/volunteer-tasks', { params }),
+  adminList: (params) => http.get('/volunteer-tasks/admin/list', { params }),
   detail: (id) => http.get(`/volunteer-tasks/${id}`),
   applications: (id, params) => http.get(`/volunteer-tasks/${id}/applications`, { params }),
   create: (data) => http.post('/volunteer-tasks', data),

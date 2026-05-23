@@ -5,7 +5,8 @@ public enum AuditTargetType {
     RESCUE("Rescue post"),
     ADOPT_APPLY("Adoption application"),
     COMMUNITY_POST("Community post"),
-    COMMUNITY_COMMENT("Community comment");
+    COMMUNITY_COMMENT("Community comment"),
+    VOLUNTEER_TASK("Volunteer task");
 
     private final String label;
 

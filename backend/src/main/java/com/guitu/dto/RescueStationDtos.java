@@ -10,26 +10,26 @@ public final class RescueStationDtos {
     }
 
     public record ApplyRequest(
-            @NotBlank(message = "Station name is required")
-            @Size(max = 120, message = "Station name must be at most 120 characters")
+            @NotBlank(message = "救助站名称不能为空")
+            @Size(max = 120, message = "救助站名称长度不能超过120字符")
             String stationName,
 
-            @Size(max = 1000, message = "Description must be at most 1000 characters")
+            @Size(max = 1000, message = "描述长度不能超过1000字符")
             String description,
 
-            @Size(max = 255, message = "Address must be at most 255 characters")
+            @Size(max = 255, message = "地址长度不能超过255字符")
             String address,
 
-            @Size(max = 64, message = "Phone must be at most 64 characters")
+            @Size(max = 64, message = "联系电话长度不能超过64字符")
             String contactPhone,
 
-            @Size(max = 500, message = "Image URL must be at most 500 characters")
+            @Size(max = 500, message = "图片URL长度不能超过500字符")
             String imageUrl
     ) {
     }
 
     public record UpdateProfileRequest(
-            @NotBlank(message = "Station name is required")
+            @NotBlank(message = "救助站名称不能为空")
             @Size(max = 120)
             String stationName,
 
@@ -89,10 +89,10 @@ public final class RescueStationDtos {
     }
 
     public record CertifyRequest(
-            @NotNull(message = "Status is required")
+            @NotNull(message = "状态不能为空")
             CertificationStatus status,
 
-            @Size(max = 500, message = "Reason must be at most 500 characters")
+            @Size(max = 500, message = "原因说明长度不能超过500字符")
             String reason
     ) {
     }

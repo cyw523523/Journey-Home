@@ -8,6 +8,7 @@ import com.guitu.domain.CommunityComment;
 import com.guitu.domain.CommunityPost;
 import com.guitu.domain.Rescue;
 import com.guitu.domain.User;
+import com.guitu.domain.VolunteerTask;
 import com.guitu.domain.enums.AnimalStatus;
 import com.guitu.domain.enums.ApplyStatus;
 import com.guitu.domain.enums.AuditAction;
@@ -16,6 +17,7 @@ import com.guitu.domain.enums.CommunityCommentStatus;
 import com.guitu.domain.enums.CommunityPostStatus;
 import com.guitu.domain.enums.NotificationType;
 import com.guitu.domain.enums.RescueStatus;
+import com.guitu.domain.enums.VolunteerTaskStatus;
 import com.guitu.dto.AuditDtos;
 import com.guitu.exception.BusinessException;
 import com.guitu.mapper.DtoMapper;
@@ -25,6 +27,7 @@ import com.guitu.repository.AuditLogRepository;
 import com.guitu.repository.CommunityCommentRepository;
 import com.guitu.repository.CommunityPostRepository;
 import com.guitu.repository.RescueRepository;
+import com.guitu.repository.VolunteerTaskRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +48,7 @@ public class AuditService {
     private final CommunityPostRepository communityPostRepository;
     private final CommunityCommentRepository communityCommentRepository;
     private final AuditLogRepository auditLogRepository;
+    private final VolunteerTaskRepository volunteerTaskRepository;
     private final UserService userService;
     private final AnimalService animalService;
     private final RescueService rescueService;
@@ -61,6 +65,7 @@ public class AuditService {
             CommunityPostRepository communityPostRepository,
             CommunityCommentRepository communityCommentRepository,
             AuditLogRepository auditLogRepository,
+            VolunteerTaskRepository volunteerTaskRepository,
             UserService userService,
             AnimalService animalService,
             RescueService rescueService,
@@ -76,6 +81,7 @@ public class AuditService {
         this.communityPostRepository = communityPostRepository;
         this.communityCommentRepository = communityCommentRepository;
         this.auditLogRepository = auditLogRepository;
+        this.volunteerTaskRepository = volunteerTaskRepository;
         this.userService = userService;
         this.animalService = animalService;
         this.rescueService = rescueService;
@@ -103,6 +109,9 @@ public class AuditService {
         if (targetType == AuditTargetType.COMMUNITY_COMMENT) {
             return communityCommentRepository.findAll(commentPendingSpec(), pageRequest(page, size)).getContent().stream().map(this::pendingComment).toList();
         }
+        if (targetType == AuditTargetType.VOLUNTEER_TASK) {
+            return volunteerTaskRepository.findAll(volunteerTaskPendingSpec(), pageRequest(page, size)).getContent().stream().map(this::pendingVolunteerTask).toList();
+        }
 
         List<AuditDtos.PendingItemResponse> result = new ArrayList<>();
         result.addAll(animalRepository.findAll(animalPendingSpec(), pageRequest(0, size)).getContent().stream().map(this::pendingAnimal).toList());
@@ -110,6 +119,7 @@ public class AuditService {
         result.addAll(adoptApplyRepository.findAll(applyPendingSpec(), pageRequest(0, size)).getContent().stream().map(this::pendingApply).toList());
         result.addAll(communityPostRepository.findAll(postPendingSpec(), pageRequest(0, size)).getContent().stream().map(this::pendingPost).toList());
         result.addAll(communityCommentRepository.findAll(commentPendingSpec(), pageRequest(0, size)).getContent().stream().map(this::pendingComment).toList());
+        result.addAll(volunteerTaskRepository.findAll(volunteerTaskPendingSpec(), pageRequest(0, size)).getContent().stream().map(this::pendingVolunteerTask).toList());
         return result.stream()
                 .sorted((left, right) -> right.createdAt().compareTo(left.createdAt()))
                 .limit(Math.max(1, size))
@@ -124,6 +134,7 @@ public class AuditService {
             case ADOPT_APPLY -> mapper.toApplyResponse(adoptApplyService.getEntity(targetId));
             case COMMUNITY_POST -> mapper.toCommunityPostResponse(communityService.getManagedPost(targetId), communityCommentRepository.countByPostIdAndStatus(targetId, CommunityCommentStatus.PUBLISHED));
             case COMMUNITY_COMMENT -> mapper.toCommunityCommentResponse(communityService.getManagedComment(targetId));
+            case VOLUNTEER_TASK -> mapper.toVolunteerTaskResponse(volunteerTaskRepository.findById(targetId).orElseThrow(() -> new BusinessException("志愿者任务不存在")));
         };
     }
 
@@ -136,6 +147,7 @@ public class AuditService {
             case ADOPT_APPLY -> auditApply(request, auditor);
             case COMMUNITY_POST -> auditPost(request, auditor);
             case COMMUNITY_COMMENT -> auditComment(request, auditor);
+            case VOLUNTEER_TASK -> auditVolunteerTask(request, auditor);
         }
         cacheInvalidationService.evictPublicCaches();
     }
@@ -254,6 +266,21 @@ public class AuditService {
         notifyAuditResult(comment.getAuthor(), "AUDIT_RESULT_COMMUNITY_COMMENT", request.opinion(), "COMMUNITY_COMMENT", comment.getId());
     }
 
+    private void auditVolunteerTask(AuditDtos.AuditRequest request, User auditor) {
+        VolunteerTask task = volunteerTaskRepository.findById(request.targetId()).orElseThrow(() -> new BusinessException("志愿者任务不存在"));
+        if (request.action() == AuditAction.OFFLINE) {
+            task.setStatus(VolunteerTaskStatus.CANCELLED);
+        } else {
+            if (task.getStatus() != VolunteerTaskStatus.PENDING_REVIEW) {
+                throw new BusinessException("该任务已审核过");
+            }
+            task.setStatus(request.action() == AuditAction.APPROVE ? VolunteerTaskStatus.RECRUITING : VolunteerTaskStatus.REJECTED);
+        }
+        task.setReviewComment(request.opinion());
+        recordLog(AuditTargetType.VOLUNTEER_TASK, task.getId(), auditor, request.action(), request.opinion());
+        notifyAuditResult(task.getPublisher(), "AUDIT_RESULT_VOLUNTEER_TASK", request.opinion(), "VOLUNTEER_TASK", task.getId());
+    }
+
     private void rejectOtherPendingApplies(AdoptApply approvedApply) {
         List<AdoptApply> pendingApplies = adoptApplyRepository.findByAnimalIdAndStatusAndIdNot(
                 approvedApply.getAnimal().getId(),
@@ -315,6 +342,10 @@ public class AuditService {
         return new AuditDtos.PendingItemResponse(AuditTargetType.COMMUNITY_COMMENT, comment.getId(), "Comment on post #" + comment.getPost().getId(), comment.getStatus().getLabel(), comment.getAuthor().getNickname(), comment.getCreatedAt());
     }
 
+    private AuditDtos.PendingItemResponse pendingVolunteerTask(VolunteerTask task) {
+        return new AuditDtos.PendingItemResponse(AuditTargetType.VOLUNTEER_TASK, task.getId(), task.getTitle() + " / " + task.getLocation(), task.getStatus().getLabel(), task.getPublisher().getNickname(), task.getCreatedAt());
+    }
+
     private Specification<Animal> animalPendingSpec() {
         return (root, query, cb) -> cb.equal(root.get("status"), AnimalStatus.PENDING_REVIEW);
     }
@@ -333,6 +364,10 @@ public class AuditService {
 
     private Specification<CommunityComment> commentPendingSpec() {
         return (root, query, cb) -> cb.equal(root.get("status"), CommunityCommentStatus.PENDING_REVIEW);
+    }
+
+    private Specification<VolunteerTask> volunteerTaskPendingSpec() {
+        return (root, query, cb) -> cb.equal(root.get("status"), VolunteerTaskStatus.PENDING_REVIEW);
     }
 
     private Pageable pageRequest(int page, int size) {

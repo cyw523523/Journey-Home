@@ -66,6 +66,18 @@ public class VolunteerTaskService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<VolunteerTaskDtos.VolunteerTaskResponse> listAdmin(VolunteerTaskStatus status, int page, int size) {
+        Specification<VolunteerTask> spec = (root, query, cb) -> {
+            if (status != null) {
+                return cb.equal(root.get("status"), status);
+            }
+            return cb.conjunction();
+        };
+        Page<VolunteerTask> result = taskRepository.findAll(spec, pageRequest(page, size));
+        return PageResponse.from(result, mapper::toVolunteerTaskResponse);
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<VolunteerTaskDtos.VolunteerTaskResponse> listMine(VolunteerTaskStatus status, int page, int size) {
         Long userId = SecuritySupport.requireUser().id();
         Specification<VolunteerTask> spec = (root, query, cb) -> {

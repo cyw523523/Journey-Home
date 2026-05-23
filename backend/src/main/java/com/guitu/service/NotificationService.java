@@ -39,7 +39,7 @@ public class NotificationService {
         SystemNotification notification = new SystemNotification();
         notification.setRecipient(recipient);
         notification.setType(type);
-        notification.setTitle(title.startsWith("AUDIT_RESULT_") || title.startsWith("COMMENT_REPLY_") ? title : type.name());
+        notification.setTitle(isI18nKey(title) ? title : type.name());
         notification.setContent(content);
         notification.setRelatedTargetType(relatedTargetType);
         notification.setRelatedTargetId(relatedTargetId);
@@ -95,5 +95,9 @@ public class NotificationService {
             throw new BusinessException(HttpStatus.FORBIDDEN, "Current user cannot access this notification");
         }
         return notification;
+    }
+
+    private boolean isI18nKey(String title) {
+        return title != null && title.matches("^[A-Z][A-Z0-9_]*$");
     }
 }

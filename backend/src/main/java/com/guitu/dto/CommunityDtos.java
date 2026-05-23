@@ -15,27 +15,27 @@ public final class CommunityDtos {
     }
 
     public record SavePostRequest(
-            @NotBlank(message = "Post title is required")
-            @Size(max = 120, message = "Post title must be at most 120 characters")
+            @NotBlank(message = "帖子标题不能为空")
+            @Size(max = 120, message = "帖子标题长度不能超过120字符")
             String title,
 
-            @NotBlank(message = "Post content is required")
-            @Size(max = 5000, message = "Post content must be at most 5000 characters")
+            @NotBlank(message = "帖子内容不能为空")
+            @Size(max = 5000, message = "帖子内容长度不能超过5000字符")
             String content,
 
-            @NotNull(message = "Category is required")
+            @NotNull(message = "分类不能为空")
             Long categoryId,
 
-            List<@Size(max = 500, message = "Image URL must be at most 500 characters") String> imageUrls
+            List<@Size(max = 500, message = "图片URL长度不能超过500字符") String> imageUrls
     ) {
     }
 
     public record SaveCommentRequest(
-            @NotBlank(message = "Comment content is required")
-            @Size(max = 2000, message = "Comment content must be at most 2000 characters")
+            @NotBlank(message = "评论内容不能为空")
+            @Size(max = 2000, message = "评论内容长度不能超过2000字符")
             String content,
 
-            List<@Size(max = 500, message = "Image URL must be at most 500 characters") String> imageUrls,
+            List<@Size(max = 500, message = "图片URL长度不能超过500字符") String> imageUrls,
 
             Long parentCommentId
     ) {

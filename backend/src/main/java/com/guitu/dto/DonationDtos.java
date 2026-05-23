@@ -16,32 +16,32 @@ public final class DonationDtos {
     }
 
     public record SaveSupplyDemandRequest(
-            @NotBlank(message = "Title is required")
-            @Size(max = 120, message = "Title must be at most 120 characters")
+            @NotBlank(message = "标题不能为空")
+            @Size(max = 120, message = "标题长度不能超过120字符")
             String title,
 
-            @NotNull(message = "Category is required")
+            @NotNull(message = "物资分类不能为空")
             SupplyCategory category,
 
-            @NotNull(message = "Target quantity is required")
-            @Min(value = 1, message = "Target quantity must be at least 1")
-            @Max(value = 10000, message = "Target quantity must be at most 10000")
+            @NotNull(message = "目标数量不能为空")
+            @Min(value = 1, message = "目标数量至少为1")
+            @Max(value = 10000, message = "目标数量最多为10000")
             Integer targetQuantity,
 
-            @NotBlank(message = "Description is required")
-            @Size(max = 1000, message = "Description must be at most 1000 characters")
+            @NotBlank(message = "描述不能为空")
+            @Size(max = 1000, message = "描述长度不能超过1000字符")
             String description,
 
-            @Size(max = 255, message = "Contact name must be at most 255 characters")
+            @Size(max = 255, message = "联系人姓名长度不能超过255字符")
             String contactName,
 
-            @Size(max = 64, message = "Contact phone must be at most 64 characters")
+            @Size(max = 64, message = "联系电话长度不能超过64字符")
             String contactPhone,
 
-            @Size(max = 500, message = "Shipping address must be at most 500 characters")
+            @Size(max = 500, message = "收货地址长度不能超过500字符")
             String shippingAddress,
 
-            @Size(max = 500, message = "Image URL must be at most 500 characters")
+            @Size(max = 500, message = "图片URL长度不能超过500字符")
             String imageUrl
     ) {
     }
@@ -68,20 +68,20 @@ public final class DonationDtos {
     }
 
     public record DonateRequest(
-            @NotNull(message = "Quantity is required")
-            @Min(value = 1, message = "Quantity must be at least 1")
+            @NotNull(message = "捐赠数量不能为空")
+            @Min(value = 1, message = "捐赠数量至少为1")
             Integer quantity,
 
-            @Size(max = 32, message = "Delivery method must be at most 32 characters")
+            @Size(max = 32, message = "配送方式长度不能超过32字符")
             String deliveryMethod,
 
-            @Size(max = 500, message = "Tracking number must be at most 500 characters")
+            @Size(max = 500, message = "物流单号长度不能超过500字符")
             String trackingNumber,
 
-            @Size(max = 1000, message = "Message must be at most 1000 characters")
+            @Size(max = 1000, message = "留言长度不能超过1000字符")
             String message,
 
-            @Size(max = 64, message = "Display name must be at most 64 characters")
+            @Size(max = 64, message = "显示名称长度不能超过64字符")
             String donorDisplayName
     ) {
     }
