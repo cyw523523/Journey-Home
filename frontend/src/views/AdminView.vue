@@ -16,10 +16,9 @@
           <el-menu-item index="users"><Users />{{ $t('admin.userManagement') }}</el-menu-item>
           <el-menu-item index="notices"><Megaphone />{{ $t('admin.noticeManagement') }}</el-menu-item>
           <el-menu-item index="applications"><HeartHandshake />{{ $t('admin.adoptionApplications') }}</el-menu-item>
-          <el-menu-item index="reports"><ShieldAlert />{{ t('admin.reportHandle') }}</el-menu-item>
-          <el-menu-item index="appeals"><FileCheck2 />{{ t('admin.appealReview') }}</el-menu-item>
-          <el-menu-item index="stations"><Building2 />{{ t('admin.stationCertify') }}</el-menu-item>
-          <el-menu-item index="volunteers"><Handshake />{{ t('admin.volunteerTask') }}</el-menu-item>
+          <el-menu-item index="reports"><ShieldAlert />举报处理</el-menu-item>
+          <el-menu-item index="appeals"><FileCheck2 />申诉复核</el-menu-item>
+          <el-menu-item index="stations"><Building2 />救助站认证</el-menu-item>
         </el-menu>
       </aside>
 
@@ -34,19 +33,19 @@
           </div>
           <el-row :gutter="14" style="margin-top: 16px">
             <el-col :md="8" :sm="24">
-              <h3>{{ t('admin.animalStatus') }}</h3>
+              <h3>动物状态</h3>
               <div v-for="item in animalStatus" :key="item.status" class="mini-row">
                 <span>{{ item.statusText }}<strong>{{ item.count }}</strong></span>
               </div>
             </el-col>
             <el-col :md="8" :sm="24">
-              <h3>{{ t('admin.rescueStatus') }}</h3>
+              <h3>救助状态</h3>
               <div v-for="item in rescueStatus" :key="item.status" class="mini-row">
                 <span>{{ item.statusText }}<strong>{{ item.count }}</strong></span>
               </div>
             </el-col>
             <el-col :md="8" :sm="24">
-              <h3>{{ t('admin.applyStatus') }}</h3>
+              <h3>申请状态</h3>
               <div v-for="item in applyStatus" :key="item.status" class="mini-row">
                 <span>{{ item.statusText }}<strong>{{ item.count }}</strong></span>
               </div>
@@ -57,28 +56,25 @@
         <div v-show="active === 'audits'" class="surface form-shell">
           <div style="display:flex;gap:10px;margin-bottom:12px">
             <el-select v-model="auditType" clearable style="width: 220px" @change="loadPending">
-              <el-option :label="t('admin.animalRecord')" value="ANIMAL" />
-              <el-option :label="t('admin.rescueInfo')" value="RESCUE" />
-              <el-option :label="t('admin.adoptApply')" value="ADOPT_APPLY" />
-              <el-option :label="t('admin.communityPost')" value="COMMUNITY_POST" />
-              <el-option :label="t('admin.communityComment')" value="COMMUNITY_COMMENT" />
-              <el-option :label="t('admin.volunteerTaskLabel')" value="VOLUNTEER_TASK" />
+              <el-option label="动物档案" value="ANIMAL" />
+              <el-option label="救助信息" value="RESCUE" />
+              <el-option label="领养申请" value="ADOPT_APPLY" />
+              <el-option label="社区帖子" value="COMMUNITY_POST" />
+              <el-option label="社区评论" value="COMMUNITY_COMMENT" />
             </el-select>
             <el-button :icon="RefreshCw" @click="loadPending">刷新</el-button>
           </div>
           <el-table :data="pending" stripe>
-            <el-table-column :label="t('admin.targetType')" width="160">
-              <template #default="{ row }">{{ auditTypeLabel(row.targetType) }}</template>
-            </el-table-column>
-            <el-table-column prop="targetId" :label="t('admin.businessId')" width="100" />
-            <el-table-column prop="title" :label="t('admin.content')" />
-            <el-table-column prop="publisherOrApplicant" :label="t('admin.publisherApplicant')" width="180" />
-            <el-table-column :label="t('admin.actions')" width="320">
+            <el-table-column prop="targetType" label="类型" width="160" />
+            <el-table-column prop="targetId" label="业务ID" width="100" />
+            <el-table-column prop="title" label="内容" />
+            <el-table-column prop="publisherOrApplicant" label="发布者/申请人" width="180" />
+            <el-table-column label="操作" width="320">
               <template #default="{ row }">
-                <el-button size="small" :icon="Eye" text @click="openDetail(row)">{{ t('admin.detail') }}</el-button>
-                <el-button size="small" :icon="Check" type="primary" @click="openAudit(row, 'APPROVE')">{{ t('admin.approve') }}</el-button>
-                <el-button size="small" :icon="X" @click="openAudit(row, 'REJECT')">{{ t('admin.reject') }}</el-button>
-                <el-button size="small" v-if="row.targetType !== 'ADOPT_APPLY'" @click="openAudit(row, 'OFFLINE')">{{ t('admin.offline') }}</el-button>
+                <el-button size="small" :icon="Eye" text @click="openDetail(row)">详情</el-button>
+                <el-button size="small" :icon="Check" type="primary" @click="openAudit(row, 'APPROVE')">通过</el-button>
+                <el-button size="small" :icon="X" @click="openAudit(row, 'REJECT')">驳回</el-button>
+                <el-button size="small" v-if="row.targetType !== 'ADOPT_APPLY'" @click="openAudit(row, 'OFFLINE')">下架</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -86,18 +82,18 @@
 
         <div v-show="active === 'users'" class="surface form-shell">
           <el-table :data="usersList" stripe>
-            <el-table-column prop="id" :label="t('admin.id')" width="80" />
-            <el-table-column prop="account" :label="t('admin.account')" />
-            <el-table-column prop="nickname" :label="t('admin.nickname')" />
-            <el-table-column prop="phone" :label="t('admin.phoneNumber')" />
-            <el-table-column :label="t('admin.role')" width="150">
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="account" label="账号" />
+            <el-table-column prop="nickname" label="昵称" />
+            <el-table-column prop="phone" label="手机号" />
+            <el-table-column label="角色" width="150">
               <template #default="{ row }">
                 <el-select v-model="row.role" size="small" @change="updateUser(row)">
                   <el-option v-for="item in roleOptions" :key="item.value" :label="item.label" :value="item.value" />
                 </el-select>
               </template>
             </el-table-column>
-            <el-table-column :label="t('admin.status')" width="140">
+            <el-table-column label="状态" width="140">
               <template #default="{ row }">
                 <el-select v-model="row.status" size="small" @change="updateUser(row)">
                   <el-option v-for="item in userStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -109,20 +105,20 @@
 
         <div v-show="active === 'notices'" class="surface form-shell">
           <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-            <el-button :icon="Plus" type="primary" @click="openNotice()">{{ t('admin.createAnnouncement') }}</el-button>
+            <el-button :icon="Plus" type="primary" @click="openNotice()">新增公告</el-button>
           </div>
           <el-table :data="notices" stripe>
-            <el-table-column prop="id" :label="t('admin.id')" width="80" />
-            <el-table-column prop="title" :label="t('admin.noticeTitle')" />
-            <el-table-column :label="t('admin.status')" width="120">
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="title" label="标题" />
+            <el-table-column label="状态" width="120">
               <template #default="{ row }">
                 <StatusTag :value="row.status" :text="row.statusText" :options="noticeStatusOptions" />
               </template>
             </el-table-column>
-            <el-table-column :label="t('admin.actions')" width="220">
+            <el-table-column label="操作" width="220">
               <template #default="{ row }">
-                <el-button size="small" :icon="Pencil" @click="openNotice(row)">{{ t('common.edit') }}</el-button>
-                <el-button size="small" :icon="Archive" @click="offlineNotice(row)">{{ t('admin.offline') }}</el-button>
+                <el-button size="small" :icon="Pencil" @click="openNotice(row)">编辑</el-button>
+                <el-button size="small" :icon="Archive" @click="offlineNotice(row)">下架</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -130,11 +126,11 @@
 
         <div v-show="active === 'applications'" class="surface form-shell">
           <el-table :data="applications" stripe>
-            <el-table-column prop="id" :label="t('admin.id')" width="80" />
-            <el-table-column prop="applicantName" :label="t('admin.applicant')" width="130" />
-            <el-table-column prop="animalTypeText" :label="t('admin.animal')" width="100" />
-            <el-table-column prop="reason" :label="t('admin.reason')" />
-            <el-table-column :label="t('admin.status')" width="120">
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="applicantName" label="申请人" width="130" />
+            <el-table-column prop="animalTypeText" label="动物" width="100" />
+            <el-table-column prop="reason" label="理由" />
+            <el-table-column label="状态" width="120">
               <template #default="{ row }">
                 <StatusTag :value="row.status" :text="row.statusText" :options="applyStatusOptions" />
               </template>
@@ -152,20 +148,18 @@
             </el-select>
           </div>
           <el-table :data="reports" stripe>
-            <el-table-column prop="id" :label="t('admin.id')" width="80" />
-            <el-table-column :label="t('admin.target')" width="120">
-              <template #default="{ row }">{{ reportTargetLabel(row.targetTypeText) }}</template>
-            </el-table-column>
-            <el-table-column prop="reasonTypeText" :label="t('admin.reason')" width="120" />
-            <el-table-column prop="description" :label="t('admin.content')" />
-            <el-table-column :label="t('admin.status')" width="120">
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="targetTypeText" label="对象" width="120" />
+            <el-table-column prop="reasonTypeText" label="原因" width="120" />
+            <el-table-column prop="description" label="说明" />
+            <el-table-column label="状态" width="120">
               <template #default="{ row }">
                 <StatusTag :value="row.status" :text="row.statusText" :options="reportStatusOptions" />
               </template>
             </el-table-column>
-            <el-table-column :label="t('admin.actions')" width="220">
+            <el-table-column label="操作" width="220">
               <template #default="{ row }">
-                <el-button size="small" :icon="Eye" text @click="openReportResolve(row)">{{ t('admin.handle') }}</el-button>
+                <el-button size="small" :icon="Eye" text @click="openReportResolve(row)">处理</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -181,20 +175,18 @@
             </el-select>
           </div>
           <el-table :data="appeals" stripe>
-            <el-table-column prop="id" :label="t('admin.id')" width="80" />
-            <el-table-column :label="t('admin.target')" width="120">
-              <template #default="{ row }">{{ appealTargetLabel(row.targetTypeText) }}</template>
-            </el-table-column>
-            <el-table-column prop="applicantNickname" :label="t('admin.appealPerson')" width="120" />
-            <el-table-column prop="reason" :label="t('admin.appealReason')" />
-            <el-table-column :label="t('admin.status')" width="150">
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="targetTypeText" label="对象" width="120" />
+            <el-table-column prop="applicantNickname" label="申诉人" width="120" />
+            <el-table-column prop="reason" label="申诉原因" />
+            <el-table-column label="状态" width="150">
               <template #default="{ row }">
                 <StatusTag :value="row.status" :text="row.statusText" :options="appealStatusOptions" />
               </template>
             </el-table-column>
-            <el-table-column :label="t('admin.actions')" width="220">
+            <el-table-column label="操作" width="220">
               <template #default="{ row }">
-                <el-button size="small" :icon="Eye" text @click="openAppealReview(row)">{{ t('admin.review') }}</el-button>
+                <el-button size="small" :icon="Eye" text @click="openAppealReview(row)">复核</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -203,77 +195,38 @@
         <div v-show="active === 'stations'" class="surface form-shell">
           <div style="display:flex;gap:10px;margin-bottom:12px">
             <el-select v-model="stationStatusFilter" clearable style="width: 180px" @change="loadStations">
-              <el-option :label="t('admin.certPending')" value="PENDING" />
-              <el-option :label="t('admin.certApproved')" value="APPROVED" />
-              <el-option :label="t('admin.certRejected')" value="REJECTED" />
+              <el-option label="待审核" value="PENDING" />
+              <el-option label="已认证" value="APPROVED" />
+              <el-option label="未通过" value="REJECTED" />
             </el-select>
             <el-button :icon="RefreshCw" @click="loadStations">刷新</el-button>
           </div>
           <el-table :data="stations" stripe>
-            <el-table-column prop="id" :label="t('admin.id')" width="70" />
-            <el-table-column prop="stationName" :label="t('admin.stationNameLabel')" width="160" />
-            <el-table-column prop="nickname" :label="t('admin.applicant')" width="120" />
-            <el-table-column prop="address" :label="t('admin.address')" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="contactPhone" :label="t('admin.contactPhone')" width="120" />
-            <el-table-column :label="t('admin.certStatus')" width="120">
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column prop="stationName" label="救助站名称" width="160" />
+            <el-table-column prop="nickname" label="申请人" width="120" />
+            <el-table-column prop="address" label="地址" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="contactPhone" label="联系电话" width="120" />
+            <el-table-column label="认证状态" width="120">
               <template #default="{ row }">
                 <StatusTag :value="row.certificationStatus" :text="row.certificationStatusText"
                            :options="certStatusOptions" size="small" />
               </template>
             </el-table-column>
-            <el-table-column :label="t('admin.followers')" width="70">
+            <el-table-column label="粉丝" width="70">
               <template #default="{ row }">{{ row.followerCount }}</template>
             </el-table-column>
-            <el-table-column :label="t('admin.applyTime')" width="160">
+            <el-table-column label="申请时间" width="160">
               <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
             </el-table-column>
-            <el-table-column :label="t('admin.actions')" width="200">
+            <el-table-column label="操作" width="200">
               <template #default="{ row }">
                 <el-button v-if="row.certificationStatus === 'PENDING'" size="small" :icon="Check" type="primary"
-                           text @click="openCertify(row, 'APPROVED')">{{ t('admin.approve') }}</el-button>
+                           text @click="openCertify(row, 'APPROVED')">通过</el-button>
                 <el-button v-if="row.certificationStatus === 'PENDING'" size="small" :icon="X" type="danger"
-                           text @click="openCertify(row, 'REJECTED')">{{ t('admin.reject') }}</el-button>
+                           text @click="openCertify(row, 'REJECTED')">驳回</el-button>
                 <el-button v-if="row.certificationStatus !== 'PENDING'" size="small" :icon="Eye" text
-                           @click="openStationDetail(row)">{{ t('admin.detail') }}</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-
-        <div v-show="active === 'volunteers'" class="surface form-shell">
-          <div style="display:flex;gap:10px;margin-bottom:12px">
-            <el-select v-model="volunteerStatusFilter" clearable style="width: 180px" @change="loadVolunteerTasks">
-              <el-option :label="t('admin.volPendingReview')" value="PENDING_REVIEW" />
-              <el-option :label="t('admin.volRecruiting')" value="RECRUITING" />
-              <el-option :label="t('admin.volInProgress')" value="IN_PROGRESS" />
-              <el-option :label="t('admin.volCompleted')" value="COMPLETED" />
-              <el-option :label="t('admin.volRejected')" value="REJECTED" />
-              <el-option :label="t('admin.volCancelled')" value="CANCELLED" />
-            </el-select>
-            <el-button :icon="RefreshCw" @click="loadVolunteerTasks">刷新</el-button>
-          </div>
-          <el-table :data="volunteerTasks" stripe>
-            <el-table-column prop="id" :label="t('admin.id')" width="70" />
-            <el-table-column prop="title" :label="t('admin.taskTitle')" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="location" :label="t('admin.location')" width="140" show-overflow-tooltip />
-            <el-table-column prop="publisherNickname" :label="t('admin.publisher')" width="110" />
-            <el-table-column :label="t('admin.peopleCount')" width="90">
-              <template #default="{ row }">{{ row.currentVolunteers || 0 }}/{{ row.maxVolunteers }}</template>
-            </el-table-column>
-            <el-table-column :label="t('admin.status')" width="120">
-              <template #default="{ row }">
-                <StatusTag :value="row.status" :text="row.statusText" :options="volunteerTaskStatusOptions" size="small" />
-              </template>
-            </el-table-column>
-            <el-table-column :label="t('admin.applyTime')" width="160">
-              <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
-            </el-table-column>
-            <el-table-column :label="t('admin.actions')" width="240">
-              <template #default="{ row }">
-                <el-button size="small" :icon="Eye" text @click="openVolunteerDetail(row)">{{ t('admin.detail') }}</el-button>
-                <el-button v-if="row.status === 'PENDING_REVIEW'" size="small" :icon="Check" type="primary" text @click="openAudit({ targetType: 'VOLUNTEER_TASK', targetId: row.id }, 'APPROVE')">{{ t('admin.approve') }}</el-button>
-                <el-button v-if="row.status === 'PENDING_REVIEW'" size="small" :icon="X" type="danger" text @click="openAudit({ targetType: 'VOLUNTEER_TASK', targetId: row.id }, 'REJECT')">{{ t('admin.reject') }}</el-button>
-                <el-button v-if="row.status !== 'PENDING_REVIEW' && row.status !== 'REJECTED' && row.status !== 'CANCELLED'" size="small" :icon="X" text @click="openAudit({ targetType: 'VOLUNTEER_TASK', targetId: row.id }, 'OFFLINE')">{{ t('admin.offline') }}</el-button>
+                           @click="openStationDetail(row)">详情</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -281,22 +234,22 @@
       </main>
     </div>
 
-    <el-dialog v-model="auditDialog" :title="t('admin.auditDialogTitle')" width="520px" append-to-body>
+    <el-dialog v-model="auditDialog" title="审核处理" width="520px" append-to-body>
       <el-form :model="auditForm" label-position="top">
-        <el-form-item :label="t('admin.auditResult')">
+        <el-form-item label="审核结果">
           <el-select v-model="auditForm.action" style="width: 100%">
-            <el-option :label="t('admin.approve')" value="APPROVE" />
-            <el-option :label="t('admin.reject')" value="REJECT" />
-            <el-option v-if="auditForm.targetType !== 'ADOPT_APPLY'" :label="t('admin.offline')" value="OFFLINE" />
+            <el-option label="通过" value="APPROVE" />
+            <el-option label="驳回" value="REJECT" />
+            <el-option v-if="auditForm.targetType !== 'ADOPT_APPLY'" label="下架" value="OFFLINE" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('admin.auditOpinion')">
+        <el-form-item label="审核意见">
           <el-input v-model="auditForm.opinion" type="textarea" :rows="4" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="auditDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button :loading="saving" :icon="Send" type="primary" @click="submitAudit">{{ t('common.submit') }}</el-button>
+        <el-button @click="auditDialog = false">取消</el-button>
+        <el-button :loading="saving" :icon="Send" type="primary" @click="submitAudit">提交</el-button>
       </template>
     </el-dialog>
 
@@ -304,183 +257,172 @@
       <el-skeleton v-if="detailLoading" :rows="8" animated />
       <template v-else-if="detailData">
         <div v-if="detailTargetType === 'ANIMAL'" class="audit-detail-grid">
-          <div class="detail-item"><label>{{ t('admin.typeLabel') }}</label><span>{{ detailData.typeText }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.genderLabel') }}</label><span>{{ detailData.genderText }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.ageLabel') }}</label><span>{{ detailData.age ?? t('admin.unknown') }}</span></div>
-          <div class="detail-item"><label>{{ t('animals.foundRegion') }}</label><span>{{ detailData.foundRegion }}</span></div>
-          <div class="detail-item"><label>{{ t('animals.healthCondition') }}</label><span>{{ detailData.healthCondition || '-' }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.status') }}</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="animalStatusOptions" /></div>
-          <div class="detail-item" v-if="parseExpectedStatus(detailData)"><label>{{ t('admin.expectedAction') }}</label><StatusTag :value="parseExpectedStatus(detailData)" :text="expectedStatusText(parseExpectedStatus(detailData))" :options="animalStatusOptions" /></div>
-          <div class="detail-item"><label>{{ t('admin.publisher') }}</label><span>{{ detailData.publisherNickname }}</span></div>
-          <div class="detail-item full-width"><label>{{ t('animals.description') }}</label><p>{{ detailData.description || '-' }}</p></div>
+          <div class="detail-item"><label>类型</label><span>{{ detailData.typeText }}</span></div>
+          <div class="detail-item"><label>性别</label><span>{{ detailData.genderText }}</span></div>
+          <div class="detail-item"><label>年龄</label><span>{{ detailData.age ?? '未知' }}</span></div>
+          <div class="detail-item"><label>发现地区</label><span>{{ detailData.foundRegion }}</span></div>
+          <div class="detail-item"><label>健康情况</label><span>{{ detailData.healthCondition || '-' }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="animalStatusOptions" /></div>
+          <div class="detail-item" v-if="parseExpectedStatus(detailData)"><label>预期操作</label><StatusTag :value="parseExpectedStatus(detailData)" :text="expectedStatusText(parseExpectedStatus(detailData))" :options="animalStatusOptions" /></div>
+          <div class="detail-item"><label>发布者</label><span>{{ detailData.publisherNickname }}</span></div>
+          <div class="detail-item full-width"><label>描述</label><p>{{ detailData.description || '-' }}</p></div>
           <div class="detail-item full-width" v-if="detailData.coverImageUrl"><label>封面图</label><img :src="detailData.coverImageUrl" style="max-width:200px;border-radius:8px" /></div>
           <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
             <label>图片</label><div class="detail-thumb-row"><img v-for="u in detailData.imageUrls" :key="u" :src="u" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" /></div>
           </div>
         </div>
         <div v-else-if="detailTargetType === 'RESCUE'" class="audit-detail-grid">
-          <div class="detail-item"><label>{{ t('rescues.location') }}</label><span>{{ detailData.location }}</span></div>
-          <div class="detail-item"><label>{{ t('rescues.animalCondition') }}</label><span>{{ detailData.animalCondition }}</span></div>
-          <div class="detail-item"><label>{{ t('rescues.contact') }}</label><span>{{ detailData.contact }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.status') }}</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="rescueStatusOptions" /></div>
-          <div class="detail-item"><label>{{ t('admin.publisher') }}</label><span>{{ detailData.publisherNickname }}</span></div>
-          <div class="detail-item full-width"><label>{{ t('rescues.description') }}</label><p>{{ detailData.description }}</p></div>
+          <div class="detail-item"><label>地点</label><span>{{ detailData.location }}</span></div>
+          <div class="detail-item"><label>动物情况</label><span>{{ detailData.animalCondition }}</span></div>
+          <div class="detail-item"><label>联系方式</label><span>{{ detailData.contact }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="rescueStatusOptions" /></div>
+          <div class="detail-item"><label>发布者</label><span>{{ detailData.publisherNickname }}</span></div>
+          <div class="detail-item full-width"><label>描述</label><p>{{ detailData.description }}</p></div>
           <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
             <label>图片</label><div class="detail-thumb-row"><img v-for="u in detailData.imageUrls" :key="u" :src="u" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" /></div>
           </div>
         </div>
         <div v-else-if="detailTargetType === 'ADOPT_APPLY'" class="audit-detail-grid">
-          <div class="detail-item"><label>{{ t('admin.animalId') }}</label><span>{{ detailData.animalId }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.animalType') }}</label><span>{{ detailData.animalTypeText }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.applicant') }}</label><span>{{ detailData.applicantName }}</span></div>
-          <div class="detail-item"><label>{{ t('rescues.contact') }}</label><span>{{ detailData.contact }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.status') }}</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="applyStatusOptions" /></div>
-          <div class="detail-item full-width"><label>{{ t('admin.adoptionReason') }}</label><p>{{ detailData.reason }}</p></div>
-          <div class="detail-item full-width"><label>{{ t('admin.livingCondition') }}</label><p>{{ detailData.livingCondition }}</p></div>
-          <div class="detail-item full-width"><label>{{ t('admin.experience') }}</label><p>{{ detailData.experience }}</p></div>
+          <div class="detail-item"><label>动物ID</label><span>{{ detailData.animalId }}</span></div>
+          <div class="detail-item"><label>动物类型</label><span>{{ detailData.animalTypeText }}</span></div>
+          <div class="detail-item"><label>申请人</label><span>{{ detailData.applicantName }}</span></div>
+          <div class="detail-item"><label>联系方式</label><span>{{ detailData.contact }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="applyStatusOptions" /></div>
+          <div class="detail-item full-width"><label>领养理由</label><p>{{ detailData.reason }}</p></div>
+          <div class="detail-item full-width"><label>居住条件</label><p>{{ detailData.livingCondition }}</p></div>
+          <div class="detail-item full-width"><label>饲养经验</label><p>{{ detailData.experience }}</p></div>
           <div class="detail-item full-width" v-if="detailData.auditOpinion"><label>审核意见</label><p>{{ detailData.auditOpinion }}</p></div>
         </div>
         <div v-else-if="detailTargetType === 'COMMUNITY_POST'" class="audit-detail-grid">
-          <div class="detail-item full-width"><label>{{ t('admin.noticeTitle') }}</label><p>{{ detailData.title }}</p></div>
-          <div class="detail-item"><label>{{ t('community.author') }}</label><span>{{ detailData.authorNickname }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.status') }}</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="communityPostStatusOptions" /></div>
+          <div class="detail-item full-width"><label>标题</label><p>{{ detailData.title }}</p></div>
+          <div class="detail-item"><label>作者</label><span>{{ detailData.authorNickname }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="communityPostStatusOptions" /></div>
           <div class="detail-item full-width"><label>内容</label><p>{{ detailData.content }}</p></div>
           <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
             <label>图片</label><div class="detail-thumb-row"><img v-for="u in detailData.imageUrls" :key="u" :src="u" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" /></div>
           </div>
         </div>
         <div v-else-if="detailTargetType === 'COMMUNITY_COMMENT'" class="audit-detail-grid">
-          <div class="detail-item"><label>{{ t('community.author') }}</label><span>{{ detailData.authorNickname }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.postId') }}</label><span>{{ detailData.postId }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.status') }}</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="communityCommentStatusOptions" /></div>
+          <div class="detail-item"><label>作者</label><span>{{ detailData.authorNickname }}</span></div>
+          <div class="detail-item"><label>帖子ID</label><span>{{ detailData.postId }}</span></div>
+          <div class="detail-item"><label>状态</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="communityCommentStatusOptions" /></div>
           <div class="detail-item full-width"><label>内容</label><p>{{ detailData.content }}</p></div>
           <div class="detail-item full-width" v-if="detailData.imageUrls?.length">
             <label>图片</label><div class="detail-thumb-row"><img v-for="u in detailData.imageUrls" :key="u" :src="u" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:6px" /></div>
           </div>
         </div>
-        <div v-else-if="detailTargetType === 'VOLUNTEER_TASK'" class="audit-detail-grid">
-          <div class="detail-item"><label>{{ t('admin.noticeTitle') }}</label><span>{{ detailData.title }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.location') }}</label><span>{{ detailData.location }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.status') }}</label><StatusTag :value="detailData.status" :text="detailData.statusText" :options="volunteerTaskStatusOptions" /></div>
-          <div class="detail-item"><label>{{ t('admin.peopleCount') }}</label><span>{{ detailData.currentVolunteers || 0 }} / {{ detailData.maxVolunteers }}</span></div>
-          <div class="detail-item"><label>{{ t('admin.publisher') }}</label><span>{{ detailData.publisherNickname }}</span></div>
-          <div class="detail-item" v-if="detailData.scheduledTime"><label>{{ t('admin.scheduledTime') }}</label><span>{{ formatTime(detailData.scheduledTime) }}</span></div>
-          <div class="detail-item full-width"><label>{{ t('animals.description') }}</label><p>{{ detailData.description || '-' }}</p></div>
-          <div class="detail-item full-width" v-if="detailData.reviewComment"><label>{{ t('admin.auditOpinion') }}</label><p>{{ detailData.reviewComment }}</p></div>
-          <div class="detail-item full-width" v-if="detailData.imageUrl"><label>{{ t('admin.coverImage') }}</label><img :src="detailData.imageUrl" style="max-width:200px;border-radius:8px" /></div>
-        </div>
       </template>
       <template #footer>
-        <el-button @click="detailDialog = false">{{ t('admin.close') }}</el-button>
+        <el-button @click="detailDialog = false">关闭</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="noticeDialog" :title="t('admin.noticeDialogTitle')" width="680px" append-to-body>
+    <el-dialog v-model="noticeDialog" title="公告编辑" width="680px" append-to-body>
       <el-form :model="noticeForm" label-position="top">
-        <el-form-item :label="t('admin.noticeTitle')">
+        <el-form-item label="标题">
           <el-input v-model="noticeForm.title" />
         </el-form-item>
-        <el-form-item :label="t('admin.status')">
+        <el-form-item label="状态">
           <el-select v-model="noticeForm.status" style="width: 100%">
             <el-option v-for="item in noticeStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('admin.noticeContent')">
+        <el-form-item label="内容">
           <el-input v-model="noticeForm.content" type="textarea" :rows="6" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="noticeDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button :loading="saving" :icon="Save" type="primary" @click="saveNotice">{{ t('common.save') }}</el-button>
+        <el-button @click="noticeDialog = false">取消</el-button>
+        <el-button :loading="saving" :icon="Save" type="primary" @click="saveNotice">保存</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="reportDialog" :title="t('admin.handleReportTitle')" width="560px" append-to-body>
+    <el-dialog v-model="reportDialog" title="处理举报" width="560px" append-to-body>
       <div v-if="reportTarget" style="margin-bottom: 12px">
         <el-tag>{{ reportTarget.targetTypeText }}</el-tag>
         <p style="margin: 12px 0 6px">{{ reportTarget.description }}</p>
-        <p class="muted">{{ t('admin.reportReason') }}：{{ reportTarget.reasonTypeText }}</p>
+        <p class="muted">举报原因：{{ reportTarget.reasonTypeText }}</p>
         <div v-if="reportTarget.targetContent" style="margin-top: 12px; padding: 12px; background: rgba(244,248,246,0.9); border-radius: 8px; white-space: pre-wrap; word-break: break-word; font-size: 13px; color: #30413b;">
-          <strong>{{ t('admin.reportedContent') }}</strong><br>{{ reportTarget.targetContent }}
+          <strong>被举报内容：</strong><br>{{ reportTarget.targetContent }}
         </div>
       </div>
       <el-form :model="reportForm" label-position="top">
-        <el-form-item :label="t('admin.handleAction')">
+        <el-form-item label="处理动作">
           <el-select v-model="reportForm.action" style="width: 100%">
             <el-option v-for="item in reportActionOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('admin.handleOpinion')">
+        <el-form-item label="处理意见">
           <el-input v-model="reportForm.opinion" type="textarea" :rows="4" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="reportDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button :loading="saving" type="primary" @click="submitReportResolve">{{ t('common.submit') }}</el-button>
+        <el-button @click="reportDialog = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="submitReportResolve">提交</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="appealDialog" :title="t('admin.handleAppealTitle')" width="560px" append-to-body>
+    <el-dialog v-model="appealDialog" title="处理申诉" width="560px" append-to-body>
       <div v-if="appealTarget" style="margin-bottom: 12px">
         <el-tag>{{ appealTarget.targetTypeText }}</el-tag>
         <p style="margin: 12px 0 6px">{{ appealTarget.reason }}</p>
-        <p class="muted">{{ t('admin.appealPerson') }}：{{ appealTarget.applicantNickname }}</p>
+        <p class="muted">申诉人：{{ appealTarget.applicantNickname }}</p>
       </div>
       <el-form :model="appealForm" label-position="top">
-        <el-form-item :label="t('admin.reviewAction')">
+        <el-form-item label="复核动作">
           <el-select v-model="appealForm.action" style="width: 100%">
             <el-option v-for="item in appealActionOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('admin.reviewOpinion')">
+        <el-form-item label="复核意见">
           <el-input v-model="appealForm.opinion" type="textarea" :rows="4" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="appealDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button :loading="saving" type="primary" @click="submitAppealReview">{{ t('common.submit') }}</el-button>
+        <el-button @click="appealDialog = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="submitAppealReview">提交</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="certDialog" :title="t('admin.certDialogTitle')" width="560px" append-to-body>
+    <el-dialog v-model="certDialog" title="救助站认证" width="560px" append-to-body>
       <div v-if="certTarget" style="margin-bottom: 12px">
         <p><strong>{{ certTarget.stationName }}</strong></p>
-        <p class="muted">{{ t('admin.applicant') }}：{{ certTarget.nickname }}</p>
-        <p class="muted">{{ t('admin.address') }}：{{ certTarget.address }}</p>
-        <p class="muted">{{ t('admin.contactPhone') }}：{{ certTarget.contactPhone }}</p>
+        <p class="muted">申请人：{{ certTarget.nickname }}</p>
+        <p class="muted">地址：{{ certTarget.address }}</p>
+        <p class="muted">联系电话：{{ certTarget.contactPhone }}</p>
       </div>
       <el-form :model="certForm" label-position="top">
-        <el-form-item :label="t('admin.certResult')">
+        <el-form-item label="认证结果">
           <el-select v-model="certForm.action" style="width: 100%">
-            <el-option :label="t('admin.approve')" value="APPROVED" />
-            <el-option :label="t('admin.reject')" value="REJECTED" />
+            <el-option label="通过" value="APPROVED" />
+            <el-option label="驳回" value="REJECTED" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('admin.handleOpinion')">
+        <el-form-item label="处理意见">
           <el-input v-model="certForm.opinion" type="textarea" :rows="4" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="certDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button :loading="saving" type="primary" @click="submitCertify">{{ t('common.submit') }}</el-button>
+        <el-button @click="certDialog = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="submitCertify">提交</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="stationDetailDialog" :title="t('admin.stationDetailTitle')" width="680px" append-to-body>
+    <el-dialog v-model="stationDetailDialog" title="救助站详情" width="680px" append-to-body>
       <div v-if="stationDetail" class="audit-detail-grid">
-        <div class="detail-item"><label>{{ t('admin.stationNameLabel') }}</label><span>{{ stationDetail.stationName }}</span></div>
-        <div class="detail-item"><label>{{ t('admin.applicant') }}</label><span>{{ stationDetail.nickname }}</span></div>
-        <div class="detail-item"><label>{{ t('admin.contactPhone') }}</label><span>{{ stationDetail.contactPhone }}</span></div>
-        <div class="detail-item"><label>{{ t('admin.address') }}</label><span>{{ stationDetail.address }}</span></div>
-        <div class="detail-item"><label>{{ t('admin.certStatus') }}</label><StatusTag :value="stationDetail.certificationStatus" :text="stationDetail.certificationStatusText" :options="certStatusOptions" /></div>
-        <div class="detail-item"><label>{{ t('admin.followers') }}</label><span>{{ stationDetail.followerCount }}</span></div>
-        <div class="detail-item"><label>{{ t('admin.applyTime') }}</label><span>{{ formatTime(stationDetail.createdAt) }}</span></div>
-        <div class="detail-item full-width"><label>{{ t('station.intro') }}</label><p>{{ stationDetail.description || '-' }}</p></div>
-        <div v-if="stationDetail.rejectReason" class="detail-item full-width"><label>{{ t('admin.rejectReasonLabel') }}</label><p>{{ stationDetail.rejectReason }}</p></div>
+        <div class="detail-item"><label>救助站名称</label><span>{{ stationDetail.stationName }}</span></div>
+        <div class="detail-item"><label>申请人</label><span>{{ stationDetail.nickname }}</span></div>
+        <div class="detail-item"><label>联系电话</label><span>{{ stationDetail.contactPhone }}</span></div>
+        <div class="detail-item"><label>地址</label><span>{{ stationDetail.address }}</span></div>
+        <div class="detail-item"><label>认证状态</label><StatusTag :value="stationDetail.certificationStatus" :text="stationDetail.certificationStatusText" :options="certStatusOptions" /></div>
+        <div class="detail-item"><label>粉丝数</label><span>{{ stationDetail.followerCount }}</span></div>
+        <div class="detail-item"><label>申请时间</label><span>{{ formatTime(stationDetail.createdAt) }}</span></div>
+        <div class="detail-item full-width"><label>简介</label><p>{{ stationDetail.description || '-' }}</p></div>
+        <div v-if="stationDetail.rejectReason" class="detail-item full-width"><label>驳回理由</label><p>{{ stationDetail.rejectReason }}</p></div>
         <div v-if="stationDetail.imageUrl" class="detail-item full-width"><label>封面图片</label><img :src="stationDetail.imageUrl" style="max-width:200px;border-radius:8px" /></div>
       </div>
       <template #footer>
-        <el-button @click="stationDetailDialog = false">{{ t('admin.close') }}</el-button>
+        <el-button @click="stationDetailDialog = false">关闭</el-button>
       </template>
     </el-dialog>
   </section>
@@ -488,7 +430,6 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import {
   Archive,
@@ -498,7 +439,6 @@ import {
   ClipboardCheck,
   Eye,
   FileCheck2,
-  Handshake,
   HeartHandshake,
   Megaphone,
   Pencil,
@@ -512,7 +452,6 @@ import {
 } from 'lucide-vue-next'
 import StatusTag from '../components/StatusTag.vue'
 import { adminApi } from '../api'
-import { volunteerTaskApi } from '../api'
 import { rescueStationApi } from '../api'
 import { notifyError } from '../api/http'
 import {
@@ -530,11 +469,9 @@ import {
   rescueStatusOptions,
   roleOptions,
   userStatusOptions,
-  certificationOptions as certStatusOptions,
-  volunteerTaskStatusOptions
+  certificationOptions as certStatusOptions
 } from '../utils/status'
 
-const { t } = useI18n()
 const active = ref('dashboard')
 const saving = ref(false)
 const overview = ref({ userCount: 0, animalCount: 0, rescueCount: 0, applyCount: 0, pendingAuditCount: 0 })
@@ -569,13 +506,11 @@ const stations = ref([])
 const stationDetailDialog = ref(false)
 const stationDetail = ref(null)
 const stationStatusFilter = ref('')
-const volunteerTasks = ref([])
-const volunteerStatusFilter = ref('')
 const certDialog = ref(false)
 const certTarget = ref(null)
 const certForm = reactive({ action: 'APPROVED', opinion: '' })
 
-const detailTypeLabels = { ANIMAL: t('admin.animalRecord'), RESCUE: t('admin.rescueInfo'), ADOPT_APPLY: t('admin.adoptApply'), COMMUNITY_POST: t('admin.communityPost'), COMMUNITY_COMMENT: t('admin.communityComment'), VOLUNTEER_TASK: t('admin.volunteerTaskLabel') }
+const detailTypeLabels = { ANIMAL: '动物档案', RESCUE: '救助信息', ADOPT_APPLY: '领养申请', COMMUNITY_POST: '社区帖子', COMMUNITY_COMMENT: '社区评论' }
 const detailTargetTypeText = ref('')
 
 function parseExpectedStatus(data) {
@@ -597,7 +532,7 @@ const reportForm = reactive({ action: 'DISMISS', opinion: '' })
 const appealForm = reactive({ action: 'ESCALATE', opinion: '' })
 
 async function loadAll() {
-  await Promise.all([loadDashboard(), loadPending(), loadUsers(), loadNotices(), loadApplications(), loadReports(), loadAppeals(), loadStations(), loadVolunteerTasks()])
+  await Promise.all([loadDashboard(), loadPending(), loadUsers(), loadNotices(), loadApplications(), loadReports(), loadAppeals(), loadStations()])
 }
 
 async function loadDashboard() {
@@ -686,7 +621,7 @@ function openAudit(row, action) {
     targetType: row.targetType,
     targetId: row.targetId,
     action,
-    opinion: action === 'APPROVE' ? t('admin.defaultApproveOpinion') : action === 'OFFLINE' ? t('admin.defaultOfflineOpinion') : t('admin.defaultRejectOpinion')
+    opinion: action === 'APPROVE' ? '审核通过' : action === 'OFFLINE' ? '内容已下架' : '审核不通过'
   })
   auditDialog.value = true
 }
@@ -695,7 +630,7 @@ async function submitAudit() {
   saving.value = true
   try {
     await adminApi.audit(auditForm)
-    ElMessage.success(t('admin.auditProcessed'))
+    ElMessage.success('审核已处理')
     auditDialog.value = false
     await loadAll()
   } catch (error) {
@@ -708,7 +643,7 @@ async function submitAudit() {
 async function updateUser(row) {
   try {
     await adminApi.updateUser(row.id, { role: row.role, status: row.status })
-    ElMessage.success(t('admin.userUpdated'))
+    ElMessage.success('用户已更新')
   } catch (error) {
     notifyError(error)
   }
@@ -727,7 +662,7 @@ async function saveNotice() {
     } else {
       await adminApi.createNotice(noticeForm)
     }
-    ElMessage.success(t('admin.noticeSaved'))
+    ElMessage.success('公告已保存')
     noticeDialog.value = false
     await loadNotices()
   } catch (error) {
@@ -740,7 +675,7 @@ async function saveNotice() {
 async function offlineNotice(row) {
   try {
     await adminApi.offlineNotice(row.id)
-    ElMessage.success(t('admin.noticeOffline'))
+    ElMessage.success('公告已下架')
     await loadNotices()
   } catch (error) {
     notifyError(error)
@@ -762,7 +697,7 @@ async function submitReportResolve() {
   saving.value = true
   try {
     await adminApi.resolveReport(reportTarget.value.id, reportForm)
-    ElMessage.success(t('admin.reportProcessed'))
+    ElMessage.success('举报已处理')
     reportDialog.value = false
     await loadReports()
   } catch (error) {
@@ -787,7 +722,7 @@ async function submitAppealReview() {
   saving.value = true
   try {
     await adminApi.reviewAppeal(appealTarget.value.id, appealForm)
-    ElMessage.success(t('admin.appealProcessed'))
+    ElMessage.success('申诉已处理')
     appealDialog.value = false
     await loadAppeals()
   } catch (error) {
@@ -819,7 +754,7 @@ async function submitCertify() {
   saving.value = true
   try {
     await rescueStationApi.certify(certTarget.value.userId, { status: certForm.action, reason: certForm.opinion })
-    ElMessage.success(certForm.action === 'APPROVED' ? t('admin.certApprovedMsg') : t('admin.certRejectedMsg'))
+    ElMessage.success(certForm.action === 'APPROVED' ? '已通过认证' : '已驳回')
     certDialog.value = false
     await loadStations()
   } catch (error) {
@@ -834,39 +769,8 @@ function openStationDetail(row) {
   stationDetailDialog.value = true
 }
 
-async function loadVolunteerTasks() {
-  try {
-    const data = await volunteerTaskApi.adminList({ status: volunteerStatusFilter.value || undefined, page: 0, size: 30 })
-    volunteerTasks.value = data.content || []
-  } catch (error) {
-    notifyError(error)
-  }
-}
-
-function openVolunteerDetail(row) {
-  detailTargetType.value = 'VOLUNTEER_TASK'
-  detailTargetTypeText.value = t('admin.volunteerTaskLabel')
-  detailData.value = row
-  detailDialog.value = true
-}
-
 function formatTime(value) {
   return value ? new Date(value).toLocaleString('zh-CN') : '-'
-}
-
-const auditTypeMap = { ANIMAL: t('admin.animalRecord'), RESCUE: t('admin.rescueInfo'), ADOPT_APPLY: t('admin.adoptApply'), COMMUNITY_POST: t('admin.communityPost'), COMMUNITY_COMMENT: t('admin.communityComment'), VOLUNTEER_TASK: t('admin.volunteerTaskLabel') }
-function auditTypeLabel(type) {
-  return auditTypeMap[type] || type
-}
-
-const reportTargetLabelMap = { 'Animal profile': t('admin.animalRecord'), 'Rescue post': t('admin.rescueInfo'), 'Community post': t('admin.communityPost'), 'Community comment': t('admin.communityComment'), 'User': t('admin.userLabel') }
-function reportTargetLabel(text) {
-  return reportTargetLabelMap[text] || text
-}
-
-const appealTargetLabelMap = { 'Animal profile': t('admin.animalRecord'), 'Rescue post': t('admin.rescueInfo'), 'Adoption application': t('admin.adoptApply'), 'Community post': t('admin.communityPost'), 'Community comment': t('admin.communityComment') }
-function appealTargetLabel(text) {
-  return appealTargetLabelMap[text] || text
 }
 
 onMounted(loadAll)

@@ -39,6 +39,14 @@ public class Animal extends BaseEntity {
     @Column(nullable = false, length = 255)
     private String foundRegion;
 
+    /** 发现地点经度，用于地图展示和附近动物查询。 */
+    @Column(name = "location_lng", columnDefinition = "DECIMAL(10,7)")
+    private Double foundLongitude;
+
+    /** 发现地点纬度，用于地图展示和附近动物查询。 */
+    @Column(name = "location_lat", columnDefinition = "DECIMAL(10,7)")
+    private Double foundLatitude;
+
     @Column(length = 500)
     private String healthCondition;
 

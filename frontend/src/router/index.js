@@ -13,6 +13,7 @@ const routes = [
   { path: '/animals', name: 'animals', component: () => import('../views/AnimalsView.vue') },
   { path: '/animals/:id', name: 'animal-detail', component: () => import('../views/AnimalDetailView.vue') },
   { path: '/rescues', name: 'rescues', component: () => import('../views/RescuesView.vue') },
+  { path: '/map', name: 'map', component: () => import('../views/MapView.vue'), meta: { requiresAuth: true } },
   { path: '/donations', name: 'donations', component: () => import('../views/DonationsView.vue') },
   { path: '/volunteer-tasks', name: 'volunteer-tasks', component: () => import('../views/VolunteerTasksView.vue') },
   { path: '/rescue-station', name: 'rescue-station', component: () => import('../views/RescueStationView.vue') },

@@ -20,6 +20,7 @@
             <RouterLink to="/notices">{{ $t('nav.notices') }}</RouterLink>
             <RouterLink to="/animals">{{ $t('nav.animals') }}</RouterLink>
             <RouterLink to="/rescues">{{ $t('nav.rescues') }}</RouterLink>
+            <RouterLink v-if="auth.isLoggedIn.value" to="/map">地图找寻</RouterLink>
             <RouterLink to="/donations">{{ $t('nav.donations') }}</RouterLink>
             <RouterLink to="/volunteer-tasks">{{ $t('nav.volunteerTasks') }}</RouterLink>
             <RouterLink v-if="auth.isAdmin.value" to="/admin/rescue-stations">{{ $t('nav.rescueStation') }}</RouterLink>

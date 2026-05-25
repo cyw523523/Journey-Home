@@ -29,7 +29,7 @@ app:
   ai:
     zhipu:
       api-url: ${ZHIPU_API_URL:https://open.bigmodel.cn/api/paas/v4/chat/completions}
-      api-key: ${ZHIPU_API_KEY:}
+      api-key: d65edab46a5c49599cf2033a079d67fd.SD62vu4rPonycqns
       model: ${ZHIPU_AI_MODEL:glm-4-flash-250414}
       connect-timeout-ms: ${ZHIPU_CONNECT_TIMEOUT_MS:10000}
       read-timeout-ms: ${ZHIPU_READ_TIMEOUT_MS:60000}

@@ -64,6 +64,13 @@ public class RescueStationService {
         station.setStationName(request.stationName());
         station.setDescription(request.description());
         station.setAddress(request.address());
+        if (request.longitude() != null && request.latitude() != null) {
+            station.setLongitude(request.longitude());
+            station.setLatitude(request.latitude());
+        }
+        if (request.serviceTime() != null) {
+            station.setServiceTime(request.serviceTime());
+        }
         station.setContactPhone(request.contactPhone());
         station.setImageUrl(request.imageUrl());
         station.setCertificationStatus(CertificationStatus.PENDING);
@@ -112,6 +119,13 @@ public class RescueStationService {
         station.setStationName(request.stationName());
         station.setDescription(request.description());
         station.setAddress(request.address());
+        if (request.longitude() != null && request.latitude() != null) {
+            station.setLongitude(request.longitude());
+            station.setLatitude(request.latitude());
+        }
+        if (request.serviceTime() != null) {
+            station.setServiceTime(request.serviceTime());
+        }
         station.setContactPhone(request.contactPhone());
         station.setImageUrl(request.imageUrl());
         cacheInvalidationService.evictPublicCaches();

@@ -32,6 +32,17 @@ public class RescueStation extends BaseEntity {
     @Column(length = 255)
     private String address;
 
+    /** 救助站经度，用于地图展示和附近救助站查询。 */
+    @Column(name = "location_lng", columnDefinition = "DECIMAL(10,7)")
+    private Double longitude;
+
+    /** 救助站纬度，用于地图展示和附近救助站查询。 */
+    @Column(name = "location_lat", columnDefinition = "DECIMAL(10,7)")
+    private Double latitude;
+
+    @Column(name = "service_time", length = 128)
+    private String serviceTime;
+
     @Column(length = 64)
     private String contactPhone;
 

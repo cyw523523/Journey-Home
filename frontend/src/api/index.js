@@ -109,6 +109,22 @@ export const aiAssistantApi = {
   chat: (data) => http.post('/ai-assistant/chat', data, { timeout: 60000 })
 }
 
+export const mapApi = {
+  points: (params) => http.get('/map/points', { params }),
+  nearbyAnimals: (params) => http.get('/map/animals/nearby', { params }),
+  stations: (params) => http.get('/map/stations', { params }),
+  nearbyStations: (params) => http.get('/map/stations/nearby', { params }),
+  around: (params) => http.get('/map/around', { params })
+}
+
+export const locationApi = {
+  uploadAnimalLocation: (data) => http.post('/animal/location', data),
+  nearbyAnimals: (params) => http.get('/animal/nearby', { params }),
+  saveRescueStationLocation: (data) => http.post('/rescue-station/location', data),
+  updateRescueStationLocation: (data) => http.put('/rescue-station/location', data),
+  nearbyRescueStations: (params) => http.get('/rescue-station/nearby', { params })
+}
+
 export const donationApi = {
   list: (params) => http.get('/donations', { params }),
   detail: (id) => http.get(`/donations/${id}`),
@@ -122,7 +138,6 @@ export const donationApi = {
 
 export const volunteerTaskApi = {
   list: (params) => http.get('/volunteer-tasks', { params }),
-  adminList: (params) => http.get('/volunteer-tasks/admin/list', { params }),
   detail: (id) => http.get(`/volunteer-tasks/${id}`),
   applications: (id, params) => http.get(`/volunteer-tasks/${id}/applications`, { params }),
   create: (data) => http.post('/volunteer-tasks', data),

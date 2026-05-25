@@ -16,26 +16,26 @@ public final class VolunteerTaskDtos {
     }
 
     public record SaveVolunteerTaskRequest(
-            @NotBlank(message = "任务标题不能为空")
-            @Size(max = 120, message = "任务标题长度不能超过120字符")
+            @NotBlank(message = "Title is required")
+            @Size(max = 120, message = "Title must be at most 120 characters")
             String title,
 
-            @NotBlank(message = "任务描述不能为空")
-            @Size(max = 1000, message = "任务描述长度不能超过1000字符")
+            @NotBlank(message = "Description is required")
+            @Size(max = 1000, message = "Description must be at most 1000 characters")
             String description,
 
-            @NotBlank(message = "活动地点不能为空")
-            @Size(max = 255, message = "活动地点长度不能超过255字符")
+            @NotBlank(message = "Location is required")
+            @Size(max = 255, message = "Location must be at most 255 characters")
             String location,
 
-            @NotNull(message = "招募人数不能为空")
-            @Min(value = 1, message = "招募人数至少为1人")
-            @Max(value = 100, message = "招募人数最多为100人")
+            @NotNull(message = "Max volunteers is required")
+            @Min(value = 1, message = "Max volunteers must be at least 1")
+            @Max(value = 100, message = "Max volunteers must be at most 100")
             Integer maxVolunteers,
 
             LocalDateTime scheduledTime,
 
-            @Size(max = 500, message = "封面图URL长度不能超过500字符")
+            @Size(max = 500, message = "Image URL must be at most 500 characters")
             String imageUrl,
 
             Long relatedRescueId
@@ -43,22 +43,22 @@ public final class VolunteerTaskDtos {
     }
 
     public record UpdateTaskStatusRequest(
-            @NotNull(message = "状态不能为空")
+            @NotNull(message = "Status is required")
             VolunteerTaskStatus status
     ) {
     }
 
     public record ReviewApplicationRequest(
-            @NotNull(message = "状态不能为空")
+            @NotNull(message = "Status is required")
             ApplicationStatus status,
 
-            @Size(max = 500, message = "审核意见长度不能超过500字符")
+            @Size(max = 500, message = "Review comment must be at most 500 characters")
             String reviewComment
     ) {
     }
 
     public record ApplyRequest(
-            @Size(max = 500, message = "留言长度不能超过500字符")
+            @Size(max = 500, message = "Message must be at most 500 characters")
             String message
     ) {
     }

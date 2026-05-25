@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS animals (
     gender VARCHAR(32) NOT NULL,
     age INT,
     found_region VARCHAR(255) NOT NULL,
+    location_lng DECIMAL(10,7),
+    location_lat DECIMAL(10,7),
     health_condition VARCHAR(500),
     cover_image_url VARCHAR(500),
     description VARCHAR(1000),
@@ -261,6 +263,9 @@ CREATE TABLE IF NOT EXISTS rescue_stations (
     station_name VARCHAR(120) NOT NULL,
     description VARCHAR(1000),
     address VARCHAR(255),
+    location_lng DECIMAL(10,7),
+    location_lat DECIMAL(10,7),
+    service_time VARCHAR(128),
     contact_phone VARCHAR(64),
     image_url VARCHAR(500),
     certification_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
@@ -280,4 +285,15 @@ CREATE TABLE IF NOT EXISTS user_follows (
     CONSTRAINT uf_follower FOREIGN KEY (follower_id) REFERENCES users(id),
     CONSTRAINT uf_station FOREIGN KEY (station_user_id) REFERENCES users(id),
     UNIQUE KEY uk_follow (follower_id, station_user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS user_location_history (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    location_lat DECIMAL(10,7) NOT NULL,
+    location_lng DECIMAL(10,7) NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_user_location_history_user FOREIGN KEY (user_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

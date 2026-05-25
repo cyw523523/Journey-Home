@@ -24,6 +24,13 @@
       </el-select>
       <el-input v-model="filters.region" :placeholder="$t('animals.region')" clearable @keyup.enter="load" />
       <el-button :icon="Search" type="primary" @click="load">{{ $t('animals.filter') }}</el-button>
+      <el-button :icon="Navigation" :loading="distanceLoading" @click="refreshDistance">
+        {{ currentLocation ? '刷新距离' : '显示距离' }}
+      </el-button>
+    </div>
+    <div v-if="currentLocation" class="distance-tip">
+      <span>已根据你的位置计算送养距离</span>
+      <span>经度 {{ currentLocation.longitude.toFixed(4) }}，纬度 {{ currentLocation.latitude.toFixed(4) }}</span>
     </div>
 
     <el-skeleton v-if="loading" :rows="6" animated />
@@ -64,8 +71,23 @@
           </el-col>
         </el-row>
         <el-form-item :label="$t('animals.foundRegion')" prop="foundRegion">
-          <el-input v-model="form.foundRegion" />
+          <el-input v-model="form.foundRegion" placeholder="例如：武汉市洪山区珞喻路附近" />
         </el-form-item>
+        <el-row :gutter="12">
+          <el-col :span="8">
+            <el-form-item label="发现地经度">
+              <el-input-number v-model="form.foundLongitude" :precision="6" :step="0.001" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="发现地纬度">
+              <el-input-number v-model="form.foundLatitude" :precision="6" :step="0.001" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8" class="animal-location-action">
+            <el-button :icon="LocateFixed" @click="fillCurrentLocation">使用当前位置</el-button>
+          </el-col>
+        </el-row>
         <el-form-item :label="$t('animals.healthCondition')">
           <el-input v-model="form.healthCondition" />
         </el-form-item>
@@ -94,11 +116,12 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { LogIn, Plus, Search, Send } from 'lucide-vue-next'
+import { LocateFixed, LogIn, Navigation, Plus, Search, Send } from 'lucide-vue-next'
 import AnimalCard from '../components/AnimalCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import { animalApi } from '../api'
+import { getBrowserLocation } from '../utils/amap'
 import { notifyError } from '../api/http'
 import { demoAnimals } from '../data/demoData'
 import { animalStatusOptions, animalTypeOptions, genderOptions } from '../utils/status'
@@ -109,6 +132,8 @@ const { t } = useI18n()
 const auth = useAuth()
 const loading = ref(false)
 const saving = ref(false)
+const distanceLoading = ref(false)
+const currentLocation = ref(loadCachedLocation())
 const animals = ref([])
 const total = ref(0)
 const page = ref(1)
@@ -129,7 +154,9 @@ const form = reactive({
   gender: 'UNKNOWN',
   age: 0,
   foundRegion: '',
-  healthCondition: '',
+  foundLongitude: null,
+  foundLatitude: null,
+  healthCondition: '', 
   imageUrls: [],
   description: '',
   status: null
@@ -153,17 +180,83 @@ async function load() {
       size: pageSize
     })
     if (data.content && data.content.length > 0) {
-      animals.value = data.content
+      animals.value = withDistance(data.content)
       total.value = data.totalElements || 0
     } else {
-      animals.value = demoAnimals
+      animals.value = withDistance(demoAnimals)
       total.value = demoAnimals.length
     }
   } catch {
-    animals.value = demoAnimals
+    animals.value = withDistance(demoAnimals)
     total.value = demoAnimals.length
   } finally {
     loading.value = false
+  }
+}
+
+function loadCachedLocation() {
+  try {
+    const raw = localStorage.getItem('guitu:lastLocation')
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (Number.isFinite(parsed.latitude) && Number.isFinite(parsed.longitude)) {
+      return parsed
+    }
+  } catch {
+    localStorage.removeItem('guitu:lastLocation')
+  }
+  return null
+}
+
+function cacheLocation(location) {
+  localStorage.setItem('guitu:lastLocation', JSON.stringify(location))
+}
+
+function withDistance(list) {
+  return list.map((animal) => ({
+    ...animal,
+    distanceKm: calcDistanceKm(animal)
+  }))
+}
+
+function calcDistanceKm(animal) {
+  if (!currentLocation.value) return null
+  const lat = Number(animal.foundLatitude)
+  const lng = Number(animal.foundLongitude)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+
+  const toRad = (value) => (value * Math.PI) / 180
+  const earthRadiusKm = 6371.0088
+  const dLat = toRad(lat - currentLocation.value.latitude)
+  const dLng = toRad(lng - currentLocation.value.longitude)
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(currentLocation.value.latitude)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2
+  return Number((earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2))
+}
+
+async function refreshDistance() {
+  distanceLoading.value = true
+  try {
+    const location = await getBrowserLocation()
+    currentLocation.value = location
+    cacheLocation(location)
+    animals.value = withDistance(animals.value)
+    ElMessage.success('已计算你与送养动物的距离')
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    distanceLoading.value = false
+  }
+}
+
+async function fillCurrentLocation() {
+  try {
+    const location = await getBrowserLocation()
+    form.foundLongitude = Number(location.longitude.toFixed(6))
+    form.foundLatitude = Number(location.latitude.toFixed(6))
+    ElMessage.success('已填入当前位置坐标')
+  } catch (error) {
+    notifyError(error)
   }
 }
 
@@ -174,7 +267,7 @@ async function submit() {
     await animalApi.create(form)
     ElMessage.success(t('animals.submitSuccess'))
     dialogVisible.value = false
-    Object.assign(form, { type: 'CAT', gender: 'UNKNOWN', age: 0, foundRegion: '', healthCondition: '', imageUrls: [], description: '', status: null })
+    Object.assign(form, { type: 'CAT', gender: 'UNKNOWN', age: 0, foundRegion: '', foundLongitude: null, foundLatitude: null, healthCondition: '', imageUrls: [], description: '', status: null })
     load()
   } catch (error) {
     notifyError(error)
@@ -183,5 +276,41 @@ async function submit() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+})
 </script>
+
+
+<style scoped>
+.animal-location-action {
+  display: flex;
+  align-items: end;
+  padding-bottom: 18px;
+}
+
+.animal-location-action .el-button {
+  width: 100%;
+}
+
+.distance-tip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  margin: -8px 0 18px;
+  padding: 10px 14px;
+  border: 1px solid rgba(31, 138, 112, 0.16);
+  border-radius: 999px;
+  background: rgba(31, 138, 112, 0.08);
+  color: #245c50;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .animal-location-action {
+    padding-bottom: 0;
+  }
+}
+</style>

@@ -28,6 +28,10 @@ public final class AnimalDtos {
             @Size(max = 255, message = "发现地区长度不能超过255")
             String foundRegion,
 
+            Double foundLongitude,
+
+            Double foundLatitude,
+
             @Size(max = 500, message = "健康情况长度不能超过500")
             String healthCondition,
 
@@ -55,6 +59,8 @@ public final class AnimalDtos {
             String genderText,
             Integer age,
             String foundRegion,
+            Double foundLongitude,
+            Double foundLatitude,
             String healthCondition,
             String coverImageUrl,
             List<String> imageUrls,

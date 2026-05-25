@@ -180,11 +180,26 @@ public class AnimalService {
         animal.setGender(request.gender());
         animal.setAge(request.age());
         animal.setFoundRegion(request.foundRegion());
+        validateCoordinate(request.foundLatitude(), request.foundLongitude());
+        animal.setFoundLatitude(request.foundLatitude());
+        animal.setFoundLongitude(request.foundLongitude());
         animal.setHealthCondition(request.healthCondition());
         animal.setDescription(request.description());
         animal.getImageUrls().clear();
         animal.getImageUrls().addAll(request.imageUrls());
         animal.setCoverImageUrl(request.imageUrls().isEmpty() ? null : request.imageUrls().get(0));
+    }
+
+    private void validateCoordinate(Double latitude, Double longitude) {
+        if (latitude == null && longitude == null) {
+            return;
+        }
+        if (latitude == null || longitude == null) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "经纬度需要同时填写");
+        }
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "经纬度范围不合法");
+        }
     }
 
     private boolean canAccessPrivate(Animal animal) {

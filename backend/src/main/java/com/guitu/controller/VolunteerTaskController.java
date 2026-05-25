@@ -40,15 +40,6 @@ public class VolunteerTaskController {
         return ApiResponse.ok(volunteerTaskService.listPublic(keyword, region, status, page, size));
     }
 
-    @GetMapping("/admin/list")
-    public ApiResponse<PageResponse<VolunteerTaskDtos.VolunteerTaskResponse>> adminList(
-            @RequestParam(required = false) VolunteerTaskStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ApiResponse.ok(volunteerTaskService.listAdmin(status, page, size));
-    }
-
     @GetMapping("/{id}")
     public ApiResponse<VolunteerTaskDtos.VolunteerTaskResponse> detail(@PathVariable Long id) {
         return ApiResponse.ok(volunteerTaskService.detail(id));
