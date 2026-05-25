@@ -160,8 +160,11 @@ public class CommunityService {
         }
         CommunityPost saved = communityPostRepository.save(post);
         notifyPostReview(saved);
-        if (saved.getStatus() == CommunityPostStatus.PUBLISHED)
+        if (saved.getStatus() == CommunityPostStatus.PUBLISHED) {
+            saved.getCategory().setPostCount(saved.getCategory().getPostCount() + 1);
+            categoryService.save(saved.getCategory());
             notifDispatcher.broadcastNewPost(currentUser.getId(), saved.getId());
+        }
         return mapper.toCommunityPostResponse(saved, 0);
     }
 

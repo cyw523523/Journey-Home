@@ -81,6 +81,7 @@ public class CommunityNotificationDispatcher {
     @Async
     public void broadcastNewPost(Long authorId, Long postId) {
         long followerCount = followRepo.countByFolloweeId(authorId);
+        if (followerCount == 0) return;
         int limit = (int) Math.min(followerCount, 200);
         Pageable pageable = PageRequest.of(0, limit);
         List<Long> followerIds = followRepo.findByFolloweeIdOrderByCreatedAtDesc(authorId, pageable)

@@ -71,7 +71,9 @@ export const communityApi = {
   listFloors: (postId, params) => http.get(`/community/posts/${postId}/floors`, { params }),
   listReplies: (floorId, params) => http.get(`/community/comments/${floorId}/replies`, { params }),
   createFloor: (postId, data) => http.post(`/community/posts/${postId}/floors`, data),
-  createReply: (floorId, data) => http.post(`/community/comments/${floorId}/replies`, data)
+  createReply: (floorId, data) => http.post(`/community/comments/${floorId}/replies`, data),
+  follow: (userId) => http.post(`/community/follows/${userId}`),
+  unfollow: (userId) => http.delete(`/community/follows/${userId}`)
 }
 
 export const reportApi = {

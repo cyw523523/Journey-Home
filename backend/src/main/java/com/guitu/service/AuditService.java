@@ -238,6 +238,9 @@ public class AuditService {
         }
         recordLog(AuditTargetType.COMMUNITY_POST, post.getId(), auditor, request.action(), request.opinion());
         notifyAuditResult(post.getAuthor(), "AUDIT_RESULT_COMMUNITY_POST", request.opinion(), "COMMUNITY_POST", post.getId());
+        if (request.action() == AuditAction.APPROVE && post.getCategory() != null) {
+            post.getCategory().setPostCount(post.getCategory().getPostCount() + 1);
+        }
     }
 
     private void auditComment(AuditDtos.AuditRequest request, User auditor) {
