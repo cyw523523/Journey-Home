@@ -47,6 +47,10 @@ public class CommunityCategoryService {
             .orElseThrow(() -> new BusinessException("版块不存在"));
     }
 
+    public void save(CommunityCategory c) {
+        categoryRepository.save(c);
+    }
+
     private void apply(CommunityCategory c, SaveCategoryRequest req) {
         c.setCode(req.code()); c.setName(req.name()); c.setNameEn(req.nameEn());
         c.setDescription(req.description()); c.setIcon(req.icon());
