@@ -31,6 +31,7 @@ public class RescueStationService {
     private final NotificationService notificationService;
     private final CacheInvalidationService cacheInvalidationService;
     private final EntityManager entityManager;
+    private final GeocodingService geocodingService;
 
     public RescueStationService(
             RescueStationRepository stationRepository,
@@ -39,7 +40,8 @@ public class RescueStationService {
             DtoMapper mapper,
             NotificationService notificationService,
             CacheInvalidationService cacheInvalidationService,
-            EntityManager entityManager
+            EntityManager entityManager,
+            GeocodingService geocodingService
     ) {
         this.stationRepository = stationRepository;
         this.followRepository = followRepository;
@@ -48,6 +50,7 @@ public class RescueStationService {
         this.notificationService = notificationService;
         this.cacheInvalidationService = cacheInvalidationService;
         this.entityManager = entityManager;
+        this.geocodingService = geocodingService;
     }
 
     @Transactional
@@ -67,6 +70,12 @@ public class RescueStationService {
         if (request.longitude() != null && request.latitude() != null) {
             station.setLongitude(request.longitude());
             station.setLatitude(request.latitude());
+        } else if (request.address() != null && !request.address().isBlank()) {
+            GeocodingService.GeoResult geo = geocodingService.geocode(request.address());
+            if (geo != null) {
+                station.setLongitude(geo.longitude());
+                station.setLatitude(geo.latitude());
+            }
         }
         if (request.serviceTime() != null) {
             station.setServiceTime(request.serviceTime());
@@ -122,6 +131,12 @@ public class RescueStationService {
         if (request.longitude() != null && request.latitude() != null) {
             station.setLongitude(request.longitude());
             station.setLatitude(request.latitude());
+        } else if (request.address() != null && !request.address().isBlank()) {
+            GeocodingService.GeoResult geo = geocodingService.geocode(request.address());
+            if (geo != null) {
+                station.setLongitude(geo.longitude());
+                station.setLatitude(geo.latitude());
+            }
         }
         if (request.serviceTime() != null) {
             station.setServiceTime(request.serviceTime());

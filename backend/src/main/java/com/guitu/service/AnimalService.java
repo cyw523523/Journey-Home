@@ -45,6 +45,7 @@ public class AnimalService {
     private final ContentModerationService moderationService;
     private final CacheInvalidationService cacheInvalidationService;
     private final NotificationService notificationService;
+    private final GeocodingService geocodingService;
 
     public AnimalService(
             AnimalRepository animalRepository,
@@ -52,7 +53,8 @@ public class AnimalService {
             DtoMapper mapper,
             ContentModerationService moderationService,
             CacheInvalidationService cacheInvalidationService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            GeocodingService geocodingService
     ) {
         this.animalRepository = animalRepository;
         this.userService = userService;
@@ -60,6 +62,7 @@ public class AnimalService {
         this.moderationService = moderationService;
         this.cacheInvalidationService = cacheInvalidationService;
         this.notificationService = notificationService;
+        this.geocodingService = geocodingService;
     }
 
     @Transactional(readOnly = true)
@@ -181,8 +184,17 @@ public class AnimalService {
         animal.setAge(request.age());
         animal.setFoundRegion(request.foundRegion());
         validateCoordinate(request.foundLatitude(), request.foundLongitude());
-        animal.setFoundLatitude(request.foundLatitude());
-        animal.setFoundLongitude(request.foundLongitude());
+        if (request.foundLatitude() != null && request.foundLongitude() != null) {
+            animal.setFoundLatitude(request.foundLatitude());
+            animal.setFoundLongitude(request.foundLongitude());
+        } else if (request.foundRegion() != null && !request.foundRegion().isBlank()
+                && (animal.getFoundLatitude() == null || animal.getFoundLongitude() == null)) {
+            GeocodingService.GeoResult geo = geocodingService.geocode(request.foundRegion());
+            if (geo != null) {
+                animal.setFoundLongitude(geo.longitude());
+                animal.setFoundLatitude(geo.latitude());
+            }
+        }
         animal.setHealthCondition(request.healthCondition());
         animal.setDescription(request.description());
         animal.getImageUrls().clear();

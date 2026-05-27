@@ -107,7 +107,6 @@ public class LocationService {
      */
     @Transactional(readOnly = true)
     public LocationDtos.NearbyAnimalListResponse nearbyAnimals(Double latitude, Double longitude, Double distance) {
-        SecuritySupport.requireUser();
         double safeDistance = validateNearbyParams(latitude, longitude, distance);
 
         List<LocationDtos.NearbyAnimalResponse> list = animalRepository
@@ -132,7 +131,6 @@ public class LocationService {
      */
     @Transactional(readOnly = true)
     public LocationDtos.NearbyRescueStationListResponse nearbyRescueStations(Double latitude, Double longitude, Double distance) {
-        SecuritySupport.requireUser();
         double safeDistance = validateNearbyParams(latitude, longitude, distance);
 
         List<LocationDtos.NearbyRescueStationResponse> list = rescueStationRepository
@@ -164,7 +162,6 @@ public class LocationService {
 
     private Specification<RescueStation> mappableStationSpec() {
         return (root, query, cb) -> cb.and(
-                cb.equal(root.get("certificationStatus"), CertificationStatus.APPROVED),
                 cb.isNotNull(root.get("latitude")),
                 cb.isNotNull(root.get("longitude"))
         );

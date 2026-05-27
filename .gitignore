@@ -14,3 +14,4 @@ frontend/*screenshot.png
 CLAUDE.md
 UI-DESIGN.md
 *.png
+frontend/.env.local
