@@ -2,32 +2,32 @@
   <section class="geo-panel">
     <div class="geo-toolbar lift-card">
       <div class="geo-title">
-        <h1>地图找寻</h1>
-        <p>展示附近流浪动物发现地点和救助站/领养点，按距离由近到远推荐。</p>
+        <h1>{{ t('geo.title') }}</h1>
+        <p>{{ t('geo.description') }}</p>
       </div>
 
       <div class="geo-controls">
         <el-form label-position="top" class="geo-control-form">
-          <el-form-item label="距离范围">
+          <el-form-item :label="t('geo.distanceRange')">
             <el-select v-model="distanceKm" size="large" style="width: 150px" @change="handleDistanceChange">
               <el-option v-for="item in distanceOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
 
-          <el-form-item label="显示类型">
+          <el-form-item :label="t('geo.displayType')">
             <el-checkbox-group v-model="visibleTypes" @change="refreshMarkers">
-              <el-checkbox-button label="animal">动物</el-checkbox-button>
-              <el-checkbox-button label="station">救助站</el-checkbox-button>
+              <el-checkbox-button label="animal">{{ t('geo.animals') }}</el-checkbox-button>
+              <el-checkbox-button label="station">{{ t('geo.stations') }}</el-checkbox-button>
             </el-checkbox-group>
           </el-form-item>
 
-          <el-form-item label="当前位置">
+          <el-form-item :label="t('geo.currentLocation')">
             <div class="location-line">
               <el-tag v-if="hasCurrentLocation" type="success" effect="plain">
                 {{ currentLocation.latitude.toFixed(6) }}, {{ currentLocation.longitude.toFixed(6) }}
               </el-tag>
-              <el-tag v-else type="info" effect="plain">暂未定位</el-tag>
-              <el-button type="primary" :loading="locating" @click="locateAndLoad">一键查看周边</el-button>
+              <el-tag v-else type="info" effect="plain">{{ t('geo.notLocated') }}</el-tag>
+              <el-button type="primary" :loading="locating" @click="locateAndLoad">{{ t('geo.viewNearby') }}</el-button>
             </div>
           </el-form-item>
         </el-form>
@@ -46,29 +46,29 @@
 
     <div class="manual-card lift-card">
       <div class="manual-head">
-        <strong>手动输入位置</strong>
-        <span>定位失败或拒绝权限时，可用地址解析，也可直接输入经纬度。</span>
+        <strong>{{ t('geo.manualLocation') }}</strong>
+        <span>{{ t('geo.manualHint') }}</span>
       </div>
       <el-form label-position="top" class="manual-form">
         <el-row :gutter="12">
           <el-col :xs="24" :sm="10">
-            <el-form-item label="地址">
-              <el-input v-model="manual.address" placeholder="例如：武汉市洪山区珞喻路" clearable @keyup.enter="locateByAddress" />
+            <el-form-item :label="t('geo.address')">
+              <el-input v-model="manual.address" :placeholder="t('geo.addressPlaceholder')" clearable @keyup.enter="locateByAddress" />
             </el-form-item>
           </el-col>
           <el-col :xs="12" :sm="5">
-            <el-form-item label="纬度 latitude">
+            <el-form-item :label="t('geo.latitude')">
               <el-input-number v-model="manual.latitude" :precision="7" :step="0.0001" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :xs="12" :sm="5">
-            <el-form-item label="经度 longitude">
+            <el-form-item :label="t('geo.longitude')">
               <el-input-number v-model="manual.longitude" :precision="7" :step="0.0001" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="4" class="manual-actions">
-            <el-button :loading="geocoding" @click="locateByAddress">地址定位</el-button>
-            <el-button type="primary" @click="applyManualCoordinate">使用坐标</el-button>
+            <el-button :loading="geocoding" @click="locateByAddress">{{ t('geo.locateByAddress') }}</el-button>
+            <el-button type="primary" @click="applyManualCoordinate">{{ t('geo.useCoordinate') }}</el-button>
           </el-col>
         </el-row>
       </el-form>
@@ -78,8 +78,8 @@
       <aside class="geo-list lift-card" v-loading="loading">
         <div class="list-head">
           <div>
-            <strong>附近结果</strong>
-            <span>共 {{ filteredPoints.length }} 条</span>
+            <strong>{{ t('geo.nearbyResults') }}</strong>
+            <span>{{ t('geo.resultCount', { count: filteredPoints.length }) }}</span>
           </div>
           <el-button :icon="RefreshCw" circle @click="loadNearby" />
         </div>
@@ -94,9 +94,9 @@
               :class="[item.type, { active: selectedKey === item.key }]"
               @click="focusPoint(item, true)"
             >
-              <span class="type-badge">{{ item.type === 'animal' ? '流浪动物' : '救助站/领养点' }}</span>
+              <span class="type-badge">{{ item.type === 'animal' ? t('geo.animalPoint') : t('geo.stationPoint') }}</span>
               <strong>{{ item.title }}</strong>
-              <small>{{ item.address || '暂无地址信息' }}</small>
+              <small>{{ item.address || t('geo.noAddress') }}</small>
               <span class="distance">{{ formatDistance(item.distanceKm) }}</span>
               <span v-if="item.subtitle" class="subtitle">{{ item.subtitle }}</span>
               <el-button
@@ -107,49 +107,49 @@
                 class="station-edit-btn"
                 @click.stop="openStationLocationDialog(item)"
               >
-                编辑位置
+                {{ t('geo.editLocation') }}
               </el-button>
             </button>
           </div>
-          <el-empty v-if="!loading && !filteredPoints.length" description="暂无附近点位，请先定位或扩大距离范围" />
+          <el-empty v-if="!loading && !filteredPoints.length" :description="t('geo.noNearby')" />
         </el-scrollbar>
       </aside>
 
       <main class="geo-map lift-card">
         <div ref="mapContainer" class="amap-box">
           <div v-if="mapError" class="map-fallback">
-            <strong>地图加载失败</strong>
+            <strong>{{ t('geo.mapLoadFailed') }}</strong>
             <span>{{ mapError }}</span>
           </div>
         </div>
       </main>
     </div>
 
-    <el-dialog v-model="stationDialogVisible" title="编辑救助站/领养点位置" width="560px" append-to-body>
-      <el-alert title="仅管理员可修改救助站位置。保存后会调用 /api/rescue-station/location 接口。" type="info" show-icon :closable="false" class="dialog-tip" />
+    <el-dialog v-model="stationDialogVisible" :title="t('geo.editLocationDialog')" width="560px" append-to-body>
+      <el-alert :title="t('geo.adminOnlyStationLocation')" type="info" show-icon :closable="false" class="dialog-tip" />
       <el-form :model="stationForm" label-position="top">
-        <el-form-item label="救助站ID">
+        <el-form-item :label="t('geo.stationId')">
           <el-input v-model="stationForm.stationId" disabled />
         </el-form-item>
-        <el-form-item label="详细地址">
-          <el-input v-model="stationForm.addressDetail" placeholder="请输入详细地址" />
+        <el-form-item :label="t('geo.addressDetail')">
+          <el-input v-model="stationForm.addressDetail" :placeholder="t('geo.addressDetailPlaceholder')" />
         </el-form-item>
         <el-row :gutter="12">
           <el-col :span="12">
-            <el-form-item label="纬度">
+            <el-form-item :label="t('geo.latitude')">
               <el-input-number v-model="stationForm.latitude" :precision="7" :step="0.0001" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="经度">
+            <el-form-item :label="t('geo.longitude')">
               <el-input-number v-model="stationForm.longitude" :precision="7" :step="0.0001" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
       </el-form>
       <template #footer>
-        <el-button @click="stationDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="savingStation" @click="saveStationLocation">保存</el-button>
+        <el-button @click="stationDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="savingStation" @click="saveStationLocation">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </section>
@@ -158,13 +158,17 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { RefreshCw } from 'lucide-vue-next'
 import { locationApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { geocodeAddress, getBrowserLocation, loadAMap } from '../utils/amap'
 import { useAuth } from '../stores/auth'
+import { translateLabel } from '../utils/status'
 
 const auth = useAuth()
+const { t } = useI18n()
 const mapContainer = ref(null)
 const loading = ref(false)
 const locating = ref(false)
@@ -203,8 +207,10 @@ const allPoints = computed(() => {
     key: `animal-${item.animalId}`,
     type: 'animal',
     id: item.animalId,
-    title: item.typeText ? `${item.typeText} ${item.genderText || ''}`.trim() : `流浪动物 #${item.animalId}`,
-    subtitle: item.statusText || '',
+    title: item.typeText
+      ? `${translateLabel(item.typeText)} ${translateLabel(item.genderText || '')}`.trim()
+      : t('geo.animalFallbackTitle', { id: item.animalId }),
+    subtitle: translateLabel(item.statusText || ''),
     address: item.foundRegion || '',
     latitude: item.latitude,
     longitude: item.longitude,
@@ -216,8 +222,8 @@ const allPoints = computed(() => {
     key: `station-${item.stationId}`,
     type: 'station',
     id: item.stationId,
-    title: item.stationName || `救助站 #${item.stationId}`,
-    subtitle: item.contactPhone ? `电话：${item.contactPhone}` : item.serviceTime || '',
+    title: item.stationName || t('geo.stationFallbackTitle', { id: item.stationId }),
+    subtitle: item.contactPhone ? t('geo.phoneLabel', { phone: item.contactPhone }) : item.serviceTime || '',
     address: item.addressDetail || '',
     latitude: item.latitude,
     longitude: item.longitude,
@@ -229,6 +235,28 @@ const allPoints = computed(() => {
 })
 
 const filteredPoints = computed(() => allPoints.value.filter((item) => visibleTypes.value.includes(item.type)))
+
+useAiAssistantPageContext(() => ({
+  pageTitle: t('geo.title'),
+  pageSummary: t('geo.pageSummary'),
+  viewData: {
+    hasCurrentLocation: hasCurrentLocation.value,
+    currentLocation: hasCurrentLocation.value ? {
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude
+    } : null,
+    distanceKm: distanceKm.value,
+    visibleTypes: [...visibleTypes.value],
+    resultCount: filteredPoints.value.length,
+    visiblePoints: filteredPoints.value.slice(0, 8).map((item) => ({
+      key: item.key,
+      type: item.type,
+      title: item.title,
+      address: item.address,
+      distanceKm: item.distanceKm
+    }))
+  }
+}))
 
 async function initMap() {
   try {
@@ -244,7 +272,7 @@ async function initMap() {
     map.addControl(new AMapRef.ToolBar({ position: { right: '18px', top: '18px' } }))
     infoWindow = new AMapRef.InfoWindow({ offset: new AMapRef.Pixel(0, -34) })
   } catch (error) {
-    mapError.value = error.message || '地图加载失败，请检查高德地图 Key 配置'
+    mapError.value = error.message || t('geo.mapLoadConfigError')
   }
 }
 
@@ -255,9 +283,9 @@ async function locateAndLoad() {
     const location = await getBrowserLocation()
     setCurrentLocation(location.latitude, location.longitude)
     await loadNearby()
-    ElMessage.success('已获取当前位置并加载周边信息')
+    ElMessage.success(t('geo.locationLoaded'))
   } catch (error) {
-    permissionTip.value = error.message || '定位失败，请手动输入地址或经纬度'
+    permissionTip.value = error.message || t('geo.locateFailed')
     ElMessage.warning(permissionTip.value)
   } finally {
     locating.value = false
@@ -282,7 +310,7 @@ async function locateByAddress() {
     manual.address = location.address
     setCurrentLocation(location.latitude, location.longitude)
     await loadNearby()
-    ElMessage.success('地址解析成功，已加载周边信息')
+    ElMessage.success(t('geo.addressLoaded'))
   } catch (error) {
     notifyError(error)
   } finally {
@@ -292,7 +320,7 @@ async function locateByAddress() {
 
 async function applyManualCoordinate() {
   if (!isValidLatitude(manual.latitude) || !isValidLongitude(manual.longitude)) {
-    ElMessage.warning('请输入合法经纬度：纬度 -90~90，经度 -180~180')
+    ElMessage.warning(t('geo.invalidCoordinate'))
     return
   }
   setCurrentLocation(manual.latitude, manual.longitude)
@@ -307,7 +335,7 @@ async function handleDistanceChange() {
 
 async function loadNearby() {
   if (!hasCurrentLocation.value) {
-    ElMessage.warning('请先点击“一键查看周边”，或手动输入地址/经纬度')
+    ElMessage.warning(t('geo.needLocateFirst'))
     return
   }
 
@@ -345,7 +373,7 @@ function refreshMarkers() {
     const marker = new AMapRef.Marker({
       position: [point.longitude, point.latitude],
       title: point.title,
-      content: `<div class="guitu-geo-marker ${point.type}">${point.type === 'animal' ? '宠' : '站'}</div>`,
+      content: `<div class="guitu-geo-marker ${point.type}">${point.type === 'animal' ? t('geo.animalMarker') : t('geo.stationMarker')}</div>`,
       offset: new AMapRef.Pixel(-17, -17)
     })
     marker.on('click', () => focusPoint(point, false))
@@ -379,8 +407,8 @@ function openInfoWindow(point) {
   infoWindow.setContent(`
     <div class="guitu-geo-info">
       <strong>${escapeHtml(point.title)}</strong>
-      <p>${escapeHtml(point.address || '暂无地址信息')}</p>
-      <p>距离：${formatDistance(point.distanceKm)}</p>
+      <p>${escapeHtml(point.address || t('geo.noAddress'))}</p>
+      <p>${escapeHtml(t('geo.distanceLabel', { distance: formatDistance(point.distanceKm) }))}</p>
       ${point.subtitle ? `<p>${escapeHtml(point.subtitle)}</p>` : ''}
     </div>
   `)
@@ -399,7 +427,7 @@ function openStationLocationDialog(point) {
 
 async function saveStationLocation() {
   if (!isValidLatitude(stationForm.latitude) || !isValidLongitude(stationForm.longitude)) {
-    ElMessage.warning('请输入合法救助站经纬度')
+    ElMessage.warning(t('geo.invalidStationCoordinate'))
     return
   }
 
@@ -411,7 +439,7 @@ async function saveStationLocation() {
       longitude: stationForm.longitude,
       addressDetail: stationForm.addressDetail
     })
-    ElMessage.success('救助站位置已更新')
+    ElMessage.success(t('geo.stationUpdated'))
     stationDialogVisible.value = false
     await loadNearby()
   } catch (error) {
@@ -436,8 +464,16 @@ function isValidLongitude(value) {
 }
 
 function formatDistance(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '未知距离'
-  return `${Number(value).toFixed(2)} km`
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return t('geo.unknownDistance')
+  }
+
+  const distance = Number(value)
+  if (distance < 1) {
+    return t('geo.distanceMetersValue', { value: Math.round(distance * 1000) })
+  }
+
+  return t('geo.distanceKilometersValue', { value: distance.toFixed(2) })
 }
 
 function escapeHtml(value) {

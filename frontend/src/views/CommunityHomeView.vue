@@ -126,6 +126,7 @@ import ImageUploader from '../components/ImageUploader.vue'
 import StatusTag from '../components/StatusTag.vue'
 import CategoryGrid from '../components/community/CategoryGrid.vue'
 import { communityApi, categoryApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 import { communityPostStatusOptions } from '../utils/status'
@@ -157,6 +158,23 @@ const rules = {
   content: [{ required: true, message: '请输入帖子内容', trigger: 'blur' }],
   categoryId: [{ required: true, message: '请选择版块', trigger: 'change' }]
 }
+
+useAiAssistantPageContext(() => ({
+  pageTitle: '社区',
+  pageSummary: '当前页面展示社区帖子流，可按最新、热门和关注排序。',
+  viewData: {
+    sort: sort.value,
+    keyword: keyword.value,
+    categoryCount: categories.value.length,
+    visiblePosts: posts.value.slice(0, 8).map((item) => ({
+      id: item.id,
+      title: item.title,
+      authorNickname: item.authorNickname,
+      commentCount: item.commentCount,
+      categoryName: item.categoryName
+    }))
+  }
+}))
 
 const API_BASE = window.location.origin
 

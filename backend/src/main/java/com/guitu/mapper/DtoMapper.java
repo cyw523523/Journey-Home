@@ -3,6 +3,8 @@ package com.guitu.mapper;
 import org.springframework.stereotype.Component;
 
 import com.guitu.domain.AdoptApply;
+import com.guitu.domain.AdoptionAgreement;
+import com.guitu.domain.AdoptionFollowUp;
 import com.guitu.domain.Animal;
 import com.guitu.domain.AppealRecord;
 import com.guitu.domain.AuditLog;
@@ -14,6 +16,7 @@ import com.guitu.domain.DirectMessage;
 import com.guitu.domain.DonationRecord;
 import com.guitu.domain.MedicalRecord;
 import com.guitu.domain.Notice;
+import com.guitu.domain.OperationLog;
 import com.guitu.domain.Rescue;
 import com.guitu.domain.RescueStation;
 import com.guitu.domain.SupplyDemand;
@@ -32,6 +35,7 @@ import com.guitu.dto.DonationDtos;
 import com.guitu.dto.MedicalRecordDtos;
 import com.guitu.dto.NoticeDtos;
 import com.guitu.dto.NotificationDtos;
+import com.guitu.dto.OperationLogDtos;
 import com.guitu.dto.ReportDtos;
 import com.guitu.dto.RescueDtos;
 import com.guitu.dto.RescueStationDtos;
@@ -113,6 +117,8 @@ public class DtoMapper {
                 apply.getId(),
                 apply.getAnimal().getId(),
                 apply.getAnimal().getType().getLabel(),
+                apply.getAnimal().getPublisher().getId(),
+                apply.getAnimal().getPublisher().getNickname(),
                 apply.getApplicant().getId(),
                 apply.getApplicantName(),
                 apply.getContact(),
@@ -124,6 +130,51 @@ public class DtoMapper {
                 apply.getAuditOpinion(),
                 apply.getCreatedAt(),
                 apply.getUpdatedAt()
+        );
+    }
+
+    public AdoptApplyDtos.AgreementResponse toAgreementResponse(AdoptionAgreement agreement) {
+        return new AdoptApplyDtos.AgreementResponse(
+                agreement.getId(),
+                agreement.getApply().getId(),
+                agreement.getAgreementNo(),
+                agreement.getTitle(),
+                agreement.getContent(),
+                agreement.getStatus(),
+                agreement.getStatus().getLabel(),
+                agreement.getAdopter().getId(),
+                agreement.getAdopter().getNickname(),
+                agreement.getPublisher().getId(),
+                agreement.getPublisher().getNickname(),
+                agreement.getAdopterSignatureName(),
+                agreement.getAdopterSignatureImageUrl(),
+                agreement.getAdopterSignedAt(),
+                agreement.getCounterpartSignatureName(),
+                agreement.getCounterpartSignatureImageUrl(),
+                agreement.getCounterpartSignedAt(),
+                agreement.getPdfUrl(),
+                agreement.getCompletedAt(),
+                agreement.getCreatedAt(),
+                agreement.getUpdatedAt()
+        );
+    }
+
+    public AdoptApplyDtos.FollowUpResponse toFollowUpResponse(AdoptionFollowUp followUp) {
+        return new AdoptApplyDtos.FollowUpResponse(
+                followUp.getId(),
+                followUp.getApply().getId(),
+                followUp.getStageCode(),
+                followUp.getStageLabel(),
+                followUp.getPlannedAt(),
+                followUp.getCompletedAt(),
+                followUp.getStatus(),
+                followUp.getStatus().getLabel(),
+                followUp.getNote(),
+                followUp.getImageUrls(),
+                followUp.getCreator() != null ? followUp.getCreator().getId() : null,
+                followUp.getCreator() != null ? followUp.getCreator().getNickname() : null,
+                followUp.getCreatedAt(),
+                followUp.getUpdatedAt()
         );
     }
 
@@ -332,6 +383,26 @@ public class DtoMapper {
                 log.getAction().getLabel(),
                 log.getOpinion(),
                 log.getAuditTime()
+        );
+    }
+
+    public OperationLogDtos.OperationLogResponse toOperationLogResponse(OperationLog log) {
+        return new OperationLogDtos.OperationLogResponse(
+                log.getId(),
+                log.getTargetType(),
+                log.getTargetType().getLabel(),
+                log.getTargetId(),
+                log.getTargetName(),
+                log.getOperationType(),
+                log.getOperationType().getLabel(),
+                log.getOperator().getId(),
+                log.getOperator().getAccount(),
+                log.getOperator().getNickname(),
+                log.getOperatorIp(),
+                log.getDetail(),
+                log.getBeforeSnapshot(),
+                log.getAfterSnapshot(),
+                log.getOperatedAt()
         );
     }
 

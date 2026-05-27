@@ -70,6 +70,14 @@ switch -wildcard -casesensitive ( $($distributionUrl -replace '^.*/','') ) {
   }
 }
 
+$bundledMavenHome = Join-Path $scriptDir "..\tools\apache-maven-3.9.9"
+$bundledMavenCmd = Join-Path $bundledMavenHome "bin\$MVN_CMD"
+if (-not $USE_MVND -and (Test-Path -Path $bundledMavenCmd -PathType Leaf)) {
+  $resolvedBundledMavenCmd = (Resolve-Path -Path $bundledMavenCmd).Path
+  Write-Output "MVN_CMD=$resolvedBundledMavenCmd"
+  exit $?
+}
+
 # apply MVNW_REPOURL and calculate MAVEN_HOME
 # maven home pattern: ~/.m2/wrapper/dists/{apache-maven-<version>,maven-mvnd-<version>-<platform>}/<hash>
 if ($env:MVNW_REPOURL) {
@@ -89,10 +97,18 @@ if (-not (Test-Path -Path $MAVEN_M2_PATH)) {
 }
 
 $MAVEN_WRAPPER_DISTS = $null
-if ((Get-Item $MAVEN_M2_PATH).Target[0] -eq $null) {
+$mavenM2Item = Get-Item $MAVEN_M2_PATH
+$mavenM2Target = $null
+if ($mavenM2Item.PSObject.Properties.Match("Target").Count -gt 0) {
+  $mavenM2Target = $mavenM2Item.Target
+}
+if ($mavenM2Target -is [array]) {
+  $mavenM2Target = $mavenM2Target[0]
+}
+if ([string]::IsNullOrEmpty($mavenM2Target)) {
   $MAVEN_WRAPPER_DISTS = "$MAVEN_M2_PATH/wrapper/dists"
 } else {
-  $MAVEN_WRAPPER_DISTS = (Get-Item $MAVEN_M2_PATH).Target[0] + "/wrapper/dists"
+  $MAVEN_WRAPPER_DISTS = $mavenM2Target + "/wrapper/dists"
 }
 
 $MAVEN_HOME_PARENT = "$MAVEN_WRAPPER_DISTS/$distributionUrlNameMain"

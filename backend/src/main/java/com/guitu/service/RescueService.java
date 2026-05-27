@@ -4,6 +4,8 @@ import com.guitu.common.PageResponse;
 import com.guitu.domain.Rescue;
 import com.guitu.domain.User;
 import com.guitu.domain.enums.NotificationType;
+import com.guitu.domain.enums.OperationTargetType;
+import com.guitu.domain.enums.OperationType;
 import com.guitu.domain.enums.RescueStatus;
 import com.guitu.domain.enums.UserRole;
 import com.guitu.dto.RescueDtos;
@@ -33,6 +35,7 @@ public class RescueService {
     private final ContentModerationService moderationService;
     private final CacheInvalidationService cacheInvalidationService;
     private final NotificationService notificationService;
+    private final OperationLogService operationLogService;
 
     public RescueService(
             RescueRepository rescueRepository,
@@ -40,7 +43,8 @@ public class RescueService {
             DtoMapper mapper,
             ContentModerationService moderationService,
             CacheInvalidationService cacheInvalidationService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            OperationLogService operationLogService
     ) {
         this.rescueRepository = rescueRepository;
         this.userService = userService;
@@ -48,6 +52,7 @@ public class RescueService {
         this.moderationService = moderationService;
         this.cacheInvalidationService = cacheInvalidationService;
         this.notificationService = notificationService;
+        this.operationLogService = operationLogService;
     }
 
     @Transactional(readOnly = true)
@@ -108,7 +113,17 @@ public class RescueService {
         rescue.setStatus(RescueStatus.PENDING_REVIEW);
         rescue.setReviewComment(null);
         rescue.setPublisher(publisher);
-        RescueDtos.RescueResponse response = mapper.toRescueResponse(rescueRepository.save(rescue));
+        Rescue saved = rescueRepository.save(rescue);
+        operationLogService.record(
+                OperationTargetType.RESCUE,
+                saved.getId(),
+                saved.getLocation(),
+                OperationType.CREATE,
+                "创建救助信息",
+                null,
+                snapshotOf(saved)
+        );
+        RescueDtos.RescueResponse response = mapper.toRescueResponse(saved);
         cacheInvalidationService.evictPublicCaches();
         return response;
     }
@@ -118,6 +133,7 @@ public class RescueService {
         Rescue rescue = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(rescue.getPublisher().getId());
         moderationService.validateText("Rescue content", request.location(), request.animalCondition(), request.description(), request.contact());
+        java.util.Map<String, Object> before = snapshotOf(rescue);
         fillRescue(rescue, request);
         if (!SecuritySupport.isAdmin()) {
             rescue.setStatus(RescueStatus.PENDING_REVIEW);
@@ -127,6 +143,15 @@ public class RescueService {
                     "ADMIN_EDIT_RESCUE", "管理员编辑了你的救助信息「" + rescue.getLocation() + "」",
                     "RESCUE", rescue.getId());
         }
+        operationLogService.record(
+                OperationTargetType.RESCUE,
+                rescue.getId(),
+                rescue.getLocation(),
+                OperationType.UPDATE,
+                "编辑救助信息",
+                before,
+                snapshotOf(rescue)
+        );
         cacheInvalidationService.evictPublicCaches();
         return mapper.toRescueResponse(rescue);
     }
@@ -135,7 +160,17 @@ public class RescueService {
     public void offline(Long id) {
         Rescue rescue = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(rescue.getPublisher().getId());
+        java.util.Map<String, Object> before = snapshotOf(rescue);
         rescue.setStatus(RescueStatus.OFFLINE);
+        operationLogService.record(
+                OperationTargetType.RESCUE,
+                rescue.getId(),
+                rescue.getLocation(),
+                OperationType.OFFLINE,
+                "下架救助信息",
+                before,
+                snapshotOf(rescue)
+        );
         cacheInvalidationService.evictPublicCaches();
     }
 
@@ -146,7 +181,17 @@ public class RescueService {
         if (request.status() == RescueStatus.PENDING_REVIEW || request.status() == RescueStatus.REJECTED) {
             throw new BusinessException("This rescue status cannot be set through the normal status update endpoint");
         }
+        java.util.Map<String, Object> before = snapshotOf(rescue);
         rescue.setStatus(request.status());
+        operationLogService.record(
+                OperationTargetType.RESCUE,
+                rescue.getId(),
+                rescue.getLocation(),
+                OperationType.STATUS_CHANGE,
+                "更新救助信息状态",
+                before,
+                snapshotOf(rescue)
+        );
         cacheInvalidationService.evictPublicCaches();
         return mapper.toRescueResponse(rescue);
     }
@@ -231,5 +276,16 @@ public class RescueService {
         int safePage = Math.max(0, page);
         int safeSize = Math.max(1, Math.min(size, 50));
         return PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    private java.util.Map<String, Object> snapshotOf(Rescue rescue) {
+        java.util.Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+        snapshot.put("location", rescue.getLocation());
+        snapshot.put("animalCondition", rescue.getAnimalCondition());
+        snapshot.put("contact", rescue.getContact());
+        snapshot.put("description", rescue.getDescription());
+        snapshot.put("status", rescue.getStatus() != null ? rescue.getStatus().name() : null);
+        snapshot.put("reviewComment", rescue.getReviewComment());
+        return snapshot;
     }
 }

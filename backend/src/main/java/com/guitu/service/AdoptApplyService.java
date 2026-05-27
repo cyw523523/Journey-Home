@@ -7,6 +7,8 @@ import com.guitu.domain.User;
 import com.guitu.domain.enums.AnimalStatus;
 import com.guitu.domain.enums.ApplyStatus;
 import com.guitu.domain.enums.NotificationType;
+import com.guitu.domain.enums.OperationTargetType;
+import com.guitu.domain.enums.OperationType;
 import com.guitu.dto.AdoptApplyDtos;
 import com.guitu.exception.BusinessException;
 import com.guitu.mapper.DtoMapper;
@@ -36,6 +38,7 @@ public class AdoptApplyService {
     private final ContentModerationService moderationService;
     private final NotificationService notificationService;
     private final CacheInvalidationService cacheInvalidationService;
+    private final OperationLogService operationLogService;
 
     public AdoptApplyService(
             AdoptApplyRepository adoptApplyRepository,
@@ -45,7 +48,8 @@ public class AdoptApplyService {
             AntiAbuseService antiAbuseService,
             ContentModerationService moderationService,
             NotificationService notificationService,
-            CacheInvalidationService cacheInvalidationService
+            CacheInvalidationService cacheInvalidationService,
+            OperationLogService operationLogService
     ) {
         this.adoptApplyRepository = adoptApplyRepository;
         this.animalService = animalService;
@@ -55,6 +59,7 @@ public class AdoptApplyService {
         this.moderationService = moderationService;
         this.notificationService = notificationService;
         this.cacheInvalidationService = cacheInvalidationService;
+        this.operationLogService = operationLogService;
     }
 
     @Transactional
@@ -86,6 +91,19 @@ public class AdoptApplyService {
         apply.setExperience(request.experience());
         apply.setStatus(ApplyStatus.PENDING_REVIEW);
         AdoptApply saved = adoptApplyRepository.save(apply);
+        operationLogService.record(
+                OperationTargetType.ADOPT_APPLY,
+                saved.getId(),
+                "领养申请#" + saved.getId() + " / " + saved.getAnimal().getType().getLabel(),
+                OperationType.SUBMIT_APPLICATION,
+                "提交领养申请",
+                null,
+                java.util.Map.of(
+                        "animalId", saved.getAnimal().getId(),
+                        "applicantName", saved.getApplicantName(),
+                        "status", saved.getStatus().name()
+                )
+        );
         notificationService.notifyUser(applicant, NotificationType.AUDIT_RESULT, "领养申请已提交", "您的领养申请已提交，请等待管理员审核。", "ADOPT_APPLY", saved.getId());
         notificationService.notifyAdmins(NotificationType.AUDIT_RESULT, "新领养申请待审核", "有新的领养申请等待审核。", "ADOPT_APPLY", saved.getId());
         cacheInvalidationService.evictPublicCaches();
@@ -102,6 +120,13 @@ public class AdoptApplyService {
     @Transactional(readOnly = true)
     public PageResponse<AdoptApplyDtos.ApplyResponse> adminList(ApplyStatus status, int page, int size) {
         Page<AdoptApply> result = adoptApplyRepository.findAll(applySpec(null, status), pageRequest(page, size));
+        return PageResponse.from(result, mapper::toApplyResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AdoptApplyDtos.ApplyResponse> managedList(ApplyStatus status, int page, int size) {
+        Long currentUserId = SecuritySupport.requireUser().id();
+        Page<AdoptApply> result = adoptApplyRepository.findAll(managedSpec(currentUserId, status), pageRequest(page, size));
         return PageResponse.from(result, mapper::toApplyResponse);
     }
 
@@ -123,7 +148,17 @@ public class AdoptApplyService {
         if (apply.getStatus() != ApplyStatus.PENDING_REVIEW) {
             throw new BusinessException("Only pending applications can be canceled");
         }
+        ApplyStatus beforeStatus = apply.getStatus();
         apply.setStatus(ApplyStatus.CANCELED);
+        operationLogService.record(
+                OperationTargetType.ADOPT_APPLY,
+                apply.getId(),
+                "领养申请#" + apply.getId() + " / " + apply.getAnimal().getType().getLabel(),
+                OperationType.CANCEL_APPLICATION,
+                "取消领养申请",
+                java.util.Map.of("status", beforeStatus.name()),
+                java.util.Map.of("status", apply.getStatus().name())
+        );
         notificationService.notifyUser(apply.getApplicant(), NotificationType.AUDIT_RESULT, "领养申请已取消", "您的领养申请已取消。", "ADOPT_APPLY", apply.getId());
         cacheInvalidationService.evictPublicCaches();
     }
@@ -151,5 +186,18 @@ public class AdoptApplyService {
         int safePage = Math.max(0, page);
         int safeSize = Math.max(1, Math.min(size, 50));
         return PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    private Specification<AdoptApply> managedSpec(Long currentUserId, ApplyStatus status) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (!SecuritySupport.isAdmin()) {
+                predicates.add(cb.equal(root.get("animal").get("publisher").get("id"), currentUserId));
+            }
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
     }
 }

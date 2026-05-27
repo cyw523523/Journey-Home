@@ -4,11 +4,16 @@ import com.guitu.common.ApiResponse;
 import com.guitu.common.PageResponse;
 import com.guitu.domain.enums.ApplyStatus;
 import com.guitu.domain.enums.AuditTargetType;
+import com.guitu.domain.enums.OperationTargetType;
+import com.guitu.domain.enums.OperationType;
 import com.guitu.dto.AdoptApplyDtos;
 import com.guitu.dto.AuditDtos;
+import com.guitu.dto.OperationLogDtos;
 import com.guitu.service.AdoptApplyService;
 import com.guitu.service.AuditService;
+import com.guitu.service.OperationLogService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,10 +30,16 @@ import java.util.List;
 public class AdminAuditController {
     private final AuditService auditService;
     private final AdoptApplyService adoptApplyService;
+    private final OperationLogService operationLogService;
 
-    public AdminAuditController(AuditService auditService, AdoptApplyService adoptApplyService) {
+    public AdminAuditController(
+            AuditService auditService,
+            AdoptApplyService adoptApplyService,
+            OperationLogService operationLogService
+    ) {
         this.auditService = auditService;
         this.adoptApplyService = adoptApplyService;
+        this.operationLogService = operationLogService;
     }
 
     @GetMapping("/audits/pending")
@@ -59,6 +70,20 @@ public class AdminAuditController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return ApiResponse.ok(auditService.logs(targetType, targetId, page, size));
+    }
+
+    @GetMapping("/operation-logs")
+    public ApiResponse<PageResponse<OperationLogDtos.OperationLogResponse>> operationLogs(
+            @RequestParam(required = false) OperationTargetType targetType,
+            @RequestParam(required = false) OperationType operationType,
+            @RequestParam(required = false) String operatorKeyword,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startAt,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endAt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.ok(operationLogService.list(targetType, operationType, operatorKeyword, keyword, startAt, endAt, page, size));
     }
 
     @GetMapping("/applications")

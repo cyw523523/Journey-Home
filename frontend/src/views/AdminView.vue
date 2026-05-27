@@ -16,6 +16,7 @@
           <el-menu-item index="users"><Users />{{ $t('admin.userManagement') }}</el-menu-item>
           <el-menu-item index="notices"><Megaphone />{{ $t('admin.noticeManagement') }}</el-menu-item>
           <el-menu-item index="applications"><HeartHandshake />{{ $t('admin.adoptionApplications') }}</el-menu-item>
+          <el-menu-item index="operationLogs"><Archive />操作日志</el-menu-item>
           <el-menu-item index="reports"><ShieldAlert />举报处理</el-menu-item>
           <el-menu-item index="appeals"><FileCheck2 />申诉复核</el-menu-item>
           <el-menu-item index="stations"><Building2 />救助站认证</el-menu-item>
@@ -133,6 +134,42 @@
             <el-table-column label="状态" width="120">
               <template #default="{ row }">
                 <StatusTag :value="row.status" :text="row.statusText" :options="applyStatusOptions" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="220">
+              <template #default="{ row }">
+                <el-button v-if="row.status === 'APPROVED'" size="small" text type="primary" @click="openAgreement(row)">协议</el-button>
+                <el-button v-if="row.status === 'APPROVED'" size="small" text @click="openFollowUps(row)">回访</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div v-show="active === 'operationLogs'" class="surface form-shell">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <el-select v-model="operationLogFilters.targetType" clearable style="width: 180px" @change="loadOperationLogs">
+              <el-option v-for="item in operationTargetOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <el-select v-model="operationLogFilters.operationType" clearable style="width: 180px" @change="loadOperationLogs">
+              <el-option v-for="item in operationTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <el-input v-model="operationLogFilters.operatorKeyword" placeholder="操作人" style="width: 160px" @keyup.enter="loadOperationLogs" />
+            <el-input v-model="operationLogFilters.keyword" placeholder="对象/说明" style="width: 180px" @keyup.enter="loadOperationLogs" />
+            <el-button :icon="RefreshCw" @click="loadOperationLogs">查询</el-button>
+          </div>
+          <el-table :data="operationLogs" stripe>
+            <el-table-column prop="operatedAt" label="时间" width="170">
+              <template #default="{ row }">{{ formatTime(row.operatedAt) }}</template>
+            </el-table-column>
+            <el-table-column prop="operatorNickname" label="操作人" width="130" />
+            <el-table-column prop="operationTypeText" label="动作" width="120" />
+            <el-table-column prop="targetTypeText" label="对象类型" width="120" />
+            <el-table-column prop="targetName" label="对象" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="operatorIp" label="IP" width="120" />
+            <el-table-column prop="detail" label="说明" min-width="180" show-overflow-tooltip />
+            <el-table-column label="详情" width="100">
+              <template #default="{ row }">
+                <el-button size="small" text @click="openOperationLog(row)">快照</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -425,11 +462,138 @@
         <el-button @click="stationDetailDialog = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="agreementDialogVisible" title="领养协议" width="780px" append-to-body>
+      <div v-if="agreementData" class="agreement-shell">
+        <div class="agreement-meta">
+          <div>
+            <strong>{{ agreementData.title }}</strong>
+            <p class="muted">协议编号：{{ agreementData.agreementNo }}</p>
+          </div>
+          <StatusTag :value="agreementData.status" :text="agreementData.statusText" :options="agreementStatusOptions" />
+        </div>
+        <div class="agreement-actions">
+          <el-button v-if="agreementData.pdfUrl" text type="primary" @click="openAgreementPdf">下载 PDF</el-button>
+        </div>
+        <div class="agreement-content">{{ agreementData.content }}</div>
+        <div class="agreement-sign-grid">
+          <div class="detail-item">
+            <label>领养人签署</label>
+            <span>{{ agreementData.adopterSignatureName || '未签署' }}</span>
+            <img
+              v-if="signatureImageUrl(agreementData, 'adopter')"
+              :src="signatureImageUrl(agreementData, 'adopter')"
+              alt="领养人签名"
+              class="signature-preview"
+            />
+            <small>{{ formatTime(agreementData.adopterSignedAt) }}</small>
+          </div>
+          <div class="detail-item">
+            <label>救助方签署</label>
+            <span>{{ agreementData.counterpartSignatureName || '未签署' }}</span>
+            <img
+              v-if="signatureImageUrl(agreementData, 'counterpart')"
+              :src="signatureImageUrl(agreementData, 'counterpart')"
+              alt="救助方签名"
+              class="signature-preview"
+            />
+            <small>{{ formatTime(agreementData.counterpartSignedAt) }}</small>
+          </div>
+        </div>
+        <div v-if="canSignAgreement" class="agreement-sign-box">
+          <el-form label-position="top">
+            <el-form-item label="签署姓名">
+              <el-input v-model="agreementSignatureForm.signatureName" maxlength="64" />
+            </el-form-item>
+            <el-form-item label="手写签名">
+              <div class="signature-pad-shell">
+                <canvas
+                  ref="signatureCanvasRef"
+                  class="signature-canvas"
+                  @pointerdown="startSignature"
+                  @pointermove="moveSignature"
+                  @pointerup="finishSignature"
+                  @pointerleave="finishSignature"
+                />
+                <div class="signature-pad-meta">
+                  <span>{{ signatureHasStroke ? '已采集签名' : '请在框内完成签名，提交后将随协议一并保存' }}</span>
+                  <el-button text @click="clearSignature">清空</el-button>
+                </div>
+              </div>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="agreementDialogVisible = false">关闭</el-button>
+        <el-button v-if="canSignAgreement" :loading="saving" type="primary" @click="signAgreement">确认签署</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="followUpDialogVisible" title="领养回访" width="760px" append-to-body>
+      <div v-if="followUps.length" class="follow-up-list">
+        <div v-for="item in followUps" :key="item.id" class="follow-up-card">
+          <div class="follow-up-head">
+            <div>
+              <strong>{{ item.stageLabel }}</strong>
+              <p class="muted">计划时间：{{ formatTime(item.plannedAt) }}</p>
+            </div>
+            <StatusTag :value="item.status" :text="item.statusText" :options="followUpStatusOptions" />
+          </div>
+          <p class="follow-up-note">{{ item.note || '暂未填写回访内容' }}</p>
+          <div v-if="item.imageUrls?.length" class="detail-thumb-row">
+            <img v-for="url in item.imageUrls" :key="url" :src="url" style="width:88px;height:88px;object-fit:cover;border-radius:8px" />
+          </div>
+          <p class="muted">填写人：{{ item.creatorNickname || '-' }}，完成时间：{{ formatTime(item.completedAt) }}</p>
+          <div v-if="item.status !== 'COMPLETED'" class="follow-up-actions">
+            <el-button size="small" type="primary" plain @click="openFollowUpComplete(item)">填写回访</el-button>
+          </div>
+        </div>
+      </div>
+      <el-empty v-else description="暂无回访计划" />
+      <template #footer>
+        <el-button @click="followUpDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="followUpEditorVisible" title="填写回访记录" width="600px" append-to-body>
+      <el-form label-position="top">
+        <el-form-item label="回访内容">
+          <el-input v-model="followUpEditor.note" type="textarea" :rows="5" maxlength="1000" show-word-limit />
+        </el-form-item>
+        <el-form-item label="回访图片">
+          <ImageUploader v-model="followUpEditor.imageUrls" usage="adoption-follow-up" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="followUpEditorVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="submitFollowUp">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="operationLogDialogVisible" title="操作日志详情" width="760px" append-to-body>
+      <div v-if="operationLogDetail" class="operation-log-detail">
+        <div class="audit-detail-grid">
+          <div class="detail-item"><label>时间</label><span>{{ formatTime(operationLogDetail.operatedAt) }}</span></div>
+          <div class="detail-item"><label>操作人</label><span>{{ operationLogDetail.operatorNickname }} / {{ operationLogDetail.operatorAccount }}</span></div>
+          <div class="detail-item"><label>动作</label><span>{{ operationLogDetail.operationTypeText }}</span></div>
+          <div class="detail-item"><label>IP</label><span>{{ operationLogDetail.operatorIp || '-' }}</span></div>
+          <div class="detail-item"><label>对象类型</label><span>{{ operationLogDetail.targetTypeText }}</span></div>
+          <div class="detail-item"><label>对象</label><span>{{ operationLogDetail.targetName }}</span></div>
+          <div class="detail-item full-width"><label>说明</label><p>{{ operationLogDetail.detail || '-' }}</p></div>
+          <div class="detail-item full-width"><label>变更前</label><pre class="log-json">{{ operationLogDetail.beforeSnapshot || '-' }}</pre></div>
+          <div class="detail-item full-width"><label>变更后</label><pre class="log-json">{{ operationLogDetail.afterSnapshot || '-' }}</pre></div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="operationLogDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Archive,
@@ -451,18 +615,24 @@ import {
   X
 } from 'lucide-vue-next'
 import StatusTag from '../components/StatusTag.vue'
-import { adminApi } from '../api'
+import ImageUploader from '../components/ImageUploader.vue'
+import { adoptionApi, adminApi } from '../api'
 import { rescueStationApi } from '../api'
 import { notifyError } from '../api/http'
+import { useAuth } from '../stores/auth'
 import {
+  agreementStatusOptions,
   animalStatusOptions,
   appealActionOptions,
   appealStatusOptions,
   appealTargetOptions,
   applyStatusOptions,
+  followUpStatusOptions,
   communityCommentStatusOptions,
   communityPostStatusOptions,
   noticeStatusOptions,
+  operationTargetOptions,
+  operationTypeOptions,
   reportActionOptions,
   reportStatusOptions,
   reportTargetOptions,
@@ -472,6 +642,7 @@ import {
   certificationOptions as certStatusOptions
 } from '../utils/status'
 
+const auth = useAuth()
 const active = ref('dashboard')
 const saving = ref(false)
 const overview = ref({ userCount: 0, animalCount: 0, rescueCount: 0, applyCount: 0, pendingAuditCount: 0 })
@@ -482,6 +653,7 @@ const pending = ref([])
 const usersList = ref([])
 const notices = ref([])
 const applications = ref([])
+const operationLogs = ref([])
 const reports = ref([])
 const appeals = ref([])
 const auditType = ref('')
@@ -489,17 +661,38 @@ const reportStatusFilter = ref('')
 const reportTypeFilter = ref('')
 const appealStatusFilter = ref('')
 const appealTypeFilter = ref('')
+const operationLogFilters = reactive({
+  targetType: '',
+  operationType: '',
+  operatorKeyword: '',
+  keyword: ''
+})
 
 const auditDialog = ref(false)
 const detailDialog = ref(false)
 const noticeDialog = ref(false)
 const reportDialog = ref(false)
 const appealDialog = ref(false)
+const agreementDialogVisible = ref(false)
+const followUpDialogVisible = ref(false)
+const followUpEditorVisible = ref(false)
+const operationLogDialogVisible = ref(false)
 const detailLoading = ref(false)
 const detailData = ref(null)
 const detailTargetType = ref('')
 const reportTarget = ref(null)
 const appealTarget = ref(null)
+const agreementData = ref(null)
+const agreementCurrentApplyId = ref(null)
+const agreementSignatureForm = reactive({ signatureName: '', signatureDataUrl: '' })
+const signatureCanvasRef = ref()
+const signatureHasStroke = ref(false)
+const followUps = ref([])
+const followUpCurrentApplyId = ref(null)
+const followUpEditor = reactive({ id: null, note: '', imageUrls: [] })
+const operationLogDetail = ref(null)
+let signatureDrawing = false
+let signatureLastPoint = { x: 0, y: 0 }
 
 // Rescue station management
 const stations = ref([])
@@ -510,8 +703,18 @@ const certDialog = ref(false)
 const certTarget = ref(null)
 const certForm = reactive({ action: 'APPROVED', opinion: '' })
 
+const canSignAgreement = computed(() => {
+  if (!agreementData.value || agreementData.value.status === 'COMPLETED') {
+    return false
+  }
+  const currentUserId = auth.state.user?.id
+  if (!currentUserId) return false
+  return !agreementData.value.counterpartSignatureName || currentUserId === agreementData.value.adopterId
+})
+
 const detailTypeLabels = { ANIMAL: '动物档案', RESCUE: '救助信息', ADOPT_APPLY: '领养申请', COMMUNITY_POST: '社区帖子', COMMUNITY_COMMENT: '社区评论' }
 const detailTargetTypeText = ref('')
+const API_BASE = window.location.origin
 
 function parseExpectedStatus(data) {
   if (!data || !data.reviewComment) return null
@@ -526,13 +729,128 @@ function expectedStatusText(status) {
   return opt ? opt.label : status
 }
 
+function getFullUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url
+  return `${API_BASE}${url}`
+}
+
+function signatureImageUrl(data, side) {
+  if (!data) {
+    return ''
+  }
+  const keyMap = side === 'adopter'
+    ? ['adopterSignatureImageUrl', 'adopterSignatureUrl', 'adopterSignatureImage', 'adopterSignature']
+    : ['counterpartSignatureImageUrl', 'counterpartSignatureUrl', 'counterpartSignatureImage', 'counterpartSignature']
+  const raw = keyMap.map((key) => data[key]).find((value) => typeof value === 'string' && value)
+  return raw ? getFullUrl(raw) : ''
+}
+
+function initSignatureCanvas() {
+  const canvas = signatureCanvasRef.value
+  if (!canvas) {
+    return
+  }
+  canvas.width = canvas.clientWidth || 640
+  canvas.height = canvas.clientHeight || 220
+  const context = canvas.getContext('2d')
+  if (!context) {
+    return
+  }
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.lineCap = 'round'
+  context.lineJoin = 'round'
+  context.lineWidth = 2.8
+  context.strokeStyle = '#1f5d4f'
+  signatureHasStroke.value = false
+  agreementSignatureForm.signatureDataUrl = ''
+}
+
+function clearSignature() {
+  signatureDrawing = false
+  initSignatureCanvas()
+}
+
+function getSignaturePoint(event) {
+  const canvas = signatureCanvasRef.value
+  if (!canvas) {
+    return { x: 0, y: 0 }
+  }
+  const rect = canvas.getBoundingClientRect()
+  const scaleX = canvas.width / rect.width
+  const scaleY = canvas.height / rect.height
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY
+  }
+}
+
+function syncSignatureData() {
+  const canvas = signatureCanvasRef.value
+  agreementSignatureForm.signatureDataUrl = canvas && signatureHasStroke.value ? canvas.toDataURL('image/png') : ''
+}
+
+function startSignature(event) {
+  const canvas = signatureCanvasRef.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) {
+    return
+  }
+  const point = getSignaturePoint(event)
+  signatureDrawing = true
+  signatureLastPoint = point
+  signatureHasStroke.value = true
+  context.beginPath()
+  context.moveTo(point.x, point.y)
+  context.lineTo(point.x + 0.01, point.y + 0.01)
+  context.stroke()
+  canvas.setPointerCapture?.(event.pointerId)
+  syncSignatureData()
+}
+
+function moveSignature(event) {
+  if (!signatureDrawing) {
+    return
+  }
+  const canvas = signatureCanvasRef.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) {
+    return
+  }
+  const point = getSignaturePoint(event)
+  context.beginPath()
+  context.moveTo(signatureLastPoint.x, signatureLastPoint.y)
+  context.lineTo(point.x, point.y)
+  context.stroke()
+  signatureLastPoint = point
+}
+
+function finishSignature(event) {
+  if (!signatureDrawing) {
+    return
+  }
+  signatureDrawing = false
+  signatureCanvasRef.value?.releasePointerCapture?.(event.pointerId)
+  syncSignatureData()
+}
+
 const auditForm = reactive({ targetType: '', targetId: null, action: 'APPROVE', opinion: '' })
 const noticeForm = reactive({ id: null, title: '', content: '', status: 'DRAFT' })
 const reportForm = reactive({ action: 'DISMISS', opinion: '' })
 const appealForm = reactive({ action: 'ESCALATE', opinion: '' })
 
 async function loadAll() {
-  await Promise.all([loadDashboard(), loadPending(), loadUsers(), loadNotices(), loadApplications(), loadReports(), loadAppeals(), loadStations()])
+  await Promise.allSettled([
+    loadDashboard(),
+    loadPending(),
+    loadUsers(),
+    loadNotices(),
+    loadApplications(),
+    loadReports(),
+    loadAppeals(),
+    loadStations()
+  ])
 }
 
 async function loadDashboard() {
@@ -579,6 +897,21 @@ async function loadNotices() {
 async function loadApplications() {
   try {
     applications.value = (await adminApi.applications({ page: 0, size: 30 })).content || []
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+async function loadOperationLogs() {
+  try {
+    operationLogs.value = (await adminApi.operationLogs({
+      targetType: operationLogFilters.targetType || undefined,
+      operationType: operationLogFilters.operationType || undefined,
+      operatorKeyword: operationLogFilters.operatorKeyword || undefined,
+      keyword: operationLogFilters.keyword || undefined,
+      page: 0,
+      size: 50
+    })).content || []
   } catch (error) {
     notifyError(error)
   }
@@ -769,11 +1102,122 @@ function openStationDetail(row) {
   stationDetailDialog.value = true
 }
 
+async function openAgreement(row) {
+  try {
+    agreementCurrentApplyId.value = row.id
+    agreementData.value = await adoptionApi.agreement(row.id)
+    agreementSignatureForm.signatureName = auth.state.user?.nickname || '平台管理员'
+    agreementSignatureForm.signatureDataUrl = ''
+    agreementDialogVisible.value = true
+    await nextTick()
+    initSignatureCanvas()
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+function openAgreementPdf() {
+  if (!agreementData.value?.pdfUrl) return
+  window.open(getFullUrl(agreementData.value.pdfUrl), '_blank')
+}
+
+async function signAgreement() {
+  if (!agreementCurrentApplyId.value) return
+  if (!agreementSignatureForm.signatureName.trim()) {
+    ElMessage.warning('请填写签署姓名')
+    return
+  }
+  if (!signatureHasStroke.value) {
+    ElMessage.warning('请先完成手写签名')
+    return
+  }
+  syncSignatureData()
+  saving.value = true
+  try {
+    agreementData.value = await adoptionApi.signAgreement(agreementCurrentApplyId.value, {
+      signatureName: agreementSignatureForm.signatureName.trim(),
+      signatureDataUrl: agreementSignatureForm.signatureDataUrl,
+      signatureImageData: agreementSignatureForm.signatureDataUrl,
+      signatureImage: agreementSignatureForm.signatureDataUrl,
+      signatureImageUrl: agreementSignatureForm.signatureDataUrl,
+      signatureMimeType: 'image/png'
+    })
+    ElMessage.success('协议已签署')
+    await loadApplications()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function openFollowUps(row) {
+  try {
+    followUpCurrentApplyId.value = row.id
+    followUps.value = await adoptionApi.followUps(row.id)
+    followUpDialogVisible.value = true
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+function openFollowUpComplete(item) {
+  followUpEditor.id = item.id
+  followUpEditor.note = item.note || ''
+  followUpEditor.imageUrls = item.imageUrls ? [...item.imageUrls] : []
+  followUpEditorVisible.value = true
+}
+
+async function submitFollowUp() {
+  if (!followUpEditor.note.trim()) {
+    ElMessage.warning('请填写回访内容')
+    return
+  }
+  saving.value = true
+  try {
+    await adoptionApi.completeFollowUp(followUpEditor.id, {
+      note: followUpEditor.note,
+      imageUrls: followUpEditor.imageUrls
+    })
+    ElMessage.success('回访记录已保存')
+    followUpEditorVisible.value = false
+    if (followUpCurrentApplyId.value) {
+      followUps.value = await adoptionApi.followUps(followUpCurrentApplyId.value)
+    }
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+function openOperationLog(row) {
+  operationLogDetail.value = row
+  operationLogDialogVisible.value = true
+}
+
 function formatTime(value) {
   return value ? new Date(value).toLocaleString('zh-CN') : '-'
 }
 
 onMounted(loadAll)
+
+watch(active, async (value) => {
+  if (value === 'operationLogs') {
+    await loadOperationLogs()
+  }
+})
+
+watch(agreementDialogVisible, async (visible) => {
+  if (!visible) {
+    clearSignature()
+    return
+  }
+  if (canSignAgreement.value) {
+    await nextTick()
+    initSignatureCanvas()
+  }
+})
 </script>
 
 <style scoped>
@@ -799,5 +1243,99 @@ onMounted(loadAll)
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+.agreement-shell {
+  display: grid;
+  gap: 14px;
+}
+.agreement-meta,
+.follow-up-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.agreement-actions,
+.follow-up-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.agreement-content,
+.log-json {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(244, 248, 246, 0.95);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+  color: #30413b;
+}
+.agreement-sign-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.agreement-sign-box {
+  padding-top: 8px;
+  border-top: 1px solid rgba(74, 109, 96, 0.12);
+}
+
+.signature-preview {
+  width: 100%;
+  max-width: 220px;
+  height: 88px;
+  object-fit: contain;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(74, 109, 96, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 247, 0.96));
+}
+
+.signature-pad-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.signature-canvas {
+  width: 100%;
+  height: 220px;
+  display: block;
+  border-radius: 14px;
+  border: 1px dashed rgba(74, 109, 96, 0.26);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 248, 0.98)),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 35px,
+      rgba(74, 109, 96, 0.06) 35px,
+      rgba(74, 109, 96, 0.06) 36px
+    );
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.signature-pad-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #60756b;
+  font-size: 13px;
+}
+.follow-up-list {
+  display: grid;
+  gap: 12px;
+}
+.follow-up-card {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(249, 251, 250, 0.96);
+  border: 1px solid rgba(74, 109, 96, 0.1);
+}
+.follow-up-note {
+  margin: 10px 0;
+  line-height: 1.7;
+  white-space: pre-wrap;
 }
 </style>

@@ -2,8 +2,8 @@
   <section class="view page">
     <div class="section-head">
       <div>
-        <h1>个人中心</h1>
-        <p>维护资料，查看自己的发布记录、领养申请、通知、举报和申诉进度。</p>
+        <h1>{{ t('profilePage.title') }}</h1>
+        <p>{{ t('profilePage.description') }}</p>
       </div>
     </div>
 
@@ -15,22 +15,22 @@
           <StatusTag :value="profile.status" :text="profile.statusText" :options="userStatusOptions" />
         </div>
         <el-form :model="profileForm" label-position="top">
-          <el-form-item label="昵称">
+          <el-form-item :label="t('auth.nickname')">
             <el-input v-model="profileForm.nickname" />
           </el-form-item>
-          <el-form-item label="手机号">
+          <el-form-item :label="t('auth.phone')">
             <el-input v-model="profileForm.phone" />
           </el-form-item>
-          <el-form-item label="头像">
+          <el-form-item :label="t('profilePage.avatar')">
             <ImageUploader v-model="avatarUrls" usage="avatar" :limit="1" />
           </el-form-item>
-          <el-button :loading="saving" :icon="Save" type="primary" style="width: 100%" @click="saveProfile">保存资料</el-button>
+          <el-button :loading="saving" :icon="Save" type="primary" style="width: 100%" @click="saveProfile">{{ t('profilePage.saveProfile') }}</el-button>
         </el-form>
       </aside>
 
       <main class="content-panel surface">
         <el-tabs v-model="tab">
-          <el-tab-pane label="动物档案" name="animals">
+          <el-tab-pane :label="t('nav.animals')" name="animals">
             <el-table :data="animals" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="typeText" label="类型" width="120" />
@@ -51,7 +51,7 @@
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="救助信息" name="rescues">
+          <el-tab-pane :label="t('nav.rescues')" name="rescues">
             <el-table :data="rescues" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="location" label="地点" />
@@ -72,7 +72,7 @@
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="领养申请" name="applications">
+          <el-tab-pane :label="t('profilePage.adoptionApplications')" name="applications">
             <el-table :data="applications" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="animalTypeText" label="动物" width="120" />
@@ -83,8 +83,10 @@
                 </template>
               </el-table-column>
               <el-table-column prop="auditOpinion" label="审核意见" />
-              <el-table-column label="操作" width="220">
+              <el-table-column label="操作" width="320">
                 <template #default="{ row }">
+                  <el-button v-if="row.status === 'APPROVED'" size="small" text type="primary" @click="openAgreement(row)">协议</el-button>
+                  <el-button v-if="row.status === 'APPROVED'" size="small" text @click="openFollowUps(row, false)">回访</el-button>
                   <el-button v-if="row.status === 'PENDING_REVIEW'" size="small" text type="danger" @click="cancelApplication(row)">取消</el-button>
                   <el-button v-if="row.status === 'REJECTED'" size="small" text type="warning" @click="openAppeal('ADOPT_APPLY', row.id)">申诉</el-button>
                 </template>
@@ -92,7 +94,27 @@
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="社区帖子" name="communityPosts">
+          <el-tab-pane v-if="canManageAdoptions" :label="t('profilePage.adoptionFollowUp')" name="managedApplications">
+            <el-table :data="managedApplications" stripe>
+              <el-table-column prop="id" label="申请ID" width="90" />
+              <el-table-column prop="animalTypeText" label="动物" width="100" />
+              <el-table-column prop="applicantName" label="申请人" width="120" />
+              <el-table-column prop="contact" label="联系方式" width="140" />
+              <el-table-column label="状态" width="140">
+                <template #default="{ row }">
+                  <StatusTag :value="row.status" :text="row.statusText" :options="applyStatusOptions" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="240">
+                <template #default="{ row }">
+                  <el-button v-if="row.status === 'APPROVED'" size="small" text type="primary" @click="openAgreement(row)">协议</el-button>
+                  <el-button v-if="row.status === 'APPROVED'" size="small" text @click="openFollowUps(row, true)">回访</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <el-tab-pane :label="t('statusLabel.communityPost')" name="communityPosts">
             <el-table :data="communityPosts" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="title" label="标题" />
@@ -109,7 +131,7 @@
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="社区评论" name="communityComments">
+          <el-tab-pane :label="t('statusLabel.communityComment')" name="communityComments">
             <el-table :data="communityComments" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="content" label="评论内容" />
@@ -130,9 +152,9 @@
             <div class="toolbar" style="justify-content:flex-end;margin-bottom:12px">
               <el-button text @click="markAllRead">{{ t('notification.markAllRead') }}</el-button>
             </div>
-            <el-table :data="notifications" stripe>
-              <el-table-column label="标题" width="220">
-                <template #default="{ row }">{{ t('notification.' + row.title, row.title) }}</template>
+              <el-table :data="notifications" stripe>
+              <el-table-column :label="t('admin.noticeTitle')" width="220">
+                <template #default="{ row }">{{ notificationTitle(row.title) }}</template>
               </el-table-column>
               <el-table-column :label="t('admin.content')">
                 <template #default="{ row }">{{ formatNotificationContent(row) }}</template>
@@ -142,18 +164,18 @@
                   <el-tag :type="row.readFlag ? 'info' : 'success'">{{ row.readFlag ? t('notification.read') : t('notification.unread') }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="createdAt" label="时间" width="180">
+              <el-table-column prop="createdAt" :label="t('profilePage.time')" width="180">
                 <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
               </el-table-column>
-              <el-table-column label="操作" width="100">
+              <el-table-column :label="t('admin.action')" width="100">
                 <template #default="{ row }">
-                  <el-button v-if="!row.readFlag" size="small" text @click="markRead(row.id)">设为已读</el-button>
+                  <el-button v-if="!row.readFlag" size="small" text @click="markRead(row.id)">{{ t('profilePage.markRead') }}</el-button>
                 </template>
               </el-table-column>
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="我的举报" name="reports">
+          <el-tab-pane :label="t('profilePage.myReports')" name="reports">
             <el-table :data="reports" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="targetTypeText" label="举报对象" width="120" />
@@ -168,7 +190,7 @@
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="我的申诉" name="appeals">
+          <el-tab-pane :label="t('profilePage.myAppeals')" name="appeals">
             <el-table :data="appeals" stripe>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="targetTypeText" label="申诉对象" width="120" />
@@ -182,18 +204,18 @@
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="修改密码" name="password">
+          <el-tab-pane :label="t('profilePage.changePassword')" name="password">
             <el-form ref="passwordRef" :model="passwordForm" :rules="passwordRules" label-position="top" style="max-width: 460px">
-              <el-form-item label="原密码" prop="oldPassword">
+              <el-form-item :label="t('profilePage.oldPassword')" prop="oldPassword">
                 <el-input v-model="passwordForm.oldPassword" type="password" show-password />
               </el-form-item>
-              <el-form-item label="新密码" prop="newPassword">
+              <el-form-item :label="t('profilePage.newPassword')" prop="newPassword">
                 <el-input v-model="passwordForm.newPassword" type="password" show-password />
               </el-form-item>
-              <el-form-item label="确认密码" prop="confirmPassword">
+              <el-form-item :label="t('auth.confirmPassword')" prop="confirmPassword">
                 <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
               </el-form-item>
-              <el-button :loading="saving" :icon="LockKeyhole" type="primary" @click="changePassword">修改密码</el-button>
+              <el-button :loading="saving" :icon="LockKeyhole" type="primary" @click="changePassword">{{ t('profilePage.changePassword') }}</el-button>
             </el-form>
           </el-tab-pane>
         </el-tabs>
@@ -294,28 +316,139 @@
         <el-button :loading="saving" type="primary" @click="submitAppeal">提交申诉</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="agreementDialogVisible" title="领养协议" width="780px" append-to-body>
+      <div v-if="agreementData" class="agreement-shell">
+        <div class="agreement-meta">
+          <div>
+            <strong>{{ agreementData.title }}</strong>
+            <p class="muted">协议编号：{{ agreementData.agreementNo }}</p>
+          </div>
+          <StatusTag :value="agreementData.status" :text="agreementData.statusText" :options="agreementStatusOptions" />
+        </div>
+        <div class="agreement-actions">
+          <el-button v-if="agreementData.pdfUrl" text type="primary" @click="openAgreementPdf">下载 PDF</el-button>
+        </div>
+        <div class="agreement-content">{{ agreementData.content }}</div>
+        <div class="agreement-sign-grid">
+          <div class="detail-item">
+            <label>领养人签署</label>
+            <span>{{ agreementData.adopterSignatureName || '未签署' }}</span>
+            <img
+              v-if="signatureImageUrl(agreementData, 'adopter')"
+              :src="signatureImageUrl(agreementData, 'adopter')"
+              alt="领养人签名"
+              class="signature-preview"
+            />
+            <small>{{ formatTime(agreementData.adopterSignedAt) }}</small>
+          </div>
+          <div class="detail-item">
+            <label>救助方签署</label>
+            <span>{{ agreementData.counterpartSignatureName || '未签署' }}</span>
+            <img
+              v-if="signatureImageUrl(agreementData, 'counterpart')"
+              :src="signatureImageUrl(agreementData, 'counterpart')"
+              alt="救助方签名"
+              class="signature-preview"
+            />
+            <small>{{ formatTime(agreementData.counterpartSignedAt) }}</small>
+          </div>
+        </div>
+        <div v-if="canSignAgreement" class="agreement-sign-box">
+          <el-form label-position="top">
+            <el-form-item label="签署姓名">
+              <el-input v-model="agreementSignatureForm.signatureName" maxlength="64" />
+            </el-form-item>
+            <el-form-item label="手写签名">
+              <div class="signature-pad-shell">
+                <canvas
+                  ref="signatureCanvasRef"
+                  class="signature-canvas"
+                  @pointerdown="startSignature"
+                  @pointermove="moveSignature"
+                  @pointerup="finishSignature"
+                  @pointerleave="finishSignature"
+                />
+                <div class="signature-pad-meta">
+                  <span>{{ signatureHasStroke ? '已采集签名' : '请在框内完成签名，提交后将随协议一并保存' }}</span>
+                  <el-button text @click="clearSignature">清空</el-button>
+                </div>
+              </div>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="agreementDialogVisible = false">关闭</el-button>
+        <el-button v-if="canSignAgreement" :loading="saving" type="primary" @click="signAgreement">确认签署</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="followUpDialogVisible" title="领养回访" width="760px" append-to-body>
+      <div v-if="followUps.length" class="follow-up-list">
+        <div v-for="item in followUps" :key="item.id" class="follow-up-card">
+          <div class="follow-up-head">
+            <div>
+              <strong>{{ item.stageLabel }}</strong>
+              <p class="muted">计划时间：{{ formatTime(item.plannedAt) }}</p>
+            </div>
+            <StatusTag :value="item.status" :text="item.statusText" :options="followUpStatusOptions" />
+          </div>
+          <p class="follow-up-note">{{ item.note || '暂未填写回访内容' }}</p>
+          <div v-if="item.imageUrls?.length" class="detail-thumb-row">
+            <img v-for="url in item.imageUrls" :key="url" :src="getFullUrl(url)" style="width:88px;height:88px;object-fit:cover;border-radius:8px" />
+          </div>
+          <p class="muted">填写人：{{ item.creatorNickname || '-' }}，完成时间：{{ formatTime(item.completedAt) }}</p>
+          <div v-if="followUpManageMode && item.status !== 'COMPLETED'" class="follow-up-actions">
+            <el-button size="small" type="primary" plain @click="openFollowUpComplete(item)">填写回访</el-button>
+          </div>
+        </div>
+      </div>
+      <el-empty v-else description="暂无回访计划" />
+      <template #footer>
+        <el-button @click="followUpDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="followUpEditorVisible" title="填写回访记录" width="600px" append-to-body>
+      <el-form label-position="top">
+        <el-form-item label="回访内容">
+          <el-input v-model="followUpEditor.note" type="textarea" :rows="5" maxlength="1000" show-word-limit />
+        </el-form-item>
+        <el-form-item label="回访图片">
+          <ImageUploader v-model="followUpEditor.imageUrls" usage="adoption-follow-up" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="followUpEditorVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="submitFollowUp">保存</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup>
 import { useRoute } from 'vue-router'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Archive, LockKeyhole, Save } from 'lucide-vue-next'
 import StatusTag from '../components/StatusTag.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import { adoptionApi, animalApi, appealApi, communityApi, notificationApi, reportApi, rescueApi, userApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 import {
+  agreementStatusOptions,
   animalStatusOptions,
-  communityCommentStatusOptions,
-  communityPostStatusOptions,
   animalTypeOptions,
   appealStatusOptions,
   appealTargetOptions,
   applyStatusOptions,
+  communityCommentStatusOptions,
+  communityPostStatusOptions,
+  followUpStatusOptions,
   genderOptions,
   optionText,
   reportStatusOptions,
@@ -332,6 +465,7 @@ const profile = ref(auth.state.user || {})
 const animals = ref([])
 const rescues = ref([])
 const applications = ref([])
+const managedApplications = ref([])
 const communityPosts = ref([])
 const communityComments = ref([])
 const notifications = ref([])
@@ -350,12 +484,26 @@ const animalEditorVisible = ref(false)
 const rescueEditorVisible = ref(false)
 const statusDialogVisible = ref(false)
 const appealVisible = ref(false)
+const agreementDialogVisible = ref(false)
+const followUpDialogVisible = ref(false)
+const followUpEditorVisible = ref(false)
 const statusTargetType = ref('animal')
 const statusTarget = ref(null)
 const statusForm = reactive({ newStatus: '' })
 const animalEditor = reactive({ id: null, type: 'CAT', gender: 'UNKNOWN', age: 0, foundRegion: '', healthCondition: '', imageUrls: [], description: '' })
 const rescueEditor = reactive({ id: null, location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
 const appealForm = reactive({ targetType: 'ANIMAL', targetId: null, reason: '' })
+const agreementData = ref(null)
+const agreementCurrentApplyId = ref(null)
+const agreementSignatureForm = reactive({ signatureName: '', signatureDataUrl: '' })
+const signatureCanvasRef = ref()
+const signatureHasStroke = ref(false)
+const followUps = ref([])
+const followUpManageMode = ref(false)
+const followUpCurrentApplyId = ref(null)
+const followUpEditor = reactive({ id: null, note: '', imageUrls: [] })
+let signatureDrawing = false
+let signatureLastPoint = { x: 0, y: 0 }
 
 const animalRules = {
   type: [{ required: true, message: '请选择动物类型', trigger: 'change' }],
@@ -385,6 +533,43 @@ const availableStatuses = computed(() => {
   return rescueStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
 })
 
+const canManageAdoptions = computed(() => ['RESCUER', 'ADMIN'].includes(profile.value.role))
+const canSignAgreement = computed(() => {
+  if (!agreementData.value || agreementData.value.status === 'COMPLETED' || !profile.value.id) {
+    return false
+  }
+  const isAdopter = profile.value.id === agreementData.value.adopterId
+  const isCounterpart = profile.value.id === agreementData.value.publisherId || profile.value.role === 'ADMIN'
+  if (isAdopter) return !agreementData.value.adopterSignatureName
+  if (isCounterpart) return !agreementData.value.counterpartSignatureName
+  return false
+})
+
+useAiAssistantPageContext(() => ({
+  pageTitle: t('profilePage.title'),
+  pageSummary: t('profilePage.pageSummary'),
+  viewData: {
+    activeTab: tab.value,
+    profile: profile.value ? {
+      id: profile.value.id,
+      nickname: profile.value.nickname,
+      roleText: profile.value.roleText,
+      statusText: profile.value.statusText
+    } : null,
+    summary: {
+      animalCount: animals.value.length,
+      rescueCount: rescues.value.length,
+      applicationCount: applications.value.length,
+      managedApplicationCount: managedApplications.value.length,
+      communityPostCount: communityPosts.value.length,
+      communityCommentCount: communityComments.value.length,
+      unreadNotificationCount: notificationSummary.value.unreadCount || 0,
+      reportCount: reports.value.length,
+      appealCount: appeals.value.length
+    }
+  }
+}))
+
 const API_BASE = window.location.origin
 function getFullUrl(url) {
   if (!url) return ''
@@ -393,42 +578,174 @@ function getFullUrl(url) {
 }
 
 function formatTime(value) {
-  return value ? new Date(value).toLocaleString() : '-'
+  if (!value) {
+    return '-'
+  }
+  return new Date(value).toLocaleString()
+}
+
+function signatureImageUrl(data, side) {
+  if (!data) {
+    return ''
+  }
+  const keyMap = side === 'adopter'
+    ? ['adopterSignatureImageUrl', 'adopterSignatureUrl', 'adopterSignatureImage', 'adopterSignature']
+    : ['counterpartSignatureImageUrl', 'counterpartSignatureUrl', 'counterpartSignatureImage', 'counterpartSignature']
+  const raw = keyMap.map((key) => data[key]).find((value) => typeof value === 'string' && value)
+  return raw ? getFullUrl(raw) : ''
+}
+
+function initSignatureCanvas() {
+  const canvas = signatureCanvasRef.value
+  if (!canvas) {
+    return
+  }
+  canvas.width = canvas.clientWidth || 640
+  canvas.height = canvas.clientHeight || 220
+  const context = canvas.getContext('2d')
+  if (!context) {
+    return
+  }
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.lineCap = 'round'
+  context.lineJoin = 'round'
+  context.lineWidth = 2.8
+  context.strokeStyle = '#1f5d4f'
+  signatureHasStroke.value = false
+  agreementSignatureForm.signatureDataUrl = ''
+}
+
+function clearSignature() {
+  signatureDrawing = false
+  initSignatureCanvas()
+}
+
+function getSignaturePoint(event) {
+  const canvas = signatureCanvasRef.value
+  if (!canvas) {
+    return { x: 0, y: 0 }
+  }
+  const rect = canvas.getBoundingClientRect()
+  const scaleX = canvas.width / rect.width
+  const scaleY = canvas.height / rect.height
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY
+  }
+}
+
+function syncSignatureData() {
+  const canvas = signatureCanvasRef.value
+  agreementSignatureForm.signatureDataUrl = canvas && signatureHasStroke.value ? canvas.toDataURL('image/png') : ''
+}
+
+function startSignature(event) {
+  const canvas = signatureCanvasRef.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) {
+    return
+  }
+  const point = getSignaturePoint(event)
+  signatureDrawing = true
+  signatureLastPoint = point
+  signatureHasStroke.value = true
+  context.beginPath()
+  context.moveTo(point.x, point.y)
+  context.lineTo(point.x + 0.01, point.y + 0.01)
+  context.stroke()
+  canvas.setPointerCapture?.(event.pointerId)
+  syncSignatureData()
+}
+
+function moveSignature(event) {
+  if (!signatureDrawing) {
+    return
+  }
+  const canvas = signatureCanvasRef.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) {
+    return
+  }
+  const point = getSignaturePoint(event)
+  context.beginPath()
+  context.moveTo(signatureLastPoint.x, signatureLastPoint.y)
+  context.lineTo(point.x, point.y)
+  context.stroke()
+  signatureLastPoint = point
+}
+
+function finishSignature(event) {
+  if (!signatureDrawing) {
+    return
+  }
+  signatureDrawing = false
+  signatureCanvasRef.value?.releasePointerCapture?.(event.pointerId)
+  syncSignatureData()
+}
+
+function notificationTitle(title) {
+  if (!title) {
+    return t('appShell.systemNotification')
+  }
+  const key = 'notification.' + title
+  const translated = t(key)
+  return translated === key ? title : translated
 }
 
 function formatNotificationContent(item) {
   if (item.title === 'COMMENT_REPLY_COMMENT' || item.title === 'COMMENT_REPLY_POST') {
     const parts = (item.content || '').split('|')
     if (parts.length === 2) {
-      return t('notification.' + item.title + '_CONTENT', { nickname: parts[0], snippet: parts[1] })
+      const key = 'notification.' + item.title + '_CONTENT'
+      const translated = t(key, { nickname: parts[0], snippet: parts[1] })
+      return translated === key ? item.content || '' : translated
     }
   }
   return item.content || ''
 }
 
 async function loadRecords() {
+  const results = await Promise.allSettled([
+    userApi.animals({ page: 0, size: 20 }),
+    userApi.rescues({ page: 0, size: 20 }),
+    userApi.applications({ page: 0, size: 20 }),
+    communityApi.myPosts({ page: 0, size: 20 }),
+    communityApi.myComments({ page: 0, size: 20 }),
+    notificationApi.list({ page: 0, size: 20 }),
+    notificationApi.summary(),
+    reportApi.list({ page: 0, size: 20 }),
+    appealApi.list({ page: 0, size: 20 })
+  ])
+
+  const pageContent = (result) => result.status === 'fulfilled' ? (result.value.content || []) : []
+  const singleValue = (result, fallback) => result.status === 'fulfilled' ? result.value : fallback
+  const failures = results.filter((item) => item.status === 'rejected')
+
+  animals.value = pageContent(results[0])
+  rescues.value = pageContent(results[1])
+  applications.value = pageContent(results[2])
+  communityPosts.value = pageContent(results[3])
+  communityComments.value = pageContent(results[4])
+  notifications.value = pageContent(results[5])
+  notificationSummary.value = singleValue(results[6], { unreadCount: 0 })
+  reports.value = pageContent(results[7])
+  appeals.value = pageContent(results[8])
+
+  if (failures.length === results.length && failures[0]?.reason) {
+    notifyError(failures[0].reason)
+  }
+}
+
+async function loadManagedApplications() {
+  if (!canManageAdoptions.value) {
+    managedApplications.value = []
+    return
+  }
   try {
-    const [myAnimals, myRescues, myApplications, myCommunityPosts, myCommunityComments, myNotifications, notificationSummaryData, myReports, myAppeals] = await Promise.all([
-      userApi.animals({ page: 0, size: 20 }),
-      userApi.rescues({ page: 0, size: 20 }),
-      userApi.applications({ page: 0, size: 20 }),
-      communityApi.myPosts({ page: 0, size: 20 }),
-      communityApi.myComments({ page: 0, size: 20 }),
-      notificationApi.list({ page: 0, size: 20 }),
-      notificationApi.summary(),
-      reportApi.list({ page: 0, size: 20 }),
-      appealApi.list({ page: 0, size: 20 })
-    ])
-    animals.value = myAnimals.content || []
-    rescues.value = myRescues.content || []
-    applications.value = myApplications.content || []
-    communityPosts.value = myCommunityPosts.content || []
-    communityComments.value = myCommunityComments.content || []
-    notifications.value = myNotifications.content || []
-    notificationSummary.value = notificationSummaryData || { unreadCount: 0 }
-    reports.value = myReports.content || []
-    appeals.value = myAppeals.content || []
+    managedApplications.value = (await userApi.managedApplications({ page: 0, size: 20 })).content || []
   } catch (error) {
+    managedApplications.value = []
     notifyError(error)
   }
 }
@@ -455,7 +772,7 @@ async function saveProfile() {
     profile.value = await userApi.update(profileForm)
     auth.state.user = profile.value
     localStorage.setItem('guitu_user', JSON.stringify(profile.value))
-    ElMessage.success('资料已更新')
+    ElMessage.success(t('profilePage.profileUpdated'))
   } catch (error) {
     notifyError(error)
   } finally {
@@ -468,7 +785,7 @@ async function changePassword() {
   saving.value = true
   try {
     await userApi.changePassword(passwordForm)
-    ElMessage.success('密码修改成功')
+    ElMessage.success(t('profilePage.passwordUpdated'))
     Object.assign(passwordForm, { oldPassword: '', newPassword: '', confirmPassword: '' })
   } catch (error) {
     notifyError(error)
@@ -583,6 +900,97 @@ async function cancelApplication(row) {
   }
 }
 
+async function openAgreement(row) {
+  try {
+    agreementCurrentApplyId.value = row.id
+    agreementData.value = await adoptionApi.agreement(row.id)
+    agreementSignatureForm.signatureName = profile.value.nickname || row.applicantName || ''
+    agreementSignatureForm.signatureDataUrl = ''
+    agreementDialogVisible.value = true
+    await nextTick()
+    initSignatureCanvas()
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+function openAgreementPdf() {
+  if (!agreementData.value?.pdfUrl) return
+  window.open(getFullUrl(agreementData.value.pdfUrl), '_blank')
+}
+
+async function signAgreement() {
+  if (!agreementCurrentApplyId.value) return
+  if (!agreementSignatureForm.signatureName.trim()) {
+    ElMessage.warning('请填写签署姓名')
+    return
+  }
+  if (!signatureHasStroke.value) {
+    ElMessage.warning('请先完成手写签名')
+    return
+  }
+  syncSignatureData()
+  saving.value = true
+  try {
+    agreementData.value = await adoptionApi.signAgreement(agreementCurrentApplyId.value, {
+      signatureName: agreementSignatureForm.signatureName.trim(),
+      signatureDataUrl: agreementSignatureForm.signatureDataUrl,
+      signatureImageData: agreementSignatureForm.signatureDataUrl,
+      signatureImage: agreementSignatureForm.signatureDataUrl,
+      signatureImageUrl: agreementSignatureForm.signatureDataUrl,
+      signatureMimeType: 'image/png'
+    })
+    ElMessage.success('协议已签署')
+    await loadRecords()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function openFollowUps(row, manageable) {
+  try {
+    followUpCurrentApplyId.value = row.id
+    followUpManageMode.value = manageable
+    followUps.value = await adoptionApi.followUps(row.id)
+    followUpDialogVisible.value = true
+  } catch (error) {
+    notifyError(error)
+  }
+}
+
+function openFollowUpComplete(item) {
+  followUpEditor.id = item.id
+  followUpEditor.note = item.note || ''
+  followUpEditor.imageUrls = item.imageUrls ? [...item.imageUrls] : []
+  followUpEditorVisible.value = true
+}
+
+async function submitFollowUp() {
+  if (!followUpEditor.note.trim()) {
+    ElMessage.warning('请填写回访内容')
+    return
+  }
+  saving.value = true
+  try {
+    await adoptionApi.completeFollowUp(followUpEditor.id, {
+      note: followUpEditor.note,
+      imageUrls: followUpEditor.imageUrls
+    })
+    ElMessage.success('回访记录已保存')
+    followUpEditorVisible.value = false
+    if (followUpCurrentApplyId.value) {
+      followUps.value = await adoptionApi.followUps(followUpCurrentApplyId.value)
+    }
+    await loadRecords()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
 async function markRead(id) {
   try {
     await notificationApi.markRead(id)
@@ -622,4 +1030,135 @@ async function submitAppeal() {
 }
 
 onMounted(load)
+
+watch(tab, async (value) => {
+  if (value === 'managedApplications' && canManageAdoptions.value) {
+    await loadManagedApplications()
+  }
+})
+
+watch(agreementDialogVisible, async (visible) => {
+  if (!visible) {
+    clearSignature()
+    return
+  }
+  if (canSignAgreement.value) {
+    await nextTick()
+    initSignatureCanvas()
+  }
+})
 </script>
+
+<style scoped>
+.agreement-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.agreement-meta,
+.follow-up-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agreement-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.agreement-content {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(244, 248, 246, 0.95);
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: #30413b;
+}
+
+.agreement-sign-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.agreement-sign-box {
+  padding-top: 8px;
+  border-top: 1px solid rgba(74, 109, 96, 0.12);
+}
+
+.signature-preview {
+  width: 100%;
+  max-width: 220px;
+  height: 88px;
+  object-fit: contain;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(74, 109, 96, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 247, 0.96));
+}
+
+.signature-pad-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.signature-canvas {
+  width: 100%;
+  height: 220px;
+  display: block;
+  border-radius: 14px;
+  border: 1px dashed rgba(74, 109, 96, 0.26);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 248, 0.98)),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 35px,
+      rgba(74, 109, 96, 0.06) 35px,
+      rgba(74, 109, 96, 0.06) 36px
+    );
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.signature-pad-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #60756b;
+  font-size: 13px;
+}
+
+.follow-up-list {
+  display: grid;
+  gap: 12px;
+}
+
+.follow-up-card {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(249, 251, 250, 0.96);
+  border: 1px solid rgba(74, 109, 96, 0.1);
+}
+
+.follow-up-note {
+  margin: 10px 0;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.follow-up-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .agreement-sign-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

@@ -2,20 +2,20 @@
   <section class="view page">
     <div class="section-head">
       <div>
-        <h1>救助信息</h1>
-        <p>发布发现地点、动物情况和联系方式，审核通过后会公开展示给更多人查看。</p>
+        <h1>{{ t('rescue.title') }}</h1>
+        <p>{{ t('rescue.description') }}</p>
       </div>
-      <el-button v-if="auth.isLoggedIn.value" :icon="Plus" type="primary" size="large" @click="dialogVisible = true">发布救助</el-button>
-      <el-button v-else :icon="LogIn" size="large" @click="$router.push('/auth')">登录后发布</el-button>
+      <el-button v-if="auth.isLoggedIn.value" :icon="Plus" type="primary" size="large" @click="dialogVisible = true">{{ t('rescue.publish') }}</el-button>
+      <el-button v-else :icon="LogIn" size="large" @click="$router.push('/auth')">{{ t('rescue.loginToPublish') }}</el-button>
     </div>
 
     <div class="toolbar tool-panel" style="grid-template-columns: 1.5fr 1fr 1fr auto">
-      <el-input v-model="filters.keyword" placeholder="关键词" clearable @keyup.enter="load" />
-      <el-input v-model="filters.region" placeholder="地区" clearable @keyup.enter="load" />
-      <el-select v-model="filters.status" placeholder="状态" clearable>
+      <el-input v-model="filters.keyword" :placeholder="t('common.keyword')" clearable @keyup.enter="load" />
+      <el-input v-model="filters.region" :placeholder="t('common.region')" clearable @keyup.enter="load" />
+      <el-select v-model="filters.status" :placeholder="t('common.status')" clearable>
         <el-option v-for="item in publicRescueStatuses" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-button :icon="Search" type="primary" @click="load">筛选</el-button>
+      <el-button :icon="Search" type="primary" @click="load">{{ t('common.filter') }}</el-button>
     </div>
 
     <el-skeleton v-if="loading" :rows="6" animated />
@@ -25,25 +25,25 @@
         <h3>{{ rescue.location }}</h3>
         <p>{{ rescue.animalCondition }}</p>
         <p class="muted">{{ rescue.description }}</p>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+        <div class="rescue-card-foot">
           <div class="meta-line"><Phone :size="16" /> {{ rescue.contact }}</div>
-          <div style="display:flex;gap:6px">
-            <el-button v-if="canEdit(rescue)" :icon="Pencil" text size="small" @click="openEdit(rescue)">编辑</el-button>
-            <el-button :icon="Eye" @click="openDetail(rescue)">详情</el-button>
+          <div class="rescue-card-actions">
+            <el-button v-if="canEdit(rescue)" :icon="Pencil" text size="small" @click="openEdit(rescue)">{{ t('common.edit') }}</el-button>
+            <el-button :icon="Eye" @click="openDetail(rescue)">{{ t('common.details') }}</el-button>
           </div>
         </div>
       </article>
     </div>
-    <EmptyState v-else title="暂无救助信息" description="可以发布一条救助信息，等待管理员审核后展示。" />
+    <EmptyState v-else :title="t('rescue.emptyTitle')" :description="t('rescue.emptyDesc')" />
 
-    <el-dialog v-model="detailVisible" title="救助详情" width="680px" append-to-body>
+    <el-dialog v-model="detailVisible" :title="t('rescue.detailTitle')" width="680px" append-to-body>
       <div v-if="current" class="form-shell">
         <StatusTag :value="current.status" :text="current.statusText" :options="rescueStatusOptions" />
         <h2>{{ current.location }}</h2>
         <p>{{ current.animalCondition }}</p>
         <p class="muted">{{ current.description }}</p>
         <p class="meta-line" style="margin:8px 0"><Phone :size="16" /> {{ current.contact }}</p>
-        <p class="muted" style="margin-top:8px">发布人：{{ current.publisherNickname || '-' }}</p>
+        <p class="muted" style="margin-top:8px">{{ t('rescue.publisher') }}：{{ current.publisherNickname || '-' }}</p>
         <div class="thumb-grid rescue-preview-grid" v-if="current.imageUrls?.length">
           <el-image
             v-for="(url, index) in current.imageUrls"
@@ -57,76 +57,76 @@
             hide-on-click-modal
           />
         </div>
-        <div v-if="canEdit(current)" style="display:flex;gap:8px;margin-top:16px">
-          <el-button :icon="Pencil" type="primary" @click="detailVisible = false; openEdit(current)">编辑</el-button>
-          <el-button :icon="RefreshCw" @click="openStatus(current)">更新状态</el-button>
-          <el-button :icon="Archive" type="danger" @click="offlineRescue(current)">下架</el-button>
+        <div v-if="canEdit(current)" class="rescue-detail-actions">
+          <el-button :icon="Pencil" type="primary" @click="detailVisible = false; openEdit(current)">{{ t('common.edit') }}</el-button>
+          <el-button :icon="RefreshCw" @click="openStatus(current)">{{ t('rescue.updateStatus') }}</el-button>
+          <el-button :icon="Archive" type="danger" @click="offlineRescue(current)">{{ t('common.delete') }}</el-button>
         </div>
         <div v-else style="margin-top:16px">
-          <el-button type="danger" plain @click="reportVisible = true">举报该救助信息</el-button>
+          <el-button type="danger" plain @click="reportVisible = true">{{ t('rescue.reportThis') }}</el-button>
         </div>
       </div>
     </el-dialog>
 
-    <el-dialog v-model="dialogVisible" title="发布救助信息" width="720px" append-to-body>
+    <el-dialog v-model="dialogVisible" :title="t('rescue.createTitle')" width="720px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-form-item label="救助地点" prop="location">
+        <el-form-item :label="t('rescue.location')" prop="location">
           <el-input v-model="form.location" />
         </el-form-item>
-        <el-form-item label="动物情况" prop="animalCondition">
+        <el-form-item :label="t('rescue.animalCondition')" prop="animalCondition">
           <el-input v-model="form.animalCondition" />
         </el-form-item>
-        <el-form-item label="联系方式" prop="contact">
+        <el-form-item :label="t('common.contact')" prop="contact">
           <el-input v-model="form.contact" />
         </el-form-item>
-        <el-form-item label="求助说明" prop="description">
+        <el-form-item :label="t('rescue.helpDescription')" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="4" />
         </el-form-item>
-        <el-form-item label="现场图片">
+        <el-form-item :label="t('rescue.sceneImages')">
           <ImageUploader v-model="form.imageUrls" usage="rescue" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button :loading="saving" :icon="Send" type="primary" @click="submit">提交审核</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button :loading="saving" :icon="Send" type="primary" @click="submit">{{ t('rescue.submitReview') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="editVisible" title="编辑救助信息" width="720px" append-to-body>
+    <el-dialog v-model="editVisible" :title="t('rescue.editTitle')" width="720px" append-to-body>
       <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-position="top">
-        <el-form-item label="救助地点" prop="location">
+        <el-form-item :label="t('rescue.location')" prop="location">
           <el-input v-model="editForm.location" />
         </el-form-item>
-        <el-form-item label="动物情况" prop="animalCondition">
+        <el-form-item :label="t('rescue.animalCondition')" prop="animalCondition">
           <el-input v-model="editForm.animalCondition" />
         </el-form-item>
-        <el-form-item label="联系方式" prop="contact">
+        <el-form-item :label="t('common.contact')" prop="contact">
           <el-input v-model="editForm.contact" />
         </el-form-item>
-        <el-form-item label="求助说明" prop="description">
+        <el-form-item :label="t('rescue.helpDescription')" prop="description">
           <el-input v-model="editForm.description" type="textarea" :rows="4" />
         </el-form-item>
-        <el-form-item label="现场图片">
+        <el-form-item :label="t('rescue.sceneImages')">
           <ImageUploader v-model="editForm.imageUrls" usage="rescue" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button :loading="saving" type="primary" @click="saveEdit">保存</el-button>
+        <el-button @click="editVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button :loading="saving" type="primary" @click="saveEdit">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="statusVisible" title="更新状态" width="460px" append-to-body>
+    <el-dialog v-model="statusVisible" :title="t('rescue.updateStatus')" width="460px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="新状态">
+        <el-form-item :label="t('rescue.newStatus')">
           <el-select v-model="newStatus" style="width: 100%">
             <el-option v-for="item in editableStatuses" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="statusVisible = false">取消</el-button>
-        <el-button :loading="saving" type="primary" @click="saveStatus">更新</el-button>
+        <el-button @click="statusVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button :loading="saving" type="primary" @click="saveStatus">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
 
@@ -139,11 +139,13 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Archive, Eye, LogIn, Pencil, Phone, Plus, RefreshCw, Search, Send } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import EmptyState from '../components/EmptyState.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import ReportDialog from '../components/ReportDialog.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { rescueApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { demoRescues } from '../data/demoData'
 import { rescueStatusOptions } from '../utils/status'
@@ -152,6 +154,7 @@ import { useAuth } from '../stores/auth'
 const auth = useAuth()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const loading = ref(false)
 const saving = ref(false)
 const detailVisible = ref(false)
@@ -171,12 +174,31 @@ const filters = reactive({ keyword: '', region: '', status: '' })
 const form = reactive({ location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
 const editForm = reactive({ id: null, location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
 const rules = {
-  location: [{ required: true, message: '请输入救助地点', trigger: 'blur' }],
-  animalCondition: [{ required: true, message: '请输入动物情况', trigger: 'blur' }],
-  contact: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入求助说明', trigger: 'blur' }]
+  location: [{ required: true, message: t('rescue.locationRequired'), trigger: 'blur' }],
+  animalCondition: [{ required: true, message: t('rescue.animalConditionRequired'), trigger: 'blur' }],
+  contact: [{ required: true, message: t('rescue.contactRequired'), trigger: 'blur' }],
+  description: [{ required: true, message: t('rescue.descriptionRequired'), trigger: 'blur' }]
 }
 const editRules = { ...rules }
+
+useAiAssistantPageContext(() => ({
+  pageTitle: detailVisible.value && current.value ? `救助详情 #${current.value.id}` : t('rescue.title'),
+  pageSummary: detailVisible.value && current.value
+    ? '当前正在查看一条救助信息详情。'
+    : t('rescue.description'),
+  entityType: detailVisible.value && current.value ? 'RESCUE' : null,
+  entityId: detailVisible.value && current.value ? current.value.id : null,
+  viewData: {
+    filters: { ...filters },
+    visibleRescues: rescues.value.slice(0, 6).map((item) => ({
+      id: item.id,
+      location: item.location,
+      statusText: item.statusText,
+      animalCondition: item.animalCondition
+    })),
+    detailOpen: detailVisible.value
+  }
+}))
 
 function canEdit(record) {
   if (!auth.state.user) return false
@@ -242,7 +264,7 @@ async function saveEdit() {
   saving.value = true
   try {
     await rescueApi.update(editForm.id, editForm)
-    ElMessage.success('救助信息已更新')
+    ElMessage.success(t('rescue.saveSuccess'))
     editVisible.value = false
     load()
   } catch (error) {
@@ -262,7 +284,7 @@ async function saveStatus() {
   saving.value = true
   try {
     await rescueApi.updateStatus(statusTarget.value.id, { status: newStatus.value })
-    ElMessage.success('状态已更新')
+    ElMessage.success(t('rescue.updateSuccess'))
     statusVisible.value = false
     load()
   } catch (error) {
@@ -274,9 +296,9 @@ async function saveStatus() {
 
 async function offlineRescue(rescue) {
   try {
-    await ElMessageBox.confirm('下架后该救助信息将从公开列表中移除，确认继续吗？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('rescue.offlineConfirm'), t('common.warning'), { type: 'warning' })
     await rescueApi.offline(rescue.id)
-    ElMessage.success('已下架')
+    ElMessage.success(t('rescue.offlineSuccess'))
     detailVisible.value = false
     load()
   } catch (error) {
@@ -289,7 +311,7 @@ async function submit() {
   saving.value = true
   try {
     await rescueApi.create(form)
-    ElMessage.success('提交成功，等待管理员审核')
+    ElMessage.success(t('rescue.createSuccess'))
     Object.assign(form, { location: '', animalCondition: '', contact: '', description: '', imageUrls: [] })
     dialogVisible.value = false
     load()
@@ -313,3 +335,24 @@ onMounted(async () => {
   await openDetailFromQuery()
 })
 </script>
+
+<style scoped>
+.rescue-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rescue-card-actions,
+.rescue-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rescue-detail-actions {
+  margin-top: 16px;
+}
+</style>

@@ -52,6 +52,7 @@ import { Megaphone, Search } from 'lucide-vue-next'
 import EmptyState from '../components/EmptyState.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { noticeApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { noticeStatusOptions } from '../utils/status'
 
@@ -61,6 +62,20 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = 10
 const keyword = ref('')
+
+useAiAssistantPageContext(() => ({
+  pageTitle: '公告列表',
+  pageSummary: '当前页面展示平台公告列表，可按关键字筛选。',
+  viewData: {
+    keyword: keyword.value,
+    visibleNotices: notices.value.slice(0, 8).map((item) => ({
+      id: item.id,
+      title: item.title,
+      statusText: item.statusText,
+      publisherNickname: item.publisherNickname
+    }))
+  }
+}))
 
 function excerpt(content) {
   if (!content) return ''

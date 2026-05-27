@@ -2,20 +2,20 @@
   <section class="view page">
     <div class="section-head">
       <div>
-        <h1>志愿者任务</h1>
-        <p>发布志愿者招募任务，将线上信息转化为线下行动，让爱心落地。</p>
+        <h1>{{ t('volunteer.title') }}</h1>
+        <p>{{ t('volunteer.description') }}</p>
       </div>
-      <el-button v-if="auth.isLoggedIn.value" :icon="Plus" type="primary" size="large" @click="dialogVisible = true">发布任务</el-button>
-      <el-button v-else :icon="LogIn" size="large" @click="$router.push('/auth')">登录后发布</el-button>
+      <el-button v-if="auth.isLoggedIn.value" :icon="Plus" type="primary" size="large" @click="dialogVisible = true">{{ t('volunteer.publish') }}</el-button>
+      <el-button v-else :icon="LogIn" size="large" @click="$router.push('/auth')">{{ t('volunteer.loginToPublish') }}</el-button>
     </div>
 
     <div class="toolbar tool-panel" style="grid-template-columns: 1.5fr 1fr 1fr auto">
-      <el-input v-model="filters.keyword" placeholder="关键词" clearable @keyup.enter="load" />
-      <el-input v-model="filters.region" placeholder="地区" clearable @keyup.enter="load" />
-      <el-select v-model="filters.status" placeholder="状态" clearable>
+      <el-input v-model="filters.keyword" :placeholder="t('common.keyword')" clearable @keyup.enter="load" />
+      <el-input v-model="filters.region" :placeholder="t('common.region')" clearable @keyup.enter="load" />
+      <el-select v-model="filters.status" :placeholder="t('common.status')" clearable>
         <el-option v-for="item in publicTaskStatuses" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-button :icon="Search" type="primary" @click="load">筛选</el-button>
+      <el-button :icon="Search" type="primary" @click="load">{{ t('common.filter') }}</el-button>
     </div>
 
     <el-skeleton v-if="loading" :rows="6" animated />
@@ -26,17 +26,17 @@
         <p class="muted">{{ task.description }}</p>
         <div class="task-meta-row">
           <span class="meta-line"><MapPin :size="14" /> {{ task.location }}</span>
-          <span class="meta-line"><Users :size="14" /> {{ task.currentVolunteers || 0 }}/{{ task.maxVolunteers }} 人</span>
+          <span class="meta-line"><Users :size="14" /> {{ task.currentVolunteers || 0 }}/{{ task.maxVolunteers }} {{ t('volunteer.volunteersCount') }}</span>
         </div>
         <div v-if="task.scheduledTime" class="meta-line"><Calendar :size="14" /> {{ formatDate(task.scheduledTime) }}</div>
         <div v-if="task.relatedRescueLocation" class="meta-line rescue-link">
-          <Link2 :size="14" /> 关联救助：{{ task.relatedRescueLocation }}
+          <Link2 :size="14" /> {{ t('volunteer.relatedRescueLocation') }}：{{ task.relatedRescueLocation }}
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px">
+        <div class="task-card-foot">
           <div class="meta-line"><User :size="14" /> {{ task.publisherNickname || '-' }}</div>
-          <div style="display:flex;gap:6px">
-            <el-button v-if="canEdit(task)" :icon="Pencil" text size="small" @click="openEdit(task)">编辑</el-button>
-            <el-button :icon="Eye" @click="openDetail(task)">详情</el-button>
+          <div class="task-card-actions">
+            <el-button v-if="canEdit(task)" :icon="Pencil" text size="small" @click="openEdit(task)">{{ t('common.edit') }}</el-button>
+            <el-button :icon="Eye" @click="openDetail(task)">{{ t('common.details') }}</el-button>
             <el-button
               v-if="canApply(task)"
               :icon="UserPlus"
@@ -44,36 +44,36 @@
               plain
               size="small"
               @click="openApply(task)"
-            >报名</el-button>
+            >{{ t('volunteer.applyNow') }}</el-button>
           </div>
         </div>
       </article>
     </div>
-    <EmptyState v-else title="暂无志愿者任务" description="可以发布一个志愿者任务，召集大家一起行动。" />
+    <EmptyState v-else :title="t('volunteer.emptyTitle')" :description="t('volunteer.emptyDesc')" />
 
-    <el-dialog v-model="detailVisible" title="任务详情" width="700px" append-to-body>
+    <el-dialog v-model="detailVisible" :title="t('volunteer.detailTitle')" width="700px" append-to-body>
       <div v-if="current" class="form-shell">
         <StatusTag :value="current.status" :text="current.statusText" :options="volunteerTaskStatusOptions" />
         <h2>{{ current.title }}</h2>
         <p class="muted">{{ current.description }}</p>
 
         <div class="detail-info-grid">
-          <div class="info-item"><MapPin :size="16" /><span><strong>地点：</strong>{{ current.location }}</span></div>
-          <div class="info-item"><Users :size="16" /><span><strong>人数：</strong>{{ current.currentVolunteers || 0 }} / {{ current.maxVolunteers }} 人</span></div>
-          <div v-if="current.scheduledTime" class="info-item"><Calendar :size="16" /><span><strong>时间：</strong>{{ formatDate(current.scheduledTime) }}</span></div>
-          <div class="info-item"><User :size="16" /><span><strong>发布人：</strong>{{ current.publisherNickname || '-' }}</span></div>
-          <div v-if="current.relatedRescueLocation" class="info-item rescue-link"><Link2 :size="16" /><span><strong>关联救助：</strong>{{ current.relatedRescueLocation }}</span></div>
+          <div class="info-item"><MapPin :size="16" /><span><strong>{{ t('volunteer.location') }}：</strong>{{ current.location }}</span></div>
+          <div class="info-item"><Users :size="16" /><span><strong>{{ t('volunteer.volunteersCount') }}：</strong>{{ current.currentVolunteers || 0 }} / {{ current.maxVolunteers }} {{ t('volunteer.volunteersCount') }}</span></div>
+          <div v-if="current.scheduledTime" class="info-item"><Calendar :size="16" /><span><strong>{{ t('volunteer.time') }}：</strong>{{ formatDate(current.scheduledTime) }}</span></div>
+          <div class="info-item"><User :size="16" /><span><strong>{{ t('volunteer.publisher') }}：</strong>{{ current.publisherNickname || '-' }}</span></div>
+          <div v-if="current.relatedRescueLocation" class="info-item rescue-link"><Link2 :size="16" /><span><strong>{{ t('volunteer.relatedRescueLocation') }}：</strong>{{ current.relatedRescueLocation }}</span></div>
         </div>
 
         <div class="volunteer-progress">
-          <span>志愿者进度</span>
+          <span>{{ t('volunteer.progress') }}</span>
           <el-progress
             :percentage="Math.min(100, Math.round(((current.currentVolunteers || 0) / (current.maxVolunteers || 1)) * 100))"
             :stroke-width="10"
           />
         </div>
 
-        <h4 style="margin-top: 20px; margin-bottom: 12px">报名列表</h4>
+        <h4 style="margin-top: 20px; margin-bottom: 12px">{{ t('volunteer.applications') }}</h4>
         <el-skeleton v-if="appsLoading" :rows="3" animated />
         <div v-else-if="applications.length" class="app-list">
           <div v-for="app in applications" :key="app.id" class="app-item">
@@ -92,7 +92,7 @@
                   text
                   size="small"
                   @click="reviewApp(app, 'APPROVED')"
-                >通过</el-button>
+                >{{ t('volunteer.approve') }}</el-button>
                 <el-button
                   v-if="app.status === 'PENDING'"
                   :icon="X"
@@ -100,7 +100,7 @@
                   text
                   size="small"
                   @click="reviewApp(app, 'REJECTED')"
-                >拒绝</el-button>
+                >{{ t('volunteer.reject') }}</el-button>
                 <el-button
                   v-if="app.status === 'APPROVED'"
                   :icon="CheckCircle"
@@ -108,114 +108,114 @@
                   text
                   size="small"
                   @click="completeApp(app)"
-                >确认完成</el-button>
+                >{{ t('volunteer.complete') }}</el-button>
               </template>
             </div>
           </div>
         </div>
-        <EmptyState v-else title="暂无报名" description="等待志愿者报名参与..." :compact="true" />
+        <EmptyState v-else :title="t('volunteer.noApplications')" :description="t('volunteer.noApplicationsDesc')" :compact="true" />
 
-        <div style="display:flex;gap:8px;margin-top:20px">
+        <div class="task-detail-actions">
           <template v-if="canEdit(current)">
-            <el-button :icon="Pencil" type="primary" @click="detailVisible = false; openEdit(current)">编辑</el-button>
-            <el-button :icon="RefreshCw" @click="openStatus(current)">更新状态</el-button>
-            <el-button :icon="Archive" type="danger" @click="offlineTask(current)">下架</el-button>
+            <el-button :icon="Pencil" type="primary" @click="detailVisible = false; openEdit(current)">{{ t('common.edit') }}</el-button>
+            <el-button :icon="RefreshCw" @click="openStatus(current)">{{ t('common.status') }}</el-button>
+            <el-button :icon="Archive" type="danger" @click="offlineTask(current)">{{ t('common.delete') }}</el-button>
           </template>
-          <el-button v-else-if="canApply(current)" :icon="UserPlus" type="primary" @click="detailVisible = false; openApply(current)">我要报名</el-button>
+          <el-button v-else-if="canApply(current)" :icon="UserPlus" type="primary" @click="detailVisible = false; openApply(current)">{{ t('volunteer.applyMe') }}</el-button>
         </div>
       </div>
     </el-dialog>
 
-    <el-dialog v-model="dialogVisible" title="发布志愿者任务" width="720px" append-to-body>
+    <el-dialog v-model="dialogVisible" :title="t('volunteer.createTitle')" width="720px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-form-item label="任务标题" prop="title">
-          <el-input v-model="form.title" placeholder="如：周六去某小区抓流浪猫绝育" />
+        <el-form-item :label="t('volunteer.titleField')" prop="title">
+          <el-input v-model="form.title" :placeholder="t('volunteer.titlePlaceholder')" />
         </el-form-item>
-        <el-form-item label="任务描述" prop="description">
-          <el-input v-model="form.description" type="textarea" :rows="4" placeholder="详细描述任务内容、注意事项、集合地点等" />
+        <el-form-item :label="t('volunteer.descriptionField')" prop="description">
+          <el-input v-model="form.description" type="textarea" :rows="4" :placeholder="t('volunteer.descriptionPlaceholder')" />
         </el-form-item>
-        <el-form-item label="活动地点" prop="location">
-          <el-input v-model="form.location" placeholder="具体地址或区域" />
+        <el-form-item :label="t('volunteer.location')" prop="location">
+          <el-input v-model="form.location" :placeholder="t('volunteer.locationPlaceholder')" />
         </el-form-item>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="需要人数" prop="maxVolunteers">
+            <el-form-item :label="t('volunteer.maxVolunteers')" prop="maxVolunteers">
               <el-input-number v-model="form.maxVolunteers" :min="1" :max="100" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="计划时间">
-              <el-date-picker v-model="form.scheduledTime" type="datetime" placeholder="选择时间" style="width: 100%" value-format="YYYY-MM-DDTHH:mm:ss" />
+            <el-form-item :label="t('volunteer.scheduledTime')">
+              <el-date-picker v-model="form.scheduledTime" type="datetime" :placeholder="t('volunteer.scheduledTimePlaceholder')" style="width: 100%" value-format="YYYY-MM-DDTHH:mm:ss" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="关联救助（可选）">
-          <el-input v-model="form.relatedRescueId" placeholder="关联的救助信息ID（选填）" />
+        <el-form-item :label="t('volunteer.relatedRescue')">
+          <el-input v-model="form.relatedRescueId" :placeholder="t('volunteer.relatedRescuePlaceholder')" />
         </el-form-item>
-        <el-form-item label="封面图片">
+        <el-form-item :label="t('volunteer.coverImage')">
           <ImageUploader v-model="form.imageUrls" usage="task" :limit="1" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button :loading="saving" :icon="Send" type="primary" @click="submit">提交发布</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button :loading="saving" :icon="Send" type="primary" @click="submit">{{ t('volunteer.submitPublish') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="editVisible" title="编辑志愿者任务" width="720px" append-to-body>
+    <el-dialog v-model="editVisible" :title="t('volunteer.editTitle')" width="720px" append-to-body>
       <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-position="top">
-        <el-form-item label="任务标题" prop="title">
+        <el-form-item :label="t('volunteer.titleField')" prop="title">
           <el-input v-model="editForm.title" />
         </el-form-item>
-        <el-form-item label="任务描述" prop="description">
+        <el-form-item :label="t('volunteer.descriptionField')" prop="description">
           <el-input v-model="editForm.description" type="textarea" :rows="4" />
         </el-form-item>
-        <el-form-item label="活动地点" prop="location">
+        <el-form-item :label="t('volunteer.location')" prop="location">
           <el-input v-model="editForm.location" />
         </el-form-item>
-        <el-form-item label="需要人数" prop="maxVolunteers">
+        <el-form-item :label="t('volunteer.maxVolunteers')" prop="maxVolunteers">
           <el-input-number v-model="editForm.maxVolunteers" :min="1" :max="100" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="计划时间">
+        <el-form-item :label="t('volunteer.scheduledTime')">
           <el-date-picker v-model="editForm.scheduledTime" type="datetime" style="width: 100%" value-format="YYYY-MM-DDTHH:mm:ss" />
         </el-form-item>
-        <el-form-item label="封面图片">
+        <el-form-item :label="t('volunteer.coverImage')">
           <ImageUploader v-model="editForm.imageUrls" usage="task" :limit="1" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button :loading="saving" type="primary" @click="saveEdit">保存</el-button>
+        <el-button @click="editVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button :loading="saving" type="primary" @click="saveEdit">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="statusVisible" title="更新状态" width="460px" append-to-body>
+    <el-dialog v-model="statusVisible" :title="t('common.status')" width="460px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="新状态">
+        <el-form-item :label="t('common.status')">
           <el-select v-model="newStatus" style="width: 100%">
             <el-option v-for="item in editableStatuses" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="statusVisible = false">取消</el-button>
-        <el-button :loading="saving" type="primary" @click="saveStatus">更新</el-button>
+        <el-button @click="statusVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button :loading="saving" type="primary" @click="saveStatus">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="applyVisible" title="报名参加" width="500px" append-to-body>
+    <el-dialog v-model="applyVisible" :title="t('volunteer.applyTitle')" width="500px" append-to-body>
       <div v-if="current" class="form-shell">
         <h3>{{ current.title }}</h3>
-        <p class="muted">还需 {{ (current.maxVolunteers || 0) - (current.currentVolunteers || 0) }} 名志愿者</p>
+        <p class="muted">{{ t('volunteer.remainingVolunteers', { count: (current.maxVolunteers || 0) - (current.currentVolunteers || 0) }) }}</p>
         <el-form ref="applyFormRef" :model="applyForm" :rules="applyRules" label-position="top">
-          <el-form-item label="自我介绍/留言（可选）">
-            <el-input v-model="applyForm.message" type="textarea" :rows="3" placeholder="简单介绍一下自己，或说明你能做什么..." />
+          <el-form-item :label="t('volunteer.applyMessage')">
+            <el-input v-model="applyForm.message" type="textarea" :rows="3" :placeholder="t('volunteer.applyMessagePlaceholder')" />
           </el-form-item>
         </el-form>
       </div>
       <template #footer>
-        <el-button @click="applyVisible = false">取消</el-button>
-        <el-button :loading="saving" :icon="UserPlus" type="primary" @click="submitApply">确认报名</el-button>
+        <el-button @click="applyVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button :loading="saving" :icon="UserPlus" type="primary" @click="submitApply">{{ t('volunteer.applyConfirm') }}</el-button>
       </template>
     </el-dialog>
   </section>
@@ -225,10 +225,12 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Archive, Calendar, Check, CheckCircle, Eye, Link2, LogIn, MapPin, Pencil, Plus, RefreshCw, Search, Send, User, UserPlus, Users } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import EmptyState from '../components/EmptyState.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { volunteerTaskApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import {
   volunteerTaskStatusOptions,
@@ -237,6 +239,7 @@ import {
 import { useAuth } from '../stores/auth'
 
 const auth = useAuth()
+const { t, locale } = useI18n()
 const loading = ref(false)
 const saving = ref(false)
 const appsLoading = ref(false)
@@ -259,21 +262,51 @@ const form = reactive({ title: '', description: '', location: '', maxVolunteers:
 const editForm = reactive({ id: null, title: '', description: '', location: '', maxVolunteers: 0, scheduledTime: null, imageUrls: [] })
 const applyForm = reactive({ message: '' })
 const rules = {
-  title: [{ required: true, message: '请输入任务标题', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入任务描述', trigger: 'blur' }],
-  location: [{ required: true, message: '请输入活动地点', trigger: 'blur' }],
-  maxVolunteers: [{ required: true, message: '请填写需要人数', trigger: 'blur' }]
+  title: [{ required: true, message: t('volunteer.titleRequired'), trigger: 'blur' }],
+  description: [{ required: true, message: t('volunteer.descriptionRequired'), trigger: 'blur' }],
+  location: [{ required: true, message: t('volunteer.locationRequired'), trigger: 'blur' }],
+  maxVolunteers: [{ required: true, message: t('volunteer.maxVolunteersRequired'), trigger: 'blur' }]
 }
 const editRules = { ...rules }
 const applyRules = {}
 
+useAiAssistantPageContext(() => ({
+  pageTitle: detailVisible.value && current.value ? `志愿任务 #${current.value.id}` : t('volunteer.title'),
+  pageSummary: detailVisible.value && current.value
+    ? '当前正在查看一个志愿任务详情和报名列表。'
+    : t('volunteer.description'),
+  entityType: detailVisible.value && current.value ? 'VOLUNTEER_TASK' : null,
+  entityId: detailVisible.value && current.value ? current.value.id : null,
+  viewData: {
+    filters: { ...filters },
+    visibleTasks: tasks.value.slice(0, 6).map((item) => ({
+      id: item.id,
+      title: item.title,
+      location: item.location,
+      statusText: item.statusText,
+      currentVolunteers: item.currentVolunteers,
+      maxVolunteers: item.maxVolunteers
+    })),
+    detailOpen: detailVisible.value,
+    currentTask: current.value ? {
+      id: current.value.id,
+      title: current.value.title,
+      location: current.value.location,
+      statusText: current.value.statusText,
+      currentVolunteers: current.value.currentVolunteers,
+      maxVolunteers: current.value.maxVolunteers
+    } : null,
+    applicationCount: applications.value.length
+  }
+}))
+
 function formatDate(value) {
   if (!value) return '-'
-  return new Date(value).toLocaleString('zh-CN')
+  return new Date(value).toLocaleString(locale.value === 'zh' ? 'zh-CN' : 'en-US')
 }
 
 function formatTime(value) {
-  return value ? new Date(value).toLocaleString('zh-CN') : '-'
+  return value ? new Date(value).toLocaleString(locale.value === 'zh' ? 'zh-CN' : 'en-US') : '-'
 }
 
 function canEdit(record) {
@@ -349,7 +382,7 @@ async function saveEdit() {
   try {
     const payload = { ...editForm, imageUrl: editForm.imageUrls?.[0] || null }
     await volunteerTaskApi.update(editForm.id, payload)
-    ElMessage.success('任务已更新')
+    ElMessage.success(t('volunteer.saveSuccess'))
     editVisible.value = false
     load()
   } catch (error) {
@@ -363,7 +396,7 @@ async function saveStatus() {
   saving.value = true
   try {
     await volunteerTaskApi.updateStatus(current.value.id, { status: newStatus.value })
-    ElMessage.success('状态已更新')
+    ElMessage.success(t('volunteer.updateSuccess'))
     statusVisible.value = false
     load()
   } catch (error) {
@@ -375,9 +408,9 @@ async function saveStatus() {
 
 async function offlineTask(task) {
   try {
-    await ElMessageBox.confirm('下架后该任务将从公开列表中移除，确认继续吗？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('volunteer.offlineConfirm'), t('common.warning'), { type: 'warning' })
     await volunteerTaskApi.offline(task.id)
-    ElMessage.success('已下架')
+    ElMessage.success(t('volunteer.offlineSuccess'))
     detailVisible.value = false
     load()
   } catch (error) {
@@ -395,7 +428,7 @@ async function submitApply() {
   saving.value = true
   try {
     await volunteerTaskApi.apply(current.value.id, applyForm)
-    ElMessage.success('报名成功，请等待审核')
+    ElMessage.success(t('volunteer.applySuccess'))
     applyVisible.value = false
     load()
   } catch (error) {
@@ -406,11 +439,17 @@ async function submitApply() {
 }
 
 async function reviewApp(app, status) {
-  const actionText = status === 'APPROVED' ? '通过' : '拒绝'
+  const actionText = status === 'APPROVED' ? t('volunteer.approve') : t('volunteer.reject')
   try {
-    await ElMessageBox.confirm(`确认${actionText} ${app.volunteerNickname} 的报名？`, '提示', { type: status === 'APPROVED' ? 'success' : 'warning' })
+    await ElMessageBox.confirm(
+      status === 'APPROVED'
+        ? t('volunteer.approveConfirm', { name: app.volunteerNickname })
+        : t('volunteer.rejectConfirm', { name: app.volunteerNickname }),
+      t('common.warning'),
+      { type: status === 'APPROVED' ? 'success' : 'warning' }
+    )
     await volunteerTaskApi.reviewApplication(app.id, { status, reviewComment: '' })
-    ElMessage.success(`已${actionText}`)
+    ElMessage.success(status === 'APPROVED' ? t('volunteer.approvedSuccess') : t('volunteer.rejectedSuccess'))
     await loadApplications(current.value.id)
     load()
   } catch (error) {
@@ -420,9 +459,9 @@ async function reviewApp(app, status) {
 
 async function completeApp(app) {
   try {
-    await ElMessageBox.confirm(`确认 ${app.volunteerNickname} 已完成任务？`, '提示', { type: 'info' })
+    await ElMessageBox.confirm(t('volunteer.completeConfirm', { name: app.volunteerNickname }), t('common.warning'), { type: 'info' })
     await volunteerTaskApi.completeApplication(app.id)
-    ElMessage.success('已确认为完成')
+    ElMessage.success(t('volunteer.completedSuccess'))
     await loadApplications(current.value.id)
     load()
   } catch (error) {
@@ -439,7 +478,7 @@ async function submit() {
       payload.relatedRescueId = Number(payload.relatedRescueId) || null
     }
     await volunteerTaskApi.create(payload)
-    ElMessage.success('发布成功，等待管理员审核')
+    ElMessage.success(t('volunteer.publishSuccess'))
     Object.assign(form, { title: '', description: '', location: '', maxVolunteers: 3, scheduledTime: null, imageUrls: [], relatedRescueId: null })
     dialogVisible.value = false
     load()
@@ -461,6 +500,20 @@ onMounted(async () => {
 }
 .task-card {
   padding: 20px;
+}
+.task-card-foot,
+.task-card-actions,
+.task-detail-actions,
+.app-right {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.task-card-foot {
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  gap: 12px;
 }
 .task-meta-row {
   display: flex;
@@ -518,9 +571,10 @@ onMounted(async () => {
   min-width: 0;
 }
 .app-right {
-  display: flex;
   align-items: center;
-  gap: 6px;
   flex-shrink: 0;
+}
+.task-detail-actions {
+  margin-top: 20px;
 }
 </style>

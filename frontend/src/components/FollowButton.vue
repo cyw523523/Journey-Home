@@ -6,13 +6,14 @@
     size="small"
     @click="toggleFollow"
   >
-    {{ isFollowed ? '已关注' : '关注' }}
+    {{ isFollowed ? t('common.followed') : t('common.follow') }}
   </el-button>
 </template>
 
 <script setup>
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { rescueStationApi } from '../api'
 
 const props = defineProps({
@@ -21,6 +22,7 @@ const props = defineProps({
 
 const loading = ref(false)
 const isFollowed = ref(false)
+const { t } = useI18n()
 
 async function checkStatus() {
   try {
@@ -36,10 +38,10 @@ async function toggleFollow() {
     loading.value = true
     try {
       await rescueStationApi.follow(props.stationUserId)
-      ElMessage.success('已关注')
+      ElMessage.success(t('common.followed'))
       isFollowed.value = true
     } catch (error) {
-      ElMessage.error(error?.response?.data?.message || '关注失败')
+      ElMessage.error(error?.response?.data?.message || t('common.operationFailed'))
     } finally {
       loading.value = false
     }
@@ -47,10 +49,10 @@ async function toggleFollow() {
     loading.value = true
     try {
       await rescueStationApi.unfollow(props.stationUserId)
-      ElMessage.success('已取消关注')
+      ElMessage.success(t('common.unfollowed'))
       isFollowed.value = false
     } catch (error) {
-      ElMessage.error(error?.response?.data?.message || '操作失败')
+      ElMessage.error(error?.response?.data?.message || t('common.operationFailed'))
     } finally {
       loading.value = false
     }

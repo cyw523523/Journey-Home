@@ -6,6 +6,7 @@ import com.guitu.domain.enums.ApplyStatus;
 import com.guitu.dto.AdoptApplyDtos;
 import com.guitu.dto.SmartAdoptionDtos;
 import com.guitu.service.AdoptApplyService;
+import com.guitu.service.AdoptionExtensionService;
 import com.guitu.service.SmartAdoptionService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,10 +22,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/adoptions")
 public class AdoptApplyController {
     private final AdoptApplyService adoptApplyService;
+    private final AdoptionExtensionService adoptionExtensionService;
     private final SmartAdoptionService smartAdoptionService;
 
-    public AdoptApplyController(AdoptApplyService adoptApplyService, SmartAdoptionService smartAdoptionService) {
+    public AdoptApplyController(
+            AdoptApplyService adoptApplyService,
+            AdoptionExtensionService adoptionExtensionService,
+            SmartAdoptionService smartAdoptionService
+    ) {
         this.adoptApplyService = adoptApplyService;
+        this.adoptionExtensionService = adoptionExtensionService;
         this.smartAdoptionService = smartAdoptionService;
     }
 
@@ -58,5 +65,31 @@ public class AdoptApplyController {
     public ApiResponse<Void> cancel(@PathVariable Long id) {
         adoptApplyService.cancel(id);
         return ApiResponse.ok();
+    }
+
+    @GetMapping("/{id}/agreement")
+    public ApiResponse<AdoptApplyDtos.AgreementResponse> agreement(@PathVariable Long id) {
+        return ApiResponse.ok(adoptionExtensionService.getAgreement(id));
+    }
+
+    @PostMapping("/{id}/agreement/sign")
+    public ApiResponse<AdoptApplyDtos.AgreementResponse> signAgreement(
+            @PathVariable Long id,
+            @Valid @RequestBody AdoptApplyDtos.SignAgreementRequest request
+    ) {
+        return ApiResponse.ok(adoptionExtensionService.signAgreement(id, request));
+    }
+
+    @GetMapping("/{id}/follow-ups")
+    public ApiResponse<java.util.List<AdoptApplyDtos.FollowUpResponse>> followUps(@PathVariable Long id) {
+        return ApiResponse.ok(adoptionExtensionService.listFollowUps(id));
+    }
+
+    @PatchMapping("/follow-ups/{followUpId}/complete")
+    public ApiResponse<AdoptApplyDtos.FollowUpResponse> completeFollowUp(
+            @PathVariable Long followUpId,
+            @Valid @RequestBody AdoptApplyDtos.CompleteFollowUpRequest request
+    ) {
+        return ApiResponse.ok(adoptionExtensionService.completeFollowUp(followUpId, request));
     }
 }

@@ -26,12 +26,20 @@ import { ArrowLeft, Megaphone } from 'lucide-vue-next'
 import EmptyState from '../components/EmptyState.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { noticeApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { noticeStatusOptions } from '../utils/status'
 
 const route = useRoute()
 const loading = ref(false)
 const notice = ref(null)
+
+useAiAssistantPageContext(() => ({
+  pageTitle: notice.value?.title || '公告详情',
+  pageSummary: '当前页面展示平台公告全文。',
+  entityType: 'NOTICE',
+  entityId: notice.value?.id || Number(route.params.id) || null
+}))
 
 onMounted(async () => {
   loading.value = true

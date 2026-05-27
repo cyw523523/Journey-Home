@@ -72,10 +72,12 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { Bot, Send, User, X } from 'lucide-vue-next'
+import { useRoute } from 'vue-router'
 import { aiAssistantApi } from '../api'
 import { notifyError } from '../api/http'
+import { useAiAssistantContext } from '../stores/aiAssistantContext'
 
 const isOpen = ref(false)
 const loading = ref(false)
@@ -89,12 +91,20 @@ const isDragging = ref(false)
 const isDialogDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
 const hasMoved = ref(false)
+const route = useRoute()
+const { context: pageContext } = useAiAssistantContext()
 
 const quickQuestions = [
   '如何领养流浪动物？',
   '领养需要什么条件？',
   '如何发布救助信息？'
 ]
+
+const requestContext = computed(() => ({
+  routeName: typeof route.name === 'string' ? route.name : '',
+  routePath: route.fullPath,
+  ...(pageContext.value || {})
+}))
 
 function handleClick(e) {
   if (hasMoved.value) {
@@ -178,6 +188,7 @@ async function sendMessage() {
   if (!msg || loading.value) return
 
   messages.value.push({ role: 'user', content: msg })
+  const history = buildRequestHistory()
   inputMessage.value = ''
   loading.value = true
 
@@ -185,7 +196,11 @@ async function sendMessage() {
   scrollToBottom()
 
   try {
-    const res = await aiAssistantApi.chat({ message: msg })
+    const res = await aiAssistantApi.chat({
+      message: msg,
+      history,
+      pageContext: requestContext.value
+    })
     messages.value.push({ role: 'assistant', content: res.reply })
   } catch (error) {
     notifyError(error)
@@ -200,6 +215,17 @@ async function sendMessage() {
 function sendQuickQuestion(q) {
   inputMessage.value = q
   sendMessage()
+}
+
+function buildRequestHistory() {
+  return messages.value
+    .slice(0, -1)
+    .filter((item) => item?.role && item?.content)
+    .slice(-10)
+    .map((item) => ({
+      role: item.role,
+      content: item.content
+    }))
 }
 
 function scrollToBottom() {
