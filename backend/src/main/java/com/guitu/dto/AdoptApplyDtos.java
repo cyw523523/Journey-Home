@@ -94,6 +94,17 @@ public final class AdoptApplyDtos {
     ) {
     }
 
+    public record UpdateAgreementRequest(
+            @NotBlank(message = "协议标题不能为空")
+            @Size(max = 120, message = "协议标题不能超过120个字符")
+            String title,
+
+            @NotBlank(message = "协议内容不能为空")
+            @Size(max = 20000, message = "协议内容不能超过20000个字符")
+            String content
+    ) {
+    }
+
     public record CompleteFollowUpRequest(
             @NotBlank(message = "回访内容不能为空")
             @Size(max = 1000, message = "回访内容不能超过1000个字符")
@@ -118,6 +129,12 @@ public final class AdoptApplyDtos {
             String creatorNickname,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
+    ) {
+    }
+
+    public record UpdateFollowUpPlanRequest(
+            @NotNull(message = "计划时间不能为空")
+            LocalDateTime plannedAt
     ) {
     }
 }

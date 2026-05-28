@@ -35,6 +35,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -99,12 +100,22 @@ public class AiAssistantService {
         }
 
         String directReply = tryDirectAnswer(request);
-        if (hasText(directReply)) {
-            return new AiAssistantDtos.ChatResponse(directReply, model, LocalDateTime.now());
-        }
+        boolean usedDirectMode = hasText(directReply);
+        String reply = usedDirectMode
+                ? directReply
+                : callModel(
+                request.message(),
+                request.history(),
+                buildSiteContext(request.pageContext(), request.history(), request.message())
+        );
 
-        String reply = callModel(request.message(), request.history(), buildSiteContext(request.pageContext()));
-        return new AiAssistantDtos.ChatResponse(reply, model, LocalDateTime.now());
+        return new AiAssistantDtos.ChatResponse(
+                reply,
+                model,
+                LocalDateTime.now(),
+                buildSuggestedQuestions(request, usedDirectMode),
+                usedDirectMode ? "direct" : "conversation"
+        );
     }
 
     private String tryDirectAnswer(AiAssistantDtos.ChatRequest request) {
@@ -114,6 +125,17 @@ public class AiAssistantService {
         }
 
         String message = safeLower(request.message());
+        if (shouldPreferConversationMode(message)) {
+            return null;
+        }
+        String globalReply = answerGlobalPlatformQuestion(pageContext, message);
+        if (hasText(globalReply)) {
+            return globalReply;
+        }
+
+        if (!isExplicitDataLookupQuestion(message)) {
+            return null;
+        }
 
         String entityReply = answerEntityQuestion(pageContext, message);
         if (hasText(entityReply)) {
@@ -141,6 +163,43 @@ public class AiAssistantService {
             case "map" -> isMapQuestion(message) ? answerMapQuestion(pageContext) : null;
             default -> null;
         };
+    }
+
+    private String answerGlobalPlatformQuestion(AiAssistantDtos.PageContext pageContext, String message) {
+        if (isPlatformCapabilityQuestion(message)) {
+            return answerPlatformCapabilityQuestion(pageContext);
+        }
+        if (isAdoptionGuideQuestion(message)) {
+            return answerAdoptionGuide(pageContext);
+        }
+        if (isAdoptionConditionQuestion(message)) {
+            return answerAdoptionConditions(pageContext);
+        }
+        if (isRescuePublishGuideQuestion(message)) {
+            return answerRescuePublishGuide(pageContext);
+        }
+        return null;
+    }
+
+    private String answerPlatformCapabilityQuestion(AiAssistantDtos.PageContext pageContext) {
+        String route = safeRoute(pageContext);
+        StringBuilder reply = new StringBuilder();
+        reply.append("我现在主要能帮你做这几类事：")
+                .append("\n1. 结合当前页面真实数据回答问题，比如动物、救助、公告、物资、志愿任务、消息、地图这些页面。")
+                .append("\n2. 解释整个平台怎么用，比如怎么领养、怎么发布救助、怎么看申请进度。")
+                .append("\n3. 记住最近几轮对话，继续接着聊，不只看最后一句。")
+                .append("\n4. 如果你正在看某条详情，我也可以直接围绕这条内容解释。");
+
+        if ("animals".equals(route)) {
+            reply.append("\n你现在在动物档案页，我还能直接帮你筛待领养动物、看状态、按猫狗和地区缩小范围。");
+        } else if ("profile".equals(route)) {
+            reply.append("\n你现在在个人中心，我还能帮你解释申请、通知、举报、申诉这些入口分别是干什么的。");
+        } else if ("messages".equals(route)) {
+            reply.append("\n你现在在消息页，我还能帮你看当前会话、未读消息和聊天对象信息。");
+        } else if ("map".equals(route)) {
+            reply.append("\n你现在在地图页，我还能帮你解释附近点位、距离和显示类型。");
+        }
+        return reply.toString();
     }
 
     private String answerEntityQuestion(AiAssistantDtos.PageContext pageContext, String message) {
@@ -186,6 +245,73 @@ public class AiAssistantService {
             case "map" -> "你现在在地图找寻页，可以定位当前位置后查看附近动物和救助站点位，还能按距离范围筛选。";
             default -> hasText(pageContext.pageSummary()) ? pageContext.pageSummary() : null;
         };
+    }
+
+    private String answerAdoptionGuide(AiAssistantDtos.PageContext pageContext) {
+        PageResponse<AnimalDtos.AnimalResponse> waitingAnimals = animalService.listPublic(
+                null,
+                null,
+                null,
+                AnimalStatus.WAITING_ADOPTION,
+                null,
+                0,
+                3
+        );
+
+        StringBuilder reply = new StringBuilder();
+        reply.append("在我们这个网站里，领养流浪动物一般这样走：")
+                .append("\n1. 先去动物档案页筛选“待领养”的动物。")
+                .append("\n2. 打开动物详情，先看状态、健康情况、医疗记录和地区。")
+                .append("\n3. 确认合适后，进入领养申请页填写申请人姓名、联系方式、领养理由、居住条件和饲养经验。")
+                .append("\n4. 提交后，可以在个人中心查看申请进度。");
+
+        reply.append("\n目前站内公开待领养动物有 ")
+                .append(waitingAnimals.totalElements())
+                .append(" 条。");
+
+        if ("animals".equals(safeRoute(pageContext))) {
+            reply.append(" 你现在就在动物档案页，直接看卡片或点进详情就行。");
+        } else if ("animal-detail".equals(safeRoute(pageContext))) {
+            reply.append(" 你现在就在动物详情页，如果这只动物状态是待领养，就可以继续申请。");
+        } else if ("adoption-new".equals(safeRoute(pageContext))) {
+            reply.append(" 你现在就在领养申请页，把表单补完整后就能提交。");
+        } else {
+            reply.append(" 你可以先去“动物档案”页面开始看。");
+        }
+        return reply.toString();
+    }
+
+    private String answerAdoptionConditions(AiAssistantDtos.PageContext pageContext) {
+        StringBuilder reply = new StringBuilder();
+        reply.append("在我们这个网站里，领养时至少要准备这几类信息：")
+                .append("\n1. 申请人姓名和联系方式。")
+                .append("\n2. 领养理由。")
+                .append("\n3. 居住条件，比如住房类型、是否稳定、是否方便照护。")
+                .append("\n4. 饲养经验，比如是否养过宠物、是否了解疫苗绝育和适应期照护。")
+                .append("\n5. 如果你想先判断适不适合，也可以在领养申请页先生成 AI 领养建议。");
+
+        if ("adoption-new".equals(safeRoute(pageContext))) {
+            reply.append(" 你现在就在领养申请页，这些字段就是当前表单里要填的重点。");
+        } else {
+            reply.append(" 真正提交时是在动物详情进入领养申请页填写。");
+        }
+        return reply.toString();
+    }
+
+    private String answerRescuePublishGuide(AiAssistantDtos.PageContext pageContext) {
+        StringBuilder reply = new StringBuilder();
+        reply.append("在我们这个网站里，发布救助信息一般这样做：")
+                .append("\n1. 进入救助信息页。")
+                .append("\n2. 点击发布，填写救助地点、动物情况、联系方式和求助说明。")
+                .append("\n3. 如果有现场图片，一起上传会更方便别人判断和跟进。")
+                .append("\n4. 提交后等待审核，通过后会出现在公开救助列表里。");
+
+        if ("rescues".equals(safeRoute(pageContext))) {
+            reply.append(" 你现在就在救助信息页，可以直接点发布。");
+        } else {
+            reply.append(" 你可以去“救助信息”页面操作。");
+        }
+        return reply.toString();
     }
 
     private String answerHomeQuestion(String message) {
@@ -723,9 +849,28 @@ public class AiAssistantService {
         Map<String, Object> viewData = defaultMap(pageContext.viewData());
         Map<String, Object> profile = getMap(viewData, "profile");
         Map<String, Object> summary = getMap(viewData, "summary");
+        Map<String, Object> assistantHints = getMap(viewData, "assistantHints");
         String activeTab = getString(viewData, "activeTab");
         String nickname = getString(profile, "nickname");
         String roleText = getString(profile, "roleText");
+        Integer unreadNotificationCount = getInteger(summary, "unreadNotificationCount");
+        Integer pendingReviewApplicationCount = getInteger(summary, "pendingReviewApplicationCount");
+        Integer managedApplicationCount = getInteger(summary, "managedApplicationCount");
+        Integer activeManagedApplicationCount = getInteger(summary, "activeManagedApplicationCount");
+
+        if (containsAny(message, "待处理", "待办", "待处理事项", "待办事项")) {
+            String pendingReply = answerProfilePendingItems(
+                    nickname,
+                    unreadNotificationCount,
+                    pendingReviewApplicationCount,
+                    managedApplicationCount,
+                    activeManagedApplicationCount,
+                    assistantHints
+            );
+            if (hasText(pendingReply)) {
+                return pendingReply;
+            }
+        }
 
         StringBuilder reply = new StringBuilder();
         reply.append("你现在在个人中心");
@@ -736,7 +881,6 @@ public class AiAssistantService {
             reply.append("，角色是 ").append(roleText);
         }
         reply.append("。");
-
         reply.append(" 当前统计里：动物档案 ")
                 .append(safeInt(getInteger(summary, "animalCount")))
                 .append("，救助信息 ")
@@ -756,10 +900,54 @@ public class AiAssistantService {
         }
 
         if (containsAny(message, "领养跟进", "managed", "托管")) {
-            reply.append(" 当前还能看到你管理侧的领养跟进数量为 ")
-                    .append(safeInt(getInteger(summary, "managedApplicationCount")))
+            reply.append(" 这里的“领养跟进”指的是和你自己发布动物相关的后续记录，不是管理员审核台。当前这部分记录数量为 ")
+                    .append(safeInt(managedApplicationCount))
                     .append("。");
         }
+        return reply.toString();
+    }
+
+    private String answerProfilePendingItems(
+            String nickname,
+            Integer unreadNotificationCount,
+            Integer pendingReviewApplicationCount,
+            Integer managedApplicationCount,
+            Integer activeManagedApplicationCount,
+            Map<String, Object> assistantHints
+    ) {
+        List<String> items = new ArrayList<>();
+
+        if (safeInt(unreadNotificationCount) > 0) {
+            items.add("你有 " + safeInt(unreadNotificationCount) + " 条未读通知");
+        }
+        if (safeInt(pendingReviewApplicationCount) > 0) {
+            items.add("你自己提交的领养申请里，有 " + safeInt(pendingReviewApplicationCount) + " 份还在等待处理");
+        }
+        if (safeInt(activeManagedApplicationCount) > 0) {
+            items.add("你发布动物相关的领养跟进里，有 " + safeInt(activeManagedApplicationCount) + " 条仍在进行中");
+        }
+
+        StringBuilder reply = new StringBuilder();
+        reply.append("按你当前这个个人中心页面来看");
+        if (hasText(nickname)) {
+            reply.append("（").append(nickname).append("）");
+        }
+        reply.append("，待你留意的事项有：");
+
+        if (items.isEmpty()) {
+            reply.append(" 目前没有明显的待办。");
+        } else {
+            for (int i = 0; i < items.size(); i++) {
+                reply.append("\n").append(i + 1).append(". ").append(items.get(i)).append("。");
+            }
+        }
+
+        if (Boolean.FALSE.equals(getBoolean(assistantHints, "userCanAuditApplications"))) {
+            reply.append("\n补充一句：这里说的“领养申请”是你的个人申请进度或你发布动物相关的跟进记录，不代表你有管理员那种审核、批准或拒绝别人的权限。");
+        } else if (safeInt(managedApplicationCount) > 0) {
+            reply.append("\n这里的“领养跟进”也只是和你自己发布内容相关的后续记录，不是平台审核台。");
+        }
+
         return reply.toString();
     }
 
@@ -933,7 +1121,11 @@ public class AiAssistantService {
         }
     }
 
-    private String buildSiteContext(AiAssistantDtos.PageContext pageContext) {
+    private String buildSiteContext(
+            AiAssistantDtos.PageContext pageContext,
+            List<AiAssistantDtos.ConversationMessage> history,
+            String userMessage
+    ) {
         StringBuilder builder = new StringBuilder();
         builder.append("Use the following real site context to answer. Prefer this context over generic knowledge.\n");
         builder.append("serverTime=").append(LocalDateTime.now().format(TIME_FORMATTER)).append('\n');
@@ -945,6 +1137,7 @@ public class AiAssistantService {
 
         appendPlatformOverview(builder);
         appendPageContext(builder, pageContext);
+        appendConversationContext(builder, history, userMessage);
         return builder.toString();
     }
 
@@ -984,6 +1177,48 @@ public class AiAssistantService {
 
         appendResolvedEntityContext(builder, pageContext);
         appendFrontendSnapshot(builder, pageContext.viewData());
+    }
+
+    private void appendConversationContext(
+            StringBuilder builder,
+            List<AiAssistantDtos.ConversationMessage> history,
+            String userMessage
+    ) {
+        String normalizedMessage = safeLower(userMessage);
+        builder.append('\n')
+                .append("conversation.currentIntent=")
+                .append(detectConversationIntent(normalizedMessage))
+                .append('\n');
+
+        if (isFollowUpConversationQuestion(normalizedMessage)) {
+            builder.append("conversation.followUp=true\n");
+        }
+        if (isRecommendationQuestion(normalizedMessage)) {
+            builder.append("conversation.recommendation=true\n");
+        }
+
+        if (history == null || history.isEmpty()) {
+            builder.append("conversation.recentTurns=none\n");
+            return;
+        }
+
+        builder.append("conversation.recentTurns=\n");
+        int start = Math.max(0, history.size() - 8);
+        for (int i = start; i < history.size(); i++) {
+            AiAssistantDtos.ConversationMessage item = history.get(i);
+            if (item == null || !hasText(item.content())) {
+                continue;
+            }
+            String role = normalizeHistoryRole(item.role());
+            if (role == null) {
+                continue;
+            }
+            builder.append("- ")
+                    .append(role)
+                    .append(": ")
+                    .append(shorten(item.content(), 120))
+                    .append('\n');
+        }
     }
 
     private void appendResolvedEntityContext(StringBuilder builder, AiAssistantDtos.PageContext pageContext) {
@@ -1207,7 +1442,7 @@ public class AiAssistantService {
         }
 
         List<ChatMessage> messages = new ArrayList<>();
-        int start = Math.max(0, history.size() - 10);
+        int start = Math.max(0, history.size() - 16);
         for (int i = start; i < history.size(); i++) {
             AiAssistantDtos.ConversationMessage item = history.get(i);
             if (item == null || !hasText(item.content())) {
@@ -1237,15 +1472,183 @@ public class AiAssistantService {
         return containsAny(message, "这个页面", "当前页面", "这一页", "这里是干嘛", "这里能做什么", "这里可以做什么", "怎么用这个页面", "当前页");
     }
 
+    private boolean shouldPreferConversationMode(String message) {
+        return isRecommendationQuestion(message)
+                || isFollowUpConversationQuestion(message)
+                || isScenarioAdviceQuestion(message);
+    }
+
+    private boolean isExplicitDataLookupQuestion(String message) {
+        return containsAny(message,
+                "现在有什么",
+                "当前有什么",
+                "有哪些",
+                "哪几个",
+                "哪几条",
+                "哪几只",
+                "帮我查",
+                "查一下",
+                "筛一下",
+                "给我列",
+                "列表",
+                "详情",
+                "状态",
+                "进度",
+                "数量",
+                "还差",
+                "未读",
+                "附近",
+                "当前页",
+                "这个页面",
+                "这一页",
+                "这个动物",
+                "这只动物",
+                "这个救助",
+                "这条救助",
+                "这个公告",
+                "这条公告",
+                "这个任务",
+                "这条任务",
+                "这个帖子",
+                "这篇帖子",
+                "这个捐赠",
+                "这条捐赠",
+                "这条",
+                "当前这条",
+                "当前这只"
+        );
+    }
+
+    private boolean isRecommendationQuestion(String message) {
+        return containsAny(message,
+                "推荐",
+                "适合我",
+                "我适合",
+                "我该养",
+                "领养啥",
+                "养啥",
+                "选哪个",
+                "哪个好",
+                "怎么选"
+        );
+    }
+
+    private boolean isFollowUpConversationQuestion(String message) {
+        return containsAny(message,
+                "比如",
+                "比如呢",
+                "然后呢",
+                "接下来呢",
+                "那然后呢",
+                "还有呢",
+                "还有吗",
+                "具体点",
+                "举个例子",
+                "再说说",
+                "为什么",
+                "啥意思",
+                "什么意思",
+                "怎么说",
+                "细说",
+                "展开说说"
+        );
+    }
+
+    private boolean isScenarioAdviceQuestion(String message) {
+        return containsAny(message,
+                "我这种情况",
+                "像我这样",
+                "我这种家庭",
+                "我这种人",
+                "我该怎么办",
+                "我下一步该怎么做",
+                "我先做什么",
+                "我适不适合"
+        );
+    }
+
+    private String detectConversationIntent(String message) {
+        if (isExplicitDataLookupQuestion(message)) {
+            return "data_lookup";
+        }
+        if (isAdoptionGuideQuestion(message) || isAdoptionConditionQuestion(message) || isRescuePublishGuideQuestion(message)) {
+            return "platform_guide";
+        }
+        if (isRecommendationQuestion(message) || isScenarioAdviceQuestion(message)) {
+            return "advice";
+        }
+        if (isFollowUpConversationQuestion(message)) {
+            return "follow_up";
+        }
+        if (isPlatformCapabilityQuestion(message)) {
+            return "capability";
+        }
+        if (isPagePurposeQuestion(message)) {
+            return "page_help";
+        }
+        return "general_chat";
+    }
+
+    private boolean isPlatformCapabilityQuestion(String message) {
+        return containsAny(message,
+                "还有什么功能",
+                "还有什么功能吗",
+                "你有什么功能",
+                "你能干嘛",
+                "你能做什么",
+                "可以帮我做什么",
+                "能帮我做什么",
+                "能做哪些事"
+        );
+    }
+
+    private boolean isAdoptionGuideQuestion(String message) {
+        return containsAny(message,
+                "如何领养流浪动物",
+                "怎么领养流浪动物",
+                "怎么领养流浪动物",
+                "如何领养",
+                "怎么领养",
+                "怎么领养",
+                "领养流程",
+                "领养步骤"
+        );
+    }
+
+    private boolean isAdoptionConditionQuestion(String message) {
+        return containsAny(message,
+                "领养需要什么条件",
+                "领养要什么条件",
+                "领养需要提供什么",
+                "领养要提供什么",
+                "领养需要哪些信息",
+                "领养要填什么",
+                "领养条件"
+        );
+    }
+
+    private boolean isRescuePublishGuideQuestion(String message) {
+        return containsAny(message,
+                "如何发布救助信息",
+                "怎么发布救助信息",
+                "如何发布救助",
+                "怎么发布救助",
+                "如何求助",
+                "怎么求助"
+        );
+    }
+
     private boolean isHomeQuestion(String message) {
-        return containsAny(message, "首页", "平台概况", "概况", "概览", "最新", "公告", "救助", "动物");
+        return containsAny(message, "首页", "平台概况", "概况", "概览", "最新公告", "最新救助", "最新动物", "首页现在");
     }
 
     private boolean isAnimalListQuestion(AiAssistantDtos.PageContext pageContext, String message) {
         if (!"animals".equals(safeRoute(pageContext))) {
             return false;
         }
-        return containsAny(message, "动物", "档案", "领养", "猫", "狗", "有哪些", "有什么", "推荐", "看看");
+        boolean asksCurrentList = containsAny(message, "现在有什么", "当前有什么", "有哪些", "哪几只", "哪几条", "给我列", "帮我查", "筛一下", "查一下");
+        boolean mentionsAnimalScope = containsAny(message, "待领养", "猫", "狗", "动物档案", "动物", "领养动物");
+        return asksCurrentList && mentionsAnimalScope;
     }
 
     private boolean isCurrentAnimalQuestion(String route, String message) {
@@ -1259,7 +1662,9 @@ public class AiAssistantService {
     }
 
     private boolean isRescueListQuestion(String message) {
-        return containsAny(message, "救助", "求助", "有哪些", "有什么", "待处理", "处理中", "已完成", "地点", "联系");
+        boolean asksCurrentList = containsAny(message, "现在有什么", "当前有什么", "有哪些", "哪几条", "给我列", "帮我查", "筛一下", "查一下");
+        boolean mentionsScope = containsAny(message, "救助", "求助", "待处理", "处理中", "已完成");
+        return asksCurrentList && mentionsScope;
     }
 
     private boolean isCurrentRescueQuestion(String message) {
@@ -1267,7 +1672,7 @@ public class AiAssistantService {
     }
 
     private boolean isNoticeListQuestion(String message) {
-        return containsAny(message, "公告", "通知", "最新公告", "有哪些公告", "有什么公告");
+        return containsAny(message, "最新公告", "有哪些公告", "有什么公告", "公告列表", "当前公告");
     }
 
     private boolean isCurrentNoticeQuestion(String message) {
@@ -1275,7 +1680,9 @@ public class AiAssistantService {
     }
 
     private boolean isDonationListQuestion(String message) {
-        return containsAny(message, "物资", "捐赠", "需求", "猫粮", "狗粮", "猫砂", "药品", "有哪些", "有什么");
+        boolean asksCurrentList = containsAny(message, "现在有什么", "当前有什么", "有哪些", "哪几条", "给我列", "帮我查", "筛一下", "查一下");
+        boolean mentionsScope = containsAny(message, "物资", "捐赠", "需求", "猫粮", "狗粮", "猫砂", "药品");
+        return asksCurrentList && mentionsScope;
     }
 
     private boolean isCurrentDonationQuestion(String message) {
@@ -1283,7 +1690,9 @@ public class AiAssistantService {
     }
 
     private boolean isVolunteerListQuestion(String message) {
-        return containsAny(message, "志愿", "任务", "报名", "招募", "有哪些", "有什么", "还缺几个人");
+        boolean asksCurrentList = containsAny(message, "现在有什么", "当前有什么", "有哪些", "哪几条", "给我列", "帮我查", "筛一下", "查一下");
+        boolean mentionsScope = containsAny(message, "志愿", "任务", "报名", "招募");
+        return asksCurrentList && mentionsScope;
     }
 
     private boolean isCurrentVolunteerQuestion(String message) {
@@ -1291,11 +1700,11 @@ public class AiAssistantService {
     }
 
     private boolean isCommunityListQuestion(String message) {
-        return containsAny(message, "社区", "帖子", "热门", "最新", "关注", "有哪些帖子", "有什么帖子");
+        return containsAny(message, "有哪些帖子", "有什么帖子", "热门帖子", "最新帖子", "关注的帖子");
     }
 
     private boolean isCommunityCategoryQuestion(String message) {
-        return containsAny(message, "分类", "版块", "帖子", "这个分类", "这个版块");
+        return containsAny(message, "这个分类有哪些帖子", "这个版块有哪些帖子", "分类下的帖子", "版块下的帖子");
     }
 
     private boolean isCurrentCommunityPostQuestion(String message) {
@@ -1307,7 +1716,7 @@ public class AiAssistantService {
     }
 
     private boolean isProfileQuestion(String message) {
-        return containsAny(message, "个人中心", "我的资料", "我的通知", "我的申诉", "我的举报", "我的申请", "我有多少", "当前标签");
+        return containsAny(message, "个人中心", "我的资料", "我的通知", "我的申诉", "我的举报", "我的申请", "我有多少", "当前标签", "待处理事项", "待办事项", "待办", "待处理");
     }
 
     private boolean isRescueStationQuestion(String message) {
@@ -1647,6 +2056,111 @@ public class AiAssistantService {
         }
     }
 
+    private List<String> buildSuggestedQuestions(AiAssistantDtos.ChatRequest request, boolean usedDirectMode) {
+        LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+        String message = safeLower(request.message());
+        String route = request.pageContext() == null ? "" : safeRoute(request.pageContext());
+
+        if (isAdoptionGuideQuestion(message)) {
+            addSuggestions(suggestions,
+                    "现在有哪些猫可以领养",
+                    "领养申请要准备什么",
+                    "我适合领养什么动物"
+            );
+        } else if (isAdoptionConditionQuestion(message)) {
+            addSuggestions(suggestions,
+                    "领养申请要填哪些内容",
+                    "现在有哪些待领养动物",
+                    "我是新手家庭适合养什么"
+            );
+        } else if (isRescuePublishGuideQuestion(message)) {
+            addSuggestions(suggestions,
+                    "发布救助信息要写哪些内容",
+                    "救助信息发出后怎么看进度",
+                    "当前有哪些待处理救助"
+            );
+        } else if (isRecommendationQuestion(message) || isScenarioAdviceQuestion(message)) {
+            addSuggestions(suggestions,
+                    "你可以先按性格、预算和照顾难度帮我推荐",
+                    "现在有哪些猫可以领养",
+                    "新手更适合领养什么类型"
+            );
+        } else if (isPlatformCapabilityQuestion(message)) {
+            addSuggestions(suggestions,
+                    "我现在这一页能做什么",
+                    "如何领养流浪动物",
+                    "如何发布救助信息"
+            );
+        } else if (isExplicitDataLookupQuestion(message)) {
+            addSuggestions(suggestions,
+                    "再帮我细说一下",
+                    "和我的情况相比哪个更适合",
+                    "我下一步该怎么做"
+            );
+        }
+
+        addRouteSuggestions(suggestions, route, usedDirectMode);
+        return suggestions.stream().filter(this::hasText).limit(3).toList();
+    }
+
+    private void addRouteSuggestions(LinkedHashSet<String> suggestions, String route, boolean usedDirectMode) {
+        switch (route) {
+            case "animals" -> addSuggestions(suggestions,
+                    usedDirectMode ? "帮我推荐适合新手的动物" : "现在有哪些待领养动物",
+                    "怎么领养申请",
+                    "领养前要重点看哪些信息"
+            );
+            case "animal-detail" -> addSuggestions(suggestions,
+                    "这只动物适合新手吗",
+                    "申请领养前还要了解什么",
+                    "这只动物现在能申请领养吗"
+            );
+            case "rescues" -> addSuggestions(suggestions,
+                    "当前有哪些待处理救助",
+                    "救助信息怎么发布",
+                    "我如何联系发起人"
+            );
+            case "donations" -> addSuggestions(suggestions,
+                    "当前最缺什么物资",
+                    "这条物资还差多少",
+                    "我怎么参与捐赠"
+            );
+            case "volunteer-tasks" -> addSuggestions(suggestions,
+                    "现在有哪些志愿任务",
+                    "我适合报名什么任务",
+                    "任务还能报名吗"
+            );
+            case "messages" -> addSuggestions(suggestions,
+                    "我现在有多少未读消息",
+                    "我应该先回复谁",
+                    "这页主要怎么用"
+            );
+            case "profile" -> addSuggestions(suggestions,
+                    "我当前有哪些待处理事项",
+                    "个人中心里可以做什么",
+                    "我下一步该点哪里"
+            );
+            case "map" -> addSuggestions(suggestions,
+                    "附近有什么点位",
+                    "最近的救助站在哪",
+                    "地图上这些点分别是什么"
+            );
+            default -> addSuggestions(suggestions,
+                    "我现在这一页能做什么",
+                    "你还能帮我做什么",
+                    "你可以结合当前页面继续帮我分析吗"
+            );
+        }
+    }
+
+    private void addSuggestions(LinkedHashSet<String> suggestions, String... items) {
+        for (String item : items) {
+            if (hasText(item)) {
+                suggestions.add(item);
+            }
+        }
+    }
+
     private String shorten(String value, int maxLength) {
         if (!hasText(value)) {
             return "";
@@ -1731,10 +2245,17 @@ public class AiAssistantService {
         return """
                 你是“归途”平台的 AI 助手。
                 你必须只用简体中文回答。
-                优先根据我提供的网站真实上下文回答，不要脱离当前页面泛化空谈。
-                如果上下文不足，就明确说不确定，不要编造站内事实。
+                优先根据我提供的网站真实上下文回答，不要脱离网站实际情况泛化空谈。
+                当前页面上下文只是辅助你理解用户，不是每一轮都必须围着页面字段机械作答。
+                如果用户问的是整个平台的通用使用问题，可以结合平台功能直接回答，不要被当前页面限制住。
+                如果上下文不足，就明确说不确定，但不要把“当前页面没有这个信息”误答成“整站都不能回答”。
+                你要像正常的大语言模型聊天框一样连续对话，理解最近几轮上下文，不要把每一句都当成全新问题。
+                如果用户在求建议、求推荐、求解释、求下一步建议，就优先正常对话；只有在用户明显要查当前页面数据时，才按页面数据直答。
+                如果用户只是简短追问，比如“比如呢”“然后呢”“为什么”，要优先承接上文继续回答，而不是重新开题。
+                如果你引用当前页面或站内数据，要尽量说人话，不要像数据库字段回显。
+                如果需要补充信息，最多追问一个最关键的问题，不要连续机械追问。
                 不要使用 Markdown。
-                回答尽量简短、直接，像网站里的内置助手，而不是百科问答。
+                回答尽量自然、直接，像一个网站里的智能助手，而不是死板的表单机器人或百科问答。
                 """;
     }
 

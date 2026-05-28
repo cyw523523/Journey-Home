@@ -72,6 +72,14 @@ public class AdoptApplyController {
         return ApiResponse.ok(adoptionExtensionService.getAgreement(id));
     }
 
+    @PatchMapping("/{id}/agreement")
+    public ApiResponse<AdoptApplyDtos.AgreementResponse> updateAgreement(
+            @PathVariable Long id,
+            @Valid @RequestBody AdoptApplyDtos.UpdateAgreementRequest request
+    ) {
+        return ApiResponse.ok(adoptionExtensionService.updateAgreement(id, request));
+    }
+
     @PostMapping("/{id}/agreement/sign")
     public ApiResponse<AdoptApplyDtos.AgreementResponse> signAgreement(
             @PathVariable Long id,
@@ -83,6 +91,14 @@ public class AdoptApplyController {
     @GetMapping("/{id}/follow-ups")
     public ApiResponse<java.util.List<AdoptApplyDtos.FollowUpResponse>> followUps(@PathVariable Long id) {
         return ApiResponse.ok(adoptionExtensionService.listFollowUps(id));
+    }
+
+    @PatchMapping("/follow-ups/{followUpId}/plan")
+    public ApiResponse<AdoptApplyDtos.FollowUpResponse> updateFollowUpPlan(
+            @PathVariable Long followUpId,
+            @Valid @RequestBody AdoptApplyDtos.UpdateFollowUpPlanRequest request
+    ) {
+        return ApiResponse.ok(adoptionExtensionService.updateFollowUpPlan(followUpId, request));
     }
 
     @PatchMapping("/follow-ups/{followUpId}/complete")

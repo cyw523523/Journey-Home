@@ -545,7 +545,7 @@
             <img v-for="url in item.imageUrls" :key="url" :src="url" style="width:88px;height:88px;object-fit:cover;border-radius:8px" />
           </div>
           <p class="muted">填写人：{{ item.creatorNickname || '-' }}，完成时间：{{ formatTime(item.completedAt) }}</p>
-          <div v-if="item.status !== 'COMPLETED'" class="follow-up-actions">
+          <div v-if="false && item.status !== 'COMPLETED'" class="follow-up-actions">
             <el-button size="small" type="primary" plain @click="openFollowUpComplete(item)">填写回访</el-button>
           </div>
         </div>
@@ -703,14 +703,7 @@ const certDialog = ref(false)
 const certTarget = ref(null)
 const certForm = reactive({ action: 'APPROVED', opinion: '' })
 
-const canSignAgreement = computed(() => {
-  if (!agreementData.value || agreementData.value.status === 'COMPLETED') {
-    return false
-  }
-  const currentUserId = auth.state.user?.id
-  if (!currentUserId) return false
-  return !agreementData.value.counterpartSignatureName || currentUserId === agreementData.value.adopterId
-})
+const canSignAgreement = computed(() => false)
 
 const detailTypeLabels = { ANIMAL: '动物档案', RESCUE: '救助信息', ADOPT_APPLY: '领养申请', COMMUNITY_POST: '社区帖子', COMMUNITY_COMMENT: '社区评论' }
 const detailTargetTypeText = ref('')

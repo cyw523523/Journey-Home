@@ -191,9 +191,7 @@ public class AdoptApplyService {
     private Specification<AdoptApply> managedSpec(Long currentUserId, ApplyStatus status) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            if (!SecuritySupport.isAdmin()) {
-                predicates.add(cb.equal(root.get("animal").get("publisher").get("id"), currentUserId));
-            }
+            predicates.add(cb.equal(root.get("animal").get("publisher").get("id"), currentUserId));
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
             }

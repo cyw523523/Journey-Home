@@ -127,6 +127,35 @@ public class AdoptionExtensionService {
     }
 
     @Transactional
+    public AdoptApplyDtos.AgreementResponse updateAgreement(Long applyId, AdoptApplyDtos.UpdateAgreementRequest request) {
+        AdoptionAgreement agreement = getAgreementEntity(applyId);
+        ensureCounterpartManager(agreement.getApply());
+        if (agreement.getAdopterSignedAt() != null || agreement.getCounterpartSignedAt() != null) {
+            throw new BusinessException("协议签署开始后不可再编辑正文");
+        }
+
+        Map<String, Object> before = new LinkedHashMap<>();
+        before.put("title", agreement.getTitle());
+        before.put("content", agreement.getContent());
+
+        agreement.setTitle(request.title().trim());
+        agreement.setContent(request.content().trim());
+        agreement.setPdfUrl(tryStoreAgreementPdf(agreement));
+
+        operationLogService.record(
+                userService.currentUser(),
+                OperationTargetType.ADOPTION_AGREEMENT,
+                agreement.getApply().getId(),
+                agreement.getTitle() + " / 申请#" + agreement.getApply().getId(),
+                OperationType.UPDATE,
+                "编辑领养协议正文",
+                before,
+                Map.of("title", agreement.getTitle(), "content", agreement.getContent())
+        );
+        return mapper.toAgreementResponse(agreement);
+    }
+
+    @Transactional
     public AdoptApplyDtos.AgreementResponse signAgreement(Long applyId, AdoptApplyDtos.SignAgreementRequest request) {
         AdoptionAgreement agreement = getAgreementEntity(applyId);
         User currentUser = userService.currentUser();
@@ -155,7 +184,7 @@ public class AdoptionExtensionService {
                 agreement.setCounterpartSignatureImageUrl(signatureImageUrl);
                 agreement.setCounterpartSignedAt(signedAt);
             }
-        } else if (currentUser.getId().equals(agreement.getPublisher().getId()) || SecuritySupport.isAdmin()) {
+        } else if (currentUser.getId().equals(agreement.getPublisher().getId())) {
             if (agreement.getCounterpartSignedAt() != null) {
                 throw new BusinessException("救助方已完成签署，请勿重复提交");
             }
@@ -229,17 +258,48 @@ public class AdoptionExtensionService {
     }
 
     @Transactional
+    public AdoptApplyDtos.FollowUpResponse updateFollowUpPlan(Long followUpId, AdoptApplyDtos.UpdateFollowUpPlanRequest request) {
+        AdoptionFollowUp followUp = adoptionFollowUpRepository.findById(followUpId)
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "回访记录不存在"));
+        ensureCounterpartManager(followUp.getApply());
+        if (followUp.getStatus() == AdoptionFollowUpStatus.COMPLETED) {
+            throw new BusinessException("已完成的回访记录不可调整计划时间");
+        }
+        if (request.plannedAt().isBefore(LocalDateTime.now().minusMinutes(1))) {
+            throw new BusinessException("计划时间不能早于当前时间");
+        }
+
+        LocalDateTime beforePlannedAt = followUp.getPlannedAt();
+        followUp.setPlannedAt(request.plannedAt());
+
+        operationLogService.record(
+                userService.currentUser(),
+                OperationTargetType.ADOPTION_FOLLOW_UP,
+                followUp.getId(),
+                followUp.getStageLabel() + " / 申请#" + followUp.getApply().getId(),
+                OperationType.UPDATE,
+                "调整回访计划时间",
+                Map.of("plannedAt", beforePlannedAt),
+                Map.of("plannedAt", followUp.getPlannedAt())
+        );
+        return mapper.toFollowUpResponse(followUp);
+    }
+
+    @Transactional
     public AdoptApplyDtos.FollowUpResponse completeFollowUp(Long followUpId, AdoptApplyDtos.CompleteFollowUpRequest request) {
         AdoptionFollowUp followUp = adoptionFollowUpRepository.findById(followUpId)
                 .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "回访记录不存在"));
         ensureCounterpartManager(followUp.getApply());
         User currentUser = userService.currentUser();
 
-        Map<String, Object> before = Map.of(
-                "status", followUp.getStatus().name(),
-                "note", followUp.getNote(),
-                "imageCount", followUp.getImageUrls().size()
-        );
+        if (followUp.getPlannedAt() != null && followUp.getPlannedAt().isAfter(LocalDateTime.now())) {
+            throw new BusinessException("尚未到回访时间，暂不可填写");
+        }
+
+        Map<String, Object> before = new LinkedHashMap<>();
+        before.put("status", followUp.getStatus().name());
+        before.put("note", followUp.getNote());
+        before.put("imageCount", followUp.getImageUrls().size());
 
         followUp.setCreator(currentUser);
         followUp.setNote(request.note());
@@ -258,12 +318,7 @@ public class AdoptionExtensionService {
                 OperationType.COMPLETE_FOLLOW_UP,
                 "完成领养回访记录",
                 before,
-                Map.of(
-                        "status", followUp.getStatus().name(),
-                        "note", followUp.getNote(),
-                        "imageCount", followUp.getImageUrls().size(),
-                        "completedAt", followUp.getCompletedAt()
-                )
+                buildFollowUpAfterSnapshot(followUp)
         );
 
         notificationService.notifyUser(
@@ -337,9 +392,9 @@ public class AdoptionExtensionService {
 
     private void ensureCounterpartManager(AdoptApply apply) {
         Long currentUserId = SecuritySupport.requireUser().id();
-        boolean isManager = currentUserId.equals(apply.getAnimal().getPublisher().getId()) || SecuritySupport.isAdmin();
+        boolean isManager = currentUserId.equals(apply.getAnimal().getPublisher().getId());
         if (!isManager) {
-            throw new BusinessException(HttpStatus.FORBIDDEN, "只有救助发布者或管理员可以维护回访记录");
+            throw new BusinessException(HttpStatus.FORBIDDEN, "只有救助发布者可以维护回访记录");
         }
     }
 
@@ -419,6 +474,15 @@ public class AdoptionExtensionService {
                 && agreement.getPublisher() != null
                 && agreement.getAdopter().getId() != null
                 && agreement.getAdopter().getId().equals(agreement.getPublisher().getId());
+    }
+
+    private Map<String, Object> buildFollowUpAfterSnapshot(AdoptionFollowUp followUp) {
+        Map<String, Object> after = new LinkedHashMap<>();
+        after.put("status", followUp.getStatus().name());
+        after.put("note", followUp.getNote());
+        after.put("imageCount", followUp.getImageUrls().size());
+        after.put("completedAt", followUp.getCompletedAt());
+        return after;
     }
 
     private String buildAgreementContent(String agreementNo, AdoptApply apply, String opinion) {

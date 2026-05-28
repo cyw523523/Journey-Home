@@ -86,7 +86,7 @@
               <el-table-column label="操作" width="320">
                 <template #default="{ row }">
                   <el-button v-if="row.status === 'APPROVED'" size="small" text type="primary" @click="openAgreement(row)">协议</el-button>
-                  <el-button v-if="row.status === 'APPROVED'" size="small" text @click="openFollowUps(row, false)">回访</el-button>
+                  <el-button v-if="row.status === 'APPROVED'" size="small" text @click="openFollowUps(row)">回访</el-button>
                   <el-button v-if="row.status === 'PENDING_REVIEW'" size="small" text type="danger" @click="cancelApplication(row)">取消</el-button>
                   <el-button v-if="row.status === 'REJECTED'" size="small" text type="warning" @click="openAppeal('ADOPT_APPLY', row.id)">申诉</el-button>
                 </template>
@@ -94,7 +94,7 @@
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane v-if="canManageAdoptions" :label="t('profilePage.adoptionFollowUp')" name="managedApplications">
+          <el-tab-pane :label="t('profilePage.adoptionFollowUp')" name="managedApplications">
             <el-table :data="managedApplications" stripe>
               <el-table-column prop="id" label="申请ID" width="90" />
               <el-table-column prop="animalTypeText" label="动物" width="100" />
@@ -108,7 +108,7 @@
               <el-table-column label="操作" width="240">
                 <template #default="{ row }">
                   <el-button v-if="row.status === 'APPROVED'" size="small" text type="primary" @click="openAgreement(row)">协议</el-button>
-                  <el-button v-if="row.status === 'APPROVED'" size="small" text @click="openFollowUps(row, true)">回访</el-button>
+                  <el-button v-if="row.status === 'APPROVED'" size="small" text @click="openFollowUps(row)">回访</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -327,9 +327,24 @@
           <StatusTag :value="agreementData.status" :text="agreementData.statusText" :options="agreementStatusOptions" />
         </div>
         <div class="agreement-actions">
+          <template v-if="canEditAgreement">
+            <el-button v-if="!agreementEditMode" text @click="startEditAgreement">编辑协议</el-button>
+            <el-button v-else text @click="cancelEditAgreement">取消编辑</el-button>
+            <el-button v-if="agreementEditMode" :loading="saving" text type="primary" @click="saveAgreement">保存协议</el-button>
+          </template>
           <el-button v-if="agreementData.pdfUrl" text type="primary" @click="openAgreementPdf">下载 PDF</el-button>
         </div>
-        <div class="agreement-content">{{ agreementData.content }}</div>
+        <div v-if="agreementEditMode" class="agreement-edit-box">
+          <el-form label-position="top">
+            <el-form-item label="协议标题">
+              <el-input v-model="agreementEditForm.title" maxlength="120" />
+            </el-form-item>
+            <el-form-item label="协议正文">
+              <el-input v-model="agreementEditForm.content" type="textarea" :rows="14" maxlength="20000" show-word-limit />
+            </el-form-item>
+          </el-form>
+        </div>
+        <div v-else class="agreement-content">{{ agreementData.content }}</div>
         <div class="agreement-sign-grid">
           <div class="detail-item">
             <label>领养人签署</label>
@@ -399,8 +414,15 @@
             <img v-for="url in item.imageUrls" :key="url" :src="getFullUrl(url)" style="width:88px;height:88px;object-fit:cover;border-radius:8px" />
           </div>
           <p class="muted">填写人：{{ item.creatorNickname || '-' }}，完成时间：{{ formatTime(item.completedAt) }}</p>
-          <div v-if="followUpManageMode && item.status !== 'COMPLETED'" class="follow-up-actions">
+          <p v-if="followUpManageMode && !canCompleteFollowUp(item) && item.status !== 'COMPLETED'" class="follow-up-waiting-tip">
+            尚未到回访时间，暂不可填写
+          </p>
+          <div v-if="followUpManageMode && canCompleteFollowUp(item)" class="follow-up-actions">
+            <el-button size="small" text @click="openFollowUpPlanEditor(item)">调整时间</el-button>
             <el-button size="small" type="primary" plain @click="openFollowUpComplete(item)">填写回访</el-button>
+          </div>
+          <div v-else-if="followUpManageMode && item.status !== 'COMPLETED'" class="follow-up-actions">
+            <el-button size="small" text @click="openFollowUpPlanEditor(item)">调整时间</el-button>
           </div>
         </div>
       </div>
@@ -422,6 +444,24 @@
       <template #footer>
         <el-button @click="followUpEditorVisible = false">取消</el-button>
         <el-button :loading="saving" type="primary" @click="submitFollowUp">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="followUpPlanEditorVisible" title="调整回访时间" width="520px" append-to-body>
+      <el-form label-position="top">
+        <el-form-item label="新的计划时间">
+          <el-date-picker
+            v-model="followUpPlanEditor.plannedAt"
+            type="datetime"
+            format="YYYY-MM-DD HH:mm"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="followUpPlanEditorVisible = false">取消</el-button>
+        <el-button :loading="saving" type="primary" @click="submitFollowUpPlan">保存时间</el-button>
       </template>
     </el-dialog>
   </section>
@@ -487,6 +527,7 @@ const appealVisible = ref(false)
 const agreementDialogVisible = ref(false)
 const followUpDialogVisible = ref(false)
 const followUpEditorVisible = ref(false)
+const followUpPlanEditorVisible = ref(false)
 const statusTargetType = ref('animal')
 const statusTarget = ref(null)
 const statusForm = reactive({ newStatus: '' })
@@ -496,12 +537,15 @@ const appealForm = reactive({ targetType: 'ANIMAL', targetId: null, reason: '' }
 const agreementData = ref(null)
 const agreementCurrentApplyId = ref(null)
 const agreementSignatureForm = reactive({ signatureName: '', signatureDataUrl: '' })
+const agreementEditMode = ref(false)
+const agreementEditForm = reactive({ title: '', content: '' })
 const signatureCanvasRef = ref()
 const signatureHasStroke = ref(false)
 const followUps = ref([])
 const followUpManageMode = ref(false)
 const followUpCurrentApplyId = ref(null)
 const followUpEditor = reactive({ id: null, note: '', imageUrls: [] })
+const followUpPlanEditor = reactive({ id: null, plannedAt: '' })
 let signatureDrawing = false
 let signatureLastPoint = { x: 0, y: 0 }
 
@@ -533,16 +577,24 @@ const availableStatuses = computed(() => {
   return rescueStatusOptions.filter((item) => item.value !== 'PENDING_REVIEW' && item.value !== 'REJECTED')
 })
 
-const canManageAdoptions = computed(() => ['RESCUER', 'ADMIN'].includes(profile.value.role))
+const canManageAdoptions = computed(() => Boolean(profile.value.id))
 const canSignAgreement = computed(() => {
   if (!agreementData.value || agreementData.value.status === 'COMPLETED' || !profile.value.id) {
     return false
   }
   const isAdopter = profile.value.id === agreementData.value.adopterId
-  const isCounterpart = profile.value.id === agreementData.value.publisherId || profile.value.role === 'ADMIN'
+  const isCounterpart = profile.value.id === agreementData.value.publisherId
   if (isAdopter) return !agreementData.value.adopterSignatureName
   if (isCounterpart) return !agreementData.value.counterpartSignatureName
   return false
+})
+const canEditAgreement = computed(() => {
+  if (!agreementData.value || !profile.value.id) {
+    return false
+  }
+  return profile.value.id === agreementData.value.publisherId &&
+    !agreementData.value.adopterSignedAt &&
+    !agreementData.value.counterpartSignedAt
 })
 
 useAiAssistantPageContext(() => ({
@@ -553,6 +605,7 @@ useAiAssistantPageContext(() => ({
     profile: profile.value ? {
       id: profile.value.id,
       nickname: profile.value.nickname,
+      role: profile.value.role,
       roleText: profile.value.roleText,
       statusText: profile.value.statusText
     } : null,
@@ -560,12 +613,20 @@ useAiAssistantPageContext(() => ({
       animalCount: animals.value.length,
       rescueCount: rescues.value.length,
       applicationCount: applications.value.length,
+      pendingReviewApplicationCount: applications.value.filter((item) => item?.status === 'PENDING_REVIEW').length,
+      approvedApplicationCount: applications.value.filter((item) => item?.status === 'APPROVED').length,
       managedApplicationCount: managedApplications.value.length,
+      activeManagedApplicationCount: managedApplications.value.filter((item) => ['APPROVED', 'PENDING_ADOPTER', 'PENDING_COUNTERPART'].includes(item?.status)).length,
       communityPostCount: communityPosts.value.length,
       communityCommentCount: communityComments.value.length,
       unreadNotificationCount: notificationSummary.value.unreadCount || 0,
       reportCount: reports.value.length,
       appealCount: appeals.value.length
+    },
+    assistantHints: {
+      userCanAuditApplications: false,
+      managedApplicationsMeaning: '这里展示的是与自己发布动物相关的领养跟进、协议和回访，不是管理员审核台。',
+      currentUserPerspective: 'personal-center'
     }
   }
 }))
@@ -582,6 +643,16 @@ function formatTime(value) {
     return '-'
   }
   return new Date(value).toLocaleString()
+}
+
+function canCompleteFollowUp(item) {
+  if (!item || item.status === 'COMPLETED') {
+    return false
+  }
+  if (!item.plannedAt) {
+    return true
+  }
+  return new Date(item.plannedAt).getTime() <= Date.now()
 }
 
 function signatureImageUrl(data, side) {
@@ -906,11 +977,47 @@ async function openAgreement(row) {
     agreementData.value = await adoptionApi.agreement(row.id)
     agreementSignatureForm.signatureName = profile.value.nickname || row.applicantName || ''
     agreementSignatureForm.signatureDataUrl = ''
+    agreementEditMode.value = false
+    agreementEditForm.title = agreementData.value.title || ''
+    agreementEditForm.content = agreementData.value.content || ''
     agreementDialogVisible.value = true
     await nextTick()
     initSignatureCanvas()
   } catch (error) {
     notifyError(error)
+  }
+}
+
+function startEditAgreement() {
+  agreementEditMode.value = true
+  agreementEditForm.title = agreementData.value?.title || ''
+  agreementEditForm.content = agreementData.value?.content || ''
+}
+
+function cancelEditAgreement() {
+  agreementEditMode.value = false
+  agreementEditForm.title = agreementData.value?.title || ''
+  agreementEditForm.content = agreementData.value?.content || ''
+}
+
+async function saveAgreement() {
+  if (!agreementCurrentApplyId.value) return
+  if (!agreementEditForm.title.trim() || !agreementEditForm.content.trim()) {
+    ElMessage.warning('请完善协议标题和正文')
+    return
+  }
+  saving.value = true
+  try {
+    agreementData.value = await adoptionApi.updateAgreement(agreementCurrentApplyId.value, {
+      title: agreementEditForm.title.trim(),
+      content: agreementEditForm.content.trim()
+    })
+    agreementEditMode.value = false
+    ElMessage.success('协议已更新')
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
   }
 }
 
@@ -949,10 +1056,10 @@ async function signAgreement() {
   }
 }
 
-async function openFollowUps(row, manageable) {
+async function openFollowUps(row) {
   try {
     followUpCurrentApplyId.value = row.id
-    followUpManageMode.value = manageable
+    followUpManageMode.value = profile.value.id === row.publisherId
     followUps.value = await adoptionApi.followUps(row.id)
     followUpDialogVisible.value = true
   } catch (error) {
@@ -961,10 +1068,20 @@ async function openFollowUps(row, manageable) {
 }
 
 function openFollowUpComplete(item) {
+  if (!canCompleteFollowUp(item)) {
+    ElMessage.warning('尚未到回访时间，暂不可填写')
+    return
+  }
   followUpEditor.id = item.id
   followUpEditor.note = item.note || ''
   followUpEditor.imageUrls = item.imageUrls ? [...item.imageUrls] : []
   followUpEditorVisible.value = true
+}
+
+function openFollowUpPlanEditor(item) {
+  followUpPlanEditor.id = item.id
+  followUpPlanEditor.plannedAt = item.plannedAt ? item.plannedAt.slice(0, 19) : ''
+  followUpPlanEditorVisible.value = true
 }
 
 async function submitFollowUp() {
@@ -984,6 +1101,28 @@ async function submitFollowUp() {
       followUps.value = await adoptionApi.followUps(followUpCurrentApplyId.value)
     }
     await loadRecords()
+  } catch (error) {
+    notifyError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function submitFollowUpPlan() {
+  if (!followUpPlanEditor.id || !followUpPlanEditor.plannedAt) {
+    ElMessage.warning('请选择新的计划时间')
+    return
+  }
+  saving.value = true
+  try {
+    await adoptionApi.updateFollowUpPlan(followUpPlanEditor.id, {
+      plannedAt: followUpPlanEditor.plannedAt
+    })
+    ElMessage.success('回访时间已更新')
+    followUpPlanEditorVisible.value = false
+    if (followUpCurrentApplyId.value) {
+      followUps.value = await adoptionApi.followUps(followUpCurrentApplyId.value)
+    }
   } catch (error) {
     notifyError(error)
   } finally {
@@ -1032,7 +1171,7 @@ async function submitAppeal() {
 onMounted(load)
 
 watch(tab, async (value) => {
-  if (value === 'managedApplications' && canManageAdoptions.value) {
+  if (value === 'managedApplications') {
     await loadManagedApplications()
   }
 })
@@ -1075,6 +1214,12 @@ watch(agreementDialogVisible, async (visible) => {
   white-space: pre-wrap;
   line-height: 1.7;
   color: #30413b;
+}
+
+.agreement-edit-box {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(244, 248, 246, 0.95);
 }
 
 .agreement-sign-grid {
@@ -1148,6 +1293,12 @@ watch(agreementDialogVisible, async (visible) => {
   margin: 10px 0;
   line-height: 1.7;
   white-space: pre-wrap;
+}
+
+.follow-up-waiting-tip {
+  margin: 8px 0 0;
+  color: #b26a00;
+  font-size: 13px;
 }
 
 .follow-up-actions {

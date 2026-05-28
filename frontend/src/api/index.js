@@ -50,8 +50,10 @@ export const adoptionApi = {
   detail: (id) => http.get(`/adoptions/${id}`),
   cancel: (id) => http.patch(`/adoptions/${id}/cancel`),
   agreement: (id) => http.get(`/adoptions/${id}/agreement`),
+  updateAgreement: (id, data) => http.patch(`/adoptions/${id}/agreement`, data),
   signAgreement: (id, data) => http.post(`/adoptions/${id}/agreement/sign`, data),
   followUps: (id) => http.get(`/adoptions/${id}/follow-ups`),
+  updateFollowUpPlan: (id, data) => http.patch(`/adoptions/follow-ups/${id}/plan`, data),
   completeFollowUp: (id, data) => http.patch(`/adoptions/follow-ups/${id}/complete`, data)
 }
 

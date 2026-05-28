@@ -3,6 +3,8 @@ package com.guitu.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 public class AiAssistantDtos {
@@ -11,7 +13,7 @@ public class AiAssistantDtos {
             @NotBlank(message = "消息不能为空")
             @Size(max = 2000, message = "消息长度不能超过 2000 个字符")
             String message,
-            java.util.List<ConversationMessage> history,
+            List<ConversationMessage> history,
             PageContext pageContext
     ) {}
 
@@ -47,6 +49,8 @@ public class AiAssistantDtos {
     public record ChatResponse(
             String reply,
             String model,
-            java.time.LocalDateTime timestamp
+            LocalDateTime timestamp,
+            List<String> suggestions,
+            String mode
     ) {}
 }
