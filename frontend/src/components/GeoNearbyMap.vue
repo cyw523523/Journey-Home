@@ -58,12 +58,24 @@
           </el-col>
           <el-col :xs="12" :sm="5">
             <el-form-item :label="t('geo.latitude')">
-              <el-input-number v-model="manual.latitude" :precision="7" :step="0.0001" style="width: 100%" />
+              <el-input-number
+                v-model="manual.latitude"
+                :precision="7"
+                :step="0.0001"
+                style="width: 100%"
+                @keyup.enter="applyManualCoordinate"
+              />
             </el-form-item>
           </el-col>
           <el-col :xs="12" :sm="5">
             <el-form-item :label="t('geo.longitude')">
-              <el-input-number v-model="manual.longitude" :precision="7" :step="0.0001" style="width: 100%" />
+              <el-input-number
+                v-model="manual.longitude"
+                :precision="7"
+                :step="0.0001"
+                style="width: 100%"
+                @keyup.enter="applyManualCoordinate"
+              />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="4" class="manual-actions">
@@ -192,6 +204,7 @@ let map = null
 let infoWindow = null
 let markers = []
 let markerMap = new Map()
+let currentLocationMarker = null
 
 const distanceOptions = [
   { label: '1km', value: 1 },
@@ -298,9 +311,8 @@ function setCurrentLocation(latitude, longitude) {
   manual.latitude = currentLocation.latitude
   manual.longitude = currentLocation.longitude
 
-  if (map) {
-    map.setZoomAndCenter(14, [currentLocation.longitude, currentLocation.latitude])
-  }
+  updateCurrentLocationMarker()
+  focusCurrentLocation()
 }
 
 async function locateByAddress() {
@@ -325,6 +337,8 @@ async function applyManualCoordinate() {
   }
   setCurrentLocation(manual.latitude, manual.longitude)
   await loadNearby()
+  openCurrentLocationInfo()
+  ElMessage.success(t('geo.locationLoaded'))
 }
 
 async function handleDistanceChange() {
@@ -381,9 +395,14 @@ function refreshMarkers() {
     markerMap.set(point.key, marker)
   })
 
+  updateCurrentLocationMarker()
+
   if (markers.length) {
     map.add(markers)
-    map.setFitView(markers, false, [70, 70, 70, 70], 15)
+    const overlays = currentLocationMarker ? [...markers, currentLocationMarker] : markers
+    map.setFitView(overlays, false, [70, 70, 70, 70], 15)
+  } else {
+    focusCurrentLocation()
   }
 }
 
@@ -453,6 +472,40 @@ function setItemRef(el, key) {
   if (el) itemRefs[key] = el
 }
 
+function updateCurrentLocationMarker() {
+  if (!map || !AMapRef || !hasCurrentLocation.value) return
+
+  if (!currentLocationMarker) {
+    currentLocationMarker = new AMapRef.Marker({
+      zIndex: 120,
+      offset: new AMapRef.Pixel(-15, -15),
+      content: '<div class="guitu-current-marker">我</div>'
+    })
+    currentLocationMarker.on('click', openCurrentLocationInfo)
+    map.add(currentLocationMarker)
+  }
+
+  currentLocationMarker.setPosition([currentLocation.longitude, currentLocation.latitude])
+}
+
+function focusCurrentLocation() {
+  if (!map || !hasCurrentLocation.value) return
+  map.setZoomAndCenter(14, [currentLocation.longitude, currentLocation.latitude])
+}
+
+function openCurrentLocationInfo() {
+  if (!map || !infoWindow || !hasCurrentLocation.value) return
+
+  infoWindow.setContent(`
+    <div class="guitu-geo-info">
+      <strong>${escapeHtml(t('geo.currentLocation'))}</strong>
+      <p>${escapeHtml(`${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`)}</p>
+      <p>${escapeHtml(manual.address || t('geo.manualHint'))}</p>
+    </div>
+  `)
+  infoWindow.open(map, [currentLocation.longitude, currentLocation.latitude])
+}
+
 function isValidLatitude(value) {
   const number = Number(value)
   return Number.isFinite(number) && number >= -90 && number <= 90
@@ -495,6 +548,7 @@ onUnmounted(() => {
     map.destroy()
     map = null
   }
+  currentLocationMarker = null
 })
 </script>
 
@@ -776,6 +830,20 @@ onUnmounted(() => {
 
 .guitu-geo-marker.station {
   background: linear-gradient(135deg, #2f9f7c, #226e5a);
+}
+
+.guitu-current-marker {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  background: radial-gradient(circle at 30% 30%, #ffd36f, #ff934f 55%, #d65d28 100%);
+  border: 2px solid rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 24px rgba(214, 93, 40, 0.28);
 }
 
 .guitu-geo-info {
