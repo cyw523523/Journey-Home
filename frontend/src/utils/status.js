@@ -1,3 +1,5 @@
+import i18n from '../i18n'
+
 export const animalTypeOptions = [
   { label: '猫', value: 'CAT' },
   { label: '狗', value: 'DOG' },
@@ -34,6 +36,44 @@ export const applyStatusOptions = [
   { label: '已通过', value: 'APPROVED', type: 'success' },
   { label: '已驳回', value: 'REJECTED', type: 'danger' },
   { label: '已取消', value: 'CANCELED', type: 'info' }
+]
+
+export const agreementStatusOptions = [
+  { label: '待领养人签署', value: 'PENDING_ADOPTER', type: 'warning' },
+  { label: '待救助方签署', value: 'PENDING_COUNTERPART', type: 'primary' },
+  { label: '已签署完成', value: 'COMPLETED', type: 'success' }
+]
+
+export const followUpStatusOptions = [
+  { label: '待回访', value: 'PENDING', type: 'warning' },
+  { label: '已回访', value: 'COMPLETED', type: 'success' }
+]
+
+export const operationTargetOptions = [
+  { label: '动物档案', value: 'ANIMAL' },
+  { label: '救助信息', value: 'RESCUE' },
+  { label: '领养申请', value: 'ADOPT_APPLY' },
+  { label: '领养协议', value: 'ADOPTION_AGREEMENT' },
+  { label: '领养回访', value: 'ADOPTION_FOLLOW_UP' },
+  { label: '社区帖子', value: 'COMMUNITY_POST' },
+  { label: '社区评论', value: 'COMMUNITY_COMMENT' },
+  { label: '公告', value: 'NOTICE' },
+  { label: '用户', value: 'USER' }
+]
+
+export const operationTypeOptions = [
+  { label: '创建', value: 'CREATE' },
+  { label: '编辑', value: 'UPDATE' },
+  { label: '下架', value: 'OFFLINE' },
+  { label: '状态变更', value: 'STATUS_CHANGE' },
+  { label: '提交申请', value: 'SUBMIT_APPLICATION' },
+  { label: '取消申请', value: 'CANCEL_APPLICATION' },
+  { label: '通过申请', value: 'APPROVE_APPLICATION' },
+  { label: '驳回申请', value: 'REJECT_APPLICATION' },
+  { label: '生成协议', value: 'CREATE_AGREEMENT' },
+  { label: '签署协议', value: 'SIGN_AGREEMENT' },
+  { label: '生成回访计划', value: 'CREATE_FOLLOW_UP_PLAN' },
+  { label: '完成回访', value: 'COMPLETE_FOLLOW_UP' }
 ]
 
 export const noticeStatusOptions = [
@@ -170,8 +210,115 @@ export const medicalRecordTypeOptions = [
   { label: '其他', value: 'OTHER' }
 ]
 
+const labelTranslationKeys = {
+  猫: 'statusLabel.cat',
+  狗: 'statusLabel.dog',
+  其他: 'statusLabel.other',
+  公: 'statusLabel.male',
+  母: 'statusLabel.female',
+  未知: 'statusLabel.unknown',
+  待审核: 'statusLabel.pendingReview',
+  待救助: 'statusLabel.waitingRescue',
+  救助中: 'statusLabel.rescuing',
+  待领养: 'statusLabel.waitingAdoption',
+  已领养: 'statusLabel.adopted',
+  已下架: 'statusLabel.offline',
+  已驳回: 'statusLabel.rejected',
+  待处理: 'statusLabel.pendingProcess',
+  处理中: 'statusLabel.processing',
+  已完成: 'statusLabel.completed',
+  已通过: 'statusLabel.approved',
+  已取消: 'statusLabel.canceled',
+  待领养人签署: 'statusLabel.pendingAdopter',
+  待救助方签署: 'statusLabel.pendingCounterpart',
+  已签署完成: 'statusLabel.signedCompleted',
+  待回访: 'statusLabel.pendingFollowUp',
+  动物档案: 'statusLabel.animalRecord',
+  救助信息: 'statusLabel.rescueInfo',
+  领养申请: 'statusLabel.adoptionApply',
+  领养协议: 'statusLabel.adoptionAgreement',
+  领养回访: 'statusLabel.adoptionFollowUp',
+  社区帖子: 'statusLabel.communityPost',
+  社区评论: 'statusLabel.communityComment',
+  公告: 'statusLabel.notice',
+  用户: 'statusLabel.user',
+  创建: 'statusLabel.create',
+  编辑: 'statusLabel.update',
+  状态变更: 'statusLabel.statusChange',
+  提交申请: 'statusLabel.submitApplication',
+  取消申请: 'statusLabel.cancelApplication',
+  通过申请: 'statusLabel.approveApplication',
+  驳回申请: 'statusLabel.rejectApplication',
+  生成协议: 'statusLabel.createAgreement',
+  签署协议: 'statusLabel.signAgreement',
+  生成回访计划: 'statusLabel.createFollowUpPlan',
+  完成回访: 'statusLabel.completeFollowUp',
+  草稿: 'statusLabel.draft',
+  已发布: 'statusLabel.published',
+  普通用户: 'statusLabel.member',
+  救助发布者: 'statusLabel.rescuer',
+  管理员: 'statusLabel.admin',
+  正常: 'statusLabel.normal',
+  禁用: 'statusLabel.disabled',
+  虚假信息: 'statusLabel.falseInformation',
+  广告引流: 'statusLabel.advertisement',
+  辱骂骚扰: 'statusLabel.harassment',
+  不良内容: 'statusLabel.abuse',
+  敏感图片: 'statusLabel.sensitiveImage',
+  垃圾刷屏: 'statusLabel.spam',
+  举报属实: 'statusLabel.resolvedValid',
+  举报不属实: 'statusLabel.resolvedInvalid',
+  重复举报: 'statusLabel.dismissedDuplicate',
+  驳回举报: 'statusLabel.dismiss',
+  仅警告: 'statusLabel.warnOnly',
+  下架内容: 'statusLabel.offlineContent',
+  禁用账号: 'statusLabel.banUser',
+  待复核: 'statusLabel.pendingAppealReview',
+  二次复核中: 'statusLabel.secondReviewPending',
+  申诉通过: 'statusLabel.appealApproved',
+  申诉驳回: 'statusLabel.appealRejected',
+  升级二次复核: 'statusLabel.escalate',
+  通过申诉: 'statusLabel.approveAppeal',
+  驳回申诉: 'statusLabel.rejectAppeal',
+  猫粮: 'statusLabel.catFood',
+  狗粮: 'statusLabel.dogFood',
+  猫砂: 'statusLabel.catLitter',
+  药品: 'statusLabel.medicine',
+  玩具: 'statusLabel.toys',
+  '垫子/窝': 'statusLabel.bedding',
+  清洁用品: 'statusLabel.cleaning',
+  待认领: 'statusLabel.unclaimed',
+  已认领: 'statusLabel.claimed',
+  运输中: 'statusLabel.inTransit',
+  招募中: 'statusLabel.recruiting',
+  进行中: 'statusLabel.inProgress',
+  待确认: 'statusLabel.pendingConfirmation',
+  已拒绝: 'statusLabel.rejectedConfirmed',
+  已撤回: 'statusLabel.withdrawn',
+  未通过: 'statusLabel.notPassed',
+  驱虫: 'statusLabel.deworming',
+  疫苗: 'statusLabel.vaccine',
+  绝育: 'statusLabel.neutering',
+  诊疗: 'statusLabel.treatment'
+}
+
+export function translateLabel(label) {
+  if (!label || i18n.global.locale.value === 'zh') {
+    return label || '-'
+  }
+
+  const key = labelTranslationKeys[label]
+  if (!key) {
+    return label
+  }
+
+  const translated = i18n.global.t(key)
+  return translated === key ? label : translated
+}
+
 export function optionText(options, value) {
-  return options.find((item) => item.value === value)?.label || value || '-'
+  const label = options.find((item) => item.value === value)?.label
+  return translateLabel(label || value || '-')
 }
 
 export function optionType(options, value) {

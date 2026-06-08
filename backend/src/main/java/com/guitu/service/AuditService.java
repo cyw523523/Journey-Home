@@ -15,6 +15,8 @@ import com.guitu.domain.enums.AuditTargetType;
 import com.guitu.domain.enums.CommunityCommentStatus;
 import com.guitu.domain.enums.CommunityPostStatus;
 import com.guitu.domain.enums.NotificationType;
+import com.guitu.domain.enums.OperationTargetType;
+import com.guitu.domain.enums.OperationType;
 import com.guitu.domain.enums.RescueStatus;
 import com.guitu.dto.AuditDtos;
 import com.guitu.exception.BusinessException;
@@ -30,6 +32,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +43,8 @@ import java.util.List;
 
 @Service
 public class AuditService {
+    private static final Logger log = LoggerFactory.getLogger(AuditService.class);
+
     private final AnimalRepository animalRepository;
     private final RescueRepository rescueRepository;
     private final AdoptApplyRepository adoptApplyRepository;
@@ -53,6 +59,8 @@ public class AuditService {
     private final DtoMapper mapper;
     private final NotificationService notificationService;
     private final CacheInvalidationService cacheInvalidationService;
+    private final OperationLogService operationLogService;
+    private final AdoptionExtensionService adoptionExtensionService;
 
     public AuditService(
             AnimalRepository animalRepository,
@@ -68,7 +76,9 @@ public class AuditService {
             CommunityService communityService,
             DtoMapper mapper,
             NotificationService notificationService,
-            CacheInvalidationService cacheInvalidationService
+            CacheInvalidationService cacheInvalidationService,
+            OperationLogService operationLogService,
+            AdoptionExtensionService adoptionExtensionService
     ) {
         this.animalRepository = animalRepository;
         this.rescueRepository = rescueRepository;
@@ -84,6 +94,8 @@ public class AuditService {
         this.mapper = mapper;
         this.notificationService = notificationService;
         this.cacheInvalidationService = cacheInvalidationService;
+        this.operationLogService = operationLogService;
+        this.adoptionExtensionService = adoptionExtensionService;
     }
 
     @Transactional(readOnly = true)
@@ -153,6 +165,7 @@ public class AuditService {
 
     private void auditAnimal(AuditDtos.AuditRequest request, User auditor) {
         Animal animal = animalService.getEntity(request.targetId());
+        AnimalStatus beforeStatus = animal.getStatus();
         if (request.action() == AuditAction.OFFLINE) {
             animal.setStatus(AnimalStatus.OFFLINE);
         } else {
@@ -184,11 +197,22 @@ public class AuditService {
         }
         animal.setReviewComment(request.opinion());
         recordLog(AuditTargetType.ANIMAL, animal.getId(), auditor, request.action(), request.opinion());
+        operationLogService.record(
+                auditor,
+                OperationTargetType.ANIMAL,
+                animal.getId(),
+                animal.getType().getLabel() + " / " + animal.getFoundRegion(),
+                request.action() == AuditAction.OFFLINE ? OperationType.OFFLINE : OperationType.STATUS_CHANGE,
+                "管理员审核动物档案",
+                java.util.Map.of("status", beforeStatus.name()),
+                java.util.Map.of("status", animal.getStatus().name(), "reviewComment", animal.getReviewComment())
+        );
         notifyAuditResult(animal.getPublisher(), "AUDIT_RESULT_ANIMAL", request.opinion(), "ANIMAL", animal.getId());
     }
 
     private void auditRescue(AuditDtos.AuditRequest request, User auditor) {
         Rescue rescue = rescueService.getEntity(request.targetId());
+        RescueStatus beforeStatus = rescue.getStatus();
         if (request.action() == AuditAction.OFFLINE) {
             rescue.setStatus(RescueStatus.OFFLINE);
         } else {
@@ -199,6 +223,16 @@ public class AuditService {
         }
         rescue.setReviewComment(request.opinion());
         recordLog(AuditTargetType.RESCUE, rescue.getId(), auditor, request.action(), request.opinion());
+        operationLogService.record(
+                auditor,
+                OperationTargetType.RESCUE,
+                rescue.getId(),
+                rescue.getLocation(),
+                request.action() == AuditAction.OFFLINE ? OperationType.OFFLINE : OperationType.STATUS_CHANGE,
+                "管理员审核救助信息",
+                java.util.Map.of("status", beforeStatus.name()),
+                java.util.Map.of("status", rescue.getStatus().name(), "reviewComment", rescue.getReviewComment())
+        );
         notifyAuditResult(rescue.getPublisher(), "AUDIT_RESULT_RESCUE", request.opinion(), "RESCUE", rescue.getId());
     }
 
@@ -210,6 +244,7 @@ public class AuditService {
         if (apply.getStatus() != ApplyStatus.PENDING_REVIEW) {
             throw new BusinessException("This record has already been audited");
         }
+        ApplyStatus beforeStatus = apply.getStatus();
         if (request.action() == AuditAction.APPROVE) {
             if (apply.getAnimal().getStatus() != AnimalStatus.WAITING_ADOPTION) {
                 throw new BusinessException("This animal is not available for adoption right now");
@@ -218,16 +253,32 @@ public class AuditService {
             apply.setAuditOpinion(request.opinion());
             apply.getAnimal().setStatus(AnimalStatus.ADOPTED);
             rejectOtherPendingApplies(apply);
+            try {
+                adoptionExtensionService.initializeForApprovedApply(apply, auditor, request.opinion());
+            } catch (RuntimeException ex) {
+                log.error("Failed to initialize adoption extension for apply {}", apply.getId(), ex);
+            }
         } else {
             apply.setStatus(ApplyStatus.REJECTED);
             apply.setAuditOpinion(request.opinion());
         }
         recordLog(AuditTargetType.ADOPT_APPLY, apply.getId(), auditor, request.action(), request.opinion());
+        operationLogService.record(
+                auditor,
+                OperationTargetType.ADOPT_APPLY,
+                apply.getId(),
+                "领养申请#" + apply.getId() + " / " + apply.getAnimal().getType().getLabel(),
+                request.action() == AuditAction.APPROVE ? OperationType.APPROVE_APPLICATION : OperationType.REJECT_APPLICATION,
+                "管理员审核领养申请",
+                java.util.Map.of("status", beforeStatus.name()),
+                java.util.Map.of("status", apply.getStatus().name(), "auditOpinion", apply.getAuditOpinion())
+        );
         notifyAuditResult(apply.getApplicant(), "AUDIT_RESULT_ADOPT_APPLY", request.opinion(), "ADOPT_APPLY", apply.getId());
     }
 
     private void auditPost(AuditDtos.AuditRequest request, User auditor) {
         CommunityPost post = communityService.getManagedPost(request.targetId());
+        CommunityPostStatus beforeStatus = post.getStatus();
         if (request.action() == AuditAction.OFFLINE) {
             post.setStatus(CommunityPostStatus.OFFLINE);
         } else {
@@ -237,6 +288,16 @@ public class AuditService {
             post.setStatus(request.action() == AuditAction.APPROVE ? CommunityPostStatus.PUBLISHED : CommunityPostStatus.REJECTED);
         }
         recordLog(AuditTargetType.COMMUNITY_POST, post.getId(), auditor, request.action(), request.opinion());
+        operationLogService.record(
+                auditor,
+                OperationTargetType.COMMUNITY_POST,
+                post.getId(),
+                post.getTitle(),
+                request.action() == AuditAction.OFFLINE ? OperationType.OFFLINE : OperationType.STATUS_CHANGE,
+                "管理员审核社区帖子",
+                java.util.Map.of("status", beforeStatus.name()),
+                java.util.Map.of("status", post.getStatus().name(), "opinion", request.opinion())
+        );
         notifyAuditResult(post.getAuthor(), "AUDIT_RESULT_COMMUNITY_POST", request.opinion(), "COMMUNITY_POST", post.getId());
         if (request.action() == AuditAction.APPROVE && post.getCategory() != null) {
             post.getCategory().setPostCount(post.getCategory().getPostCount() + 1);
@@ -245,6 +306,7 @@ public class AuditService {
 
     private void auditComment(AuditDtos.AuditRequest request, User auditor) {
         CommunityComment comment = communityService.getManagedComment(request.targetId());
+        CommunityCommentStatus beforeStatus = comment.getStatus();
         if (request.action() == AuditAction.OFFLINE) {
             comment.setStatus(CommunityCommentStatus.OFFLINE);
         } else {
@@ -254,6 +316,16 @@ public class AuditService {
             comment.setStatus(request.action() == AuditAction.APPROVE ? CommunityCommentStatus.PUBLISHED : CommunityCommentStatus.REJECTED);
         }
         recordLog(AuditTargetType.COMMUNITY_COMMENT, comment.getId(), auditor, request.action(), request.opinion());
+        operationLogService.record(
+                auditor,
+                OperationTargetType.COMMUNITY_COMMENT,
+                comment.getId(),
+                "评论#" + comment.getId() + " / 帖子#" + comment.getPost().getId(),
+                request.action() == AuditAction.OFFLINE ? OperationType.OFFLINE : OperationType.STATUS_CHANGE,
+                "管理员审核社区评论",
+                java.util.Map.of("status", beforeStatus.name()),
+                java.util.Map.of("status", comment.getStatus().name(), "opinion", request.opinion())
+        );
         notifyAuditResult(comment.getAuthor(), "AUDIT_RESULT_COMMUNITY_COMMENT", request.opinion(), "COMMUNITY_COMMENT", comment.getId());
     }
 

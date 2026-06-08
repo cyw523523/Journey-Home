@@ -7,6 +7,8 @@ import com.guitu.domain.enums.AnimalGender;
 import com.guitu.domain.enums.AnimalStatus;
 import com.guitu.domain.enums.AnimalType;
 import com.guitu.domain.enums.NotificationType;
+import com.guitu.domain.enums.OperationTargetType;
+import com.guitu.domain.enums.OperationType;
 import com.guitu.domain.enums.UserRole;
 import com.guitu.dto.AnimalDtos;
 import com.guitu.exception.BusinessException;
@@ -45,6 +47,8 @@ public class AnimalService {
     private final ContentModerationService moderationService;
     private final CacheInvalidationService cacheInvalidationService;
     private final NotificationService notificationService;
+    private final GeocodingService geocodingService;
+    private final OperationLogService operationLogService;
 
     public AnimalService(
             AnimalRepository animalRepository,
@@ -52,7 +56,9 @@ public class AnimalService {
             DtoMapper mapper,
             ContentModerationService moderationService,
             CacheInvalidationService cacheInvalidationService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            GeocodingService geocodingService,
+            OperationLogService operationLogService
     ) {
         this.animalRepository = animalRepository;
         this.userService = userService;
@@ -60,6 +66,8 @@ public class AnimalService {
         this.moderationService = moderationService;
         this.cacheInvalidationService = cacheInvalidationService;
         this.notificationService = notificationService;
+        this.geocodingService = geocodingService;
+        this.operationLogService = operationLogService;
     }
 
     @Transactional(readOnly = true)
@@ -122,7 +130,17 @@ public class AnimalService {
         animal.setStatus(request.status() != null ? request.status() : AnimalStatus.PENDING_REVIEW);
         animal.setReviewComment(null);
         animal.setPublisher(publisher);
-        AnimalDtos.AnimalResponse response = mapper.toAnimalResponse(animalRepository.save(animal));
+        Animal saved = animalRepository.save(animal);
+        operationLogService.record(
+                OperationTargetType.ANIMAL,
+                saved.getId(),
+                saved.getType().getLabel() + " / " + saved.getFoundRegion(),
+                OperationType.CREATE,
+                "创建动物档案",
+                null,
+                snapshotOf(saved)
+        );
+        AnimalDtos.AnimalResponse response = mapper.toAnimalResponse(saved);
         cacheInvalidationService.evictPublicCaches();
         return response;
     }
@@ -132,6 +150,7 @@ public class AnimalService {
         Animal animal = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(animal.getPublisher().getId());
         moderationService.validateText("Animal description", request.foundRegion(), request.healthCondition(), request.description());
+        java.util.Map<String, Object> before = snapshotOf(animal);
         fillAnimal(animal, request);
         if (!SecuritySupport.isAdmin()) {
             animal.setStatus(AnimalStatus.PENDING_REVIEW);
@@ -141,6 +160,15 @@ public class AnimalService {
                     "ADMIN_EDIT_ANIMAL", "管理员编辑了你的动物档案「" + animal.getType().getLabel() + " / " + animal.getFoundRegion() + "」",
                     "ANIMAL", animal.getId());
         }
+        operationLogService.record(
+                OperationTargetType.ANIMAL,
+                animal.getId(),
+                animal.getType().getLabel() + " / " + animal.getFoundRegion(),
+                OperationType.UPDATE,
+                "编辑动物档案",
+                before,
+                snapshotOf(animal)
+        );
         cacheInvalidationService.evictPublicCaches();
         return mapper.toAnimalResponse(animal);
     }
@@ -149,7 +177,17 @@ public class AnimalService {
     public void offline(Long id) {
         Animal animal = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(animal.getPublisher().getId());
+        java.util.Map<String, Object> before = snapshotOf(animal);
         animal.setStatus(AnimalStatus.OFFLINE);
+        operationLogService.record(
+                OperationTargetType.ANIMAL,
+                animal.getId(),
+                animal.getType().getLabel() + " / " + animal.getFoundRegion(),
+                OperationType.OFFLINE,
+                "下架动物档案",
+                before,
+                snapshotOf(animal)
+        );
         cacheInvalidationService.evictPublicCaches();
     }
 
@@ -157,6 +195,7 @@ public class AnimalService {
     public AnimalDtos.AnimalResponse updateStatus(Long id, AnimalDtos.UpdateAnimalStatusRequest request) {
         Animal animal = getEntity(id);
         SecuritySupport.requireOwnerOrAdmin(animal.getPublisher().getId());
+        java.util.Map<String, Object> before = snapshotOf(animal);
         if (!SecuritySupport.isAdmin()) {
             String prev = animal.getStatus().name();
             String target = request.status().name();
@@ -165,6 +204,15 @@ public class AnimalService {
         } else {
             animal.setStatus(request.status());
         }
+        operationLogService.record(
+                OperationTargetType.ANIMAL,
+                animal.getId(),
+                animal.getType().getLabel() + " / " + animal.getFoundRegion(),
+                OperationType.STATUS_CHANGE,
+                "更新动物档案状态",
+                before,
+                snapshotOf(animal)
+        );
         cacheInvalidationService.evictPublicCaches();
         return mapper.toAnimalResponse(animal);
     }
@@ -181,8 +229,17 @@ public class AnimalService {
         animal.setAge(request.age());
         animal.setFoundRegion(request.foundRegion());
         validateCoordinate(request.foundLatitude(), request.foundLongitude());
-        animal.setFoundLatitude(request.foundLatitude());
-        animal.setFoundLongitude(request.foundLongitude());
+        if (request.foundLatitude() != null && request.foundLongitude() != null) {
+            animal.setFoundLatitude(request.foundLatitude());
+            animal.setFoundLongitude(request.foundLongitude());
+        } else if (request.foundRegion() != null && !request.foundRegion().isBlank()
+                && (animal.getFoundLatitude() == null || animal.getFoundLongitude() == null)) {
+            GeocodingService.GeoResult geo = geocodingService.geocode(request.foundRegion());
+            if (geo != null) {
+                animal.setFoundLongitude(geo.longitude());
+                animal.setFoundLatitude(geo.latitude());
+            }
+        }
         animal.setHealthCondition(request.healthCondition());
         animal.setDescription(request.description());
         animal.getImageUrls().clear();
@@ -246,5 +303,18 @@ public class AnimalService {
         int safePage = Math.max(0, page);
         int safeSize = Math.max(1, Math.min(size, 50));
         return PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    private java.util.Map<String, Object> snapshotOf(Animal animal) {
+        java.util.Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+        snapshot.put("type", animal.getType() != null ? animal.getType().name() : null);
+        snapshot.put("gender", animal.getGender() != null ? animal.getGender().name() : null);
+        snapshot.put("age", animal.getAge());
+        snapshot.put("foundRegion", animal.getFoundRegion());
+        snapshot.put("healthCondition", animal.getHealthCondition());
+        snapshot.put("description", animal.getDescription());
+        snapshot.put("status", animal.getStatus() != null ? animal.getStatus().name() : null);
+        snapshot.put("reviewComment", animal.getReviewComment());
+        return snapshot;
     }
 }

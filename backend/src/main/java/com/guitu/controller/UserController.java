@@ -83,4 +83,13 @@ public class UserController {
     ) {
         return ApiResponse.ok(adoptApplyService.listMine(status, page, size));
     }
+
+    @GetMapping("/managed-applications")
+    public ApiResponse<PageResponse<AdoptApplyDtos.ApplyResponse>> managedApplications(
+            @RequestParam(required = false) ApplyStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.ok(adoptApplyService.managedList(status, page, size));
+    }
 }

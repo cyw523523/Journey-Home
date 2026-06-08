@@ -190,6 +190,7 @@ import ReportDialog from '../components/ReportDialog.vue'
 import StatusTag from '../components/StatusTag.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import { animalApi, medicalRecordApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 import { demoAnimals, demoImages } from '../data/demoData'
@@ -251,6 +252,18 @@ const isOwnerOrAdmin = computed(() => {
 const availableStatuses = computed(() => {
   return animalStatusOptions.filter((item) => ['WAITING_RESCUE', 'RESCUING', 'WAITING_ADOPTION', 'ADOPTED', 'OFFLINE'].includes(item.value))
 })
+
+useAiAssistantPageContext(() => ({
+  pageTitle: animal.value?.id ? `动物档案 #${animal.value.id}` : '动物详情',
+  pageSummary: '当前页面展示单个动物档案、健康情况、医疗记录，以及可执行的领养或编辑操作。',
+  entityType: 'ANIMAL',
+  entityId: animal.value?.id || Number(route.params.id) || null,
+  viewData: {
+    canApply: animal.value?.status === 'WAITING_ADOPTION',
+    isOwnerOrAdmin: isOwnerOrAdmin.value,
+    medicalRecordCount: medicalRecords.value.length
+  }
+}))
 
 function apply() {
   if (!auth.isLoggedIn.value) {

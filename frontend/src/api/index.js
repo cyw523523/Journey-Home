@@ -14,6 +14,7 @@ export const userApi = {
   animals: (params) => http.get('/users/me/animals', { params }),
   rescues: (params) => http.get('/users/me/rescues', { params }),
   applications: (params) => http.get('/users/me/applications', { params }),
+  managedApplications: (params) => http.get('/users/me/managed-applications', { params }),
   publicProfile: (id) => http.get(`/users/${id}`)
 }
 
@@ -47,7 +48,13 @@ export const adoptionApi = {
   smartMatch: (data) => http.post('/adoptions/smart-match', data, { timeout: 60000 }),
   list: (params) => http.get('/adoptions', { params }),
   detail: (id) => http.get(`/adoptions/${id}`),
-  cancel: (id) => http.patch(`/adoptions/${id}/cancel`)
+  cancel: (id) => http.patch(`/adoptions/${id}/cancel`),
+  agreement: (id) => http.get(`/adoptions/${id}/agreement`),
+  updateAgreement: (id, data) => http.patch(`/adoptions/${id}/agreement`, data),
+  signAgreement: (id, data) => http.post(`/adoptions/${id}/agreement/sign`, data),
+  followUps: (id) => http.get(`/adoptions/${id}/follow-ups`),
+  updateFollowUpPlan: (id, data) => http.patch(`/adoptions/follow-ups/${id}/plan`, data),
+  completeFollowUp: (id, data) => http.patch(`/adoptions/follow-ups/${id}/complete`, data)
 }
 
 export const noticeApi = {
@@ -184,6 +191,7 @@ export const adminApi = {
   auditDetail: (targetType, targetId) => http.get(`/admin/audits/${targetType}/${targetId}`),
   audit: (data) => http.post('/admin/audits', data),
   logs: (params) => http.get('/admin/audit-logs', { params }),
+  operationLogs: (params) => http.get('/admin/operation-logs', { params }),
   applications: (params) => http.get('/admin/applications', { params }),
   users: (params) => http.get('/admin/users', { params }),
   updateUser: (id, data) => http.patch(`/admin/users/${id}`, data),

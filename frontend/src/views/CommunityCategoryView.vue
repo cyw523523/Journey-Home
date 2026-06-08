@@ -58,6 +58,7 @@ import { ArrowLeft, Search } from 'lucide-vue-next'
 import EmptyState from '../components/EmptyState.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { categoryApi, communityApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { communityPostStatusOptions } from '../utils/status'
 
 const route = useRoute()
@@ -67,6 +68,25 @@ const keyword = ref('')
 const page = ref(1)
 const total = ref(0)
 const loading = ref(false)
+
+useAiAssistantPageContext(() => ({
+  pageTitle: category.value?.name || '社区分类',
+  pageSummary: '当前页面展示某个社区分类下的帖子列表。',
+  viewData: {
+    category: category.value ? {
+      id: category.value.id,
+      code: category.value.code,
+      name: category.value.name
+    } : null,
+    keyword: keyword.value,
+    visiblePosts: posts.value.slice(0, 8).map((item) => ({
+      id: item.id,
+      title: item.title,
+      authorNickname: item.authorNickname,
+      commentCount: item.commentCount
+    }))
+  }
+}))
 
 const API_BASE = window.location.origin
 

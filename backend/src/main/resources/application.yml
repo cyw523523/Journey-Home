@@ -26,6 +26,8 @@ app:
   upload:
     dir: ${user.dir}/uploads
     public-path: /uploads
+  amap:
+    geocode-key: ${AMAP_GEOCODE_KEY:}
   ai:
     zhipu:
       api-url: ${ZHIPU_API_URL:https://open.bigmodel.cn/api/paas/v4/chat/completions}

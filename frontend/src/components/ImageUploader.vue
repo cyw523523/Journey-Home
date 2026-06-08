@@ -15,21 +15,21 @@
       accept=".jpg,.jpeg,.png,.webp"
     >
       <UploadCloud :size="28" />
-      <div class="upload-copy">拖拽图片或点击上传</div>
+      <div class="upload-copy">{{ t('uploader.prompt') }}</div>
       <template #tip>
-        <div class="el-upload__tip">支持 JPG/PNG/WEBP，单张不超过 5MB</div>
+        <div class="el-upload__tip">{{ t('uploader.tip') }}</div>
       </template>
     </el-upload>
     <div v-if="modelValue.length" class="thumb-grid">
       <div v-for="(url, index) in modelValue" :key="url" class="thumb-item">
-        <img :src="getFullUrl(url)" alt="上传图片预览" @click="previewImage(url)" />
+        <img :src="getFullUrl(url)" :alt="t('uploader.previewAlt')" @click="previewImage(url)" />
         <button class="thumb-remove" @click.stop="removeImage(index)">×</button>
       </div>
     </div>
 
-    <el-dialog v-model="previewVisible" title="图片预览" width="600px" append-to-body>
+    <el-dialog v-model="previewVisible" :title="t('uploader.previewTitle')" width="600px" append-to-body>
       <div style="text-align: center">
-        <img :src="previewUrl" alt="预览图片" style="max-width: 100%; max-height: 70vh; object-fit: contain;" />
+        <img :src="previewUrl" :alt="t('uploader.previewAlt')" style="max-width: 100%; max-height: 70vh; object-fit: contain;" />
       </div>
     </el-dialog>
   </div>
@@ -39,6 +39,7 @@
 import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadCloud } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -55,6 +56,7 @@ const headers = computed(() => {
 const fileList = ref([])
 const previewVisible = ref(false)
 const previewUrl = ref('')
+const { t } = useI18n()
 
 const API_BASE = window.location.origin
 
@@ -79,12 +81,12 @@ watch(
 
 function handleSuccess(response) {
   if (!response?.success) {
-    ElMessage.error(response?.message || '上传失败')
+    ElMessage.error(response?.message || t('uploader.uploadFailed'))
     return
   }
   const newUrls = [...props.modelValue, response.data.url]
   emit('update:modelValue', newUrls)
-  ElMessage.success('图片上传成功')
+  ElMessage.success(t('uploader.uploadSuccess'))
 }
 
 function handleRemove(file) {
@@ -93,7 +95,7 @@ function handleRemove(file) {
 }
 
 function handleError() {
-  ElMessage.error('图片上传失败，请稍后重试')
+  ElMessage.error(t('uploader.uploadRetry'))
 }
 
 function handlePreview(file) {

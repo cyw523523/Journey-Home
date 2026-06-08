@@ -121,6 +121,7 @@ import AnimalCard from '../components/AnimalCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import { animalApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { getBrowserLocation } from '../utils/amap'
 import { notifyError } from '../api/http'
 import { demoAnimals } from '../data/demoData'
@@ -170,6 +171,24 @@ const rules = {
   foundRegion: [{ required: true, message: () => t('animals.inputRegion'), trigger: 'blur' }],
   imageUrls: [{ type: 'array', required: true, min: 1, message: () => t('animals.uploadPhoto'), trigger: 'change' }]
 }
+
+useAiAssistantPageContext(() => ({
+  pageTitle: t('animals.title'),
+  pageSummary: t('animals.description'),
+  viewData: {
+    filters: { ...filters },
+    total: total.value,
+    currentLocation: currentLocation.value,
+    visibleAnimals: animals.value.slice(0, 6).map((item) => ({
+      id: item.id,
+      typeText: item.typeText,
+      genderText: item.genderText,
+      statusText: item.statusText,
+      foundRegion: item.foundRegion,
+      distanceKm: item.distanceKm ?? null
+    }))
+  }
+}))
 
 async function load() {
   loading.value = true

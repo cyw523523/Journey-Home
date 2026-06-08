@@ -2,16 +2,16 @@
   <section class="view page">
     <div class="section-head">
       <div>
-        <h1>救助站中心</h1>
-        <p>申请认证你的救助站，发现其他救助站，与粉丝互动。</p>
+        <h1>{{ t('rescueStationPage.title') }}</h1>
+        <p>{{ t('rescueStationPage.description') }}</p>
       </div>
     </div>
 
     <!-- Discover stations section -->
     <div class="surface form-shell">
       <div class="section-header">
-        <h2>🏠 发现救助站</h2>
-        <el-input v-model="searchKeyword" placeholder="搜索救助站" style="width: 220px" @keyup.enter="loadDiscoverStations">
+        <h2>{{ t('rescueStationPage.discoverTitle') }}</h2>
+        <el-input v-model="searchKeyword" :placeholder="t('rescueStationPage.searchPlaceholder')" style="width: 220px" @keyup.enter="loadDiscoverStations">
           <template #append><Search :size="16" /></template>
         </el-input>
       </div>
@@ -27,62 +27,62 @@
           </div>
           <div class="card-body">
             <h3>{{ s.stationName }}</h3>
-            <p class="card-desc">{{ s.description || '暂无简介' }}</p>
+            <p class="card-desc">{{ s.description || t('rescueStationPage.noDescription') }}</p>
             <div class="card-meta">
-              <span><MapPin :size="12" /> {{ s.address || '未填写' }}</span>
-              <span><Users :size="12" /> {{ s.followerCount }} 粉丝</span>
+              <span><MapPin :size="12" /> {{ s.address || t('rescueStationPage.notFilled') }}</span>
+              <span><Users :size="12" /> {{ t('rescueStationPage.followersCount', { count: s.followerCount }) }}</span>
             </div>
             <div class="card-actions">
-              <el-button v-if="!isFollowing(s.userId)" size="small" :icon="Heart" @click="followStation(s.userId)">关注</el-button>
-              <el-button v-else size="small" :icon="Heart" type="primary" @click="unfollowStation(s.userId)">已关注</el-button>
-              <el-button size="small" :icon="MessageCircle" @click="openChat(s.userId, s.stationName)">私信</el-button>
+              <el-button v-if="!isFollowing(s.userId)" size="small" :icon="Heart" @click="followStation(s.userId)">{{ t('common.follow') }}</el-button>
+              <el-button v-else size="small" :icon="Heart" type="primary" @click="unfollowStation(s.userId)">{{ t('common.followed') }}</el-button>
+              <el-button size="small" :icon="MessageCircle" @click="openChat(s.userId, s.stationName)">{{ t('nav.messages') }}</el-button>
             </div>
           </div>
         </div>
         <div v-if="!discoverStations.length" class="empty-stations">
           <div class="empty-icon">🏠</div>
-          <p>暂无救助站数据</p>
+          <p>{{ t('rescueStationPage.noStations') }}</p>
         </div>
       </div>
     </div>
 
     <!-- My station section -->
     <div class="section-divider">
-      <h2>我的救助站</h2>
+      <h2>{{ t('rescueStationPage.myStation') }}</h2>
     </div>
 
     <!-- No station: show apply form -->
     <div v-if="!hasStation && !applying" class="form-shell apply-card">
-      <el-empty v-if="!auth.isLoggedIn.value" description="请先登录后再申请救助站认证">
-        <el-button type="primary" @click="$router.push('/auth')">去登录</el-button>
+      <el-empty v-if="!auth.isLoggedIn.value" :description="t('rescueStationPage.loginRequired')">
+        <el-button type="primary" @click="$router.push('/auth')">{{ t('nav.login') }}</el-button>
       </el-empty>
       <template v-else>
-        <h2>🏠 申请成为认证救助站</h2>
-        <p class="muted">提交后管理员会审核你的资质，通过后你将获得认证标识和专属数据看板。</p>
+        <h2>{{ t('rescueStationPage.applyTitle') }}</h2>
+        <p class="muted">{{ t('rescueStationPage.applyDescription') }}</p>
         <el-form ref="applyFormRef" :model="applyForm" :rules="applyRules" label-position="top">
-          <el-form-item label="救助站名称" prop="stationName">
-            <el-input v-model="applyForm.stationName" placeholder="如：朝阳区爱心流浪动物救助站" />
+          <el-form-item :label="t('rescueStationPage.stationName')" prop="stationName">
+            <el-input v-model="applyForm.stationName" :placeholder="t('rescueStationPage.stationNamePlaceholder')" />
           </el-form-item>
-          <el-form-item label="简介" prop="description">
-            <el-input v-model="applyForm.description" type="textarea" :rows="3" placeholder="介绍你的救助站、成立时间、主要工作内容等" />
+          <el-form-item :label="t('common.description')" prop="description">
+            <el-input v-model="applyForm.description" type="textarea" :rows="3" :placeholder="t('rescueStationPage.descriptionPlaceholder')" />
           </el-form-item>
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="地址">
-                <el-input v-model="applyForm.address" placeholder="详细地址" />
+              <el-form-item :label="t('common.region')">
+                <el-input v-model="applyForm.address" :placeholder="t('rescueStationPage.addressPlaceholder')" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="联系电话">
-                <el-input v-model="applyForm.contactPhone" placeholder="联系电话" />
+              <el-form-item :label="t('common.contact')">
+                <el-input v-model="applyForm.contactPhone" :placeholder="t('rescueStationPage.contactPlaceholder')" />
               </el-form-item>
             </el-col>
           </el-row>
-          <el-form-item label="封面图片">
+          <el-form-item :label="t('rescueStationPage.coverImage')">
             <ImageUploader v-model="applyForm.imageUrls" usage="station" :limit="1" />
           </el-form-item>
         </el-form>
-        <el-button :loading="saving" type="primary" size="large" @click="submitApply">提交认证申请</el-button>
+        <el-button :loading="saving" type="primary" size="large" @click="submitApply">{{ t('rescueStationPage.submitApply') }}</el-button>
       </template>
     </div>
 
@@ -99,80 +99,80 @@
             <StatusTag :value="station.certificationStatus" :text="station.certificationStatusText"
                        :options="certificationOptions" />
           </div>
-          <p class="muted">{{ station.description || '暂无简介' }}</p>
+          <p class="muted">{{ station.description || t('rescueStationPage.noDescription') }}</p>
           <div class="station-meta-row">
-            <span><MapPin :size="14" /> {{ station.address || '未填写' }}</span>
-            <span><Phone :size="14" /> {{ station.contactPhone || '未填写' }}</span>
-            <span><Users :size="14" /> {{ station.followerCount }} 粉丝</span>
+            <span><MapPin :size="14" /> {{ station.address || t('rescueStationPage.notFilled') }}</span>
+            <span><Phone :size="14" /> {{ station.contactPhone || t('rescueStationPage.notFilled') }}</span>
+            <span><Users :size="14" /> {{ t('rescueStationPage.followersCount', { count: station.followerCount }) }}</span>
           </div>
           <div v-if="station.rejectReason" class="reject-hint">
-            ⚠️ 驳回原因：{{ station.rejectReason }}
+            {{ t('rescueStationPage.rejectReason') }}{{ station.rejectReason }}
           </div>
           <div style="margin-top: 12px; display:flex; gap:8px">
-            <el-button v-if="canEdit" :icon="Pencil" @click="editVisible = true">编辑资料</el-button>
-            <el-button v-if="station.certificationStatus === 'PENDING'" disabled>审核中...</el-button>
+            <el-button v-if="canEdit" :icon="Pencil" @click="openEdit">{{ t('rescueStationPage.editProfile') }}</el-button>
+            <el-button v-if="station.certificationStatus === 'PENDING'" disabled>{{ t('rescueStationPage.pendingReview') }}</el-button>
           </div>
         </div>
       </div>
 
       <!-- Tabs -->
       <el-tabs v-model="activeTab" class="station-tabs">
-        <el-tab-pane label="数据看板" name="dashboard">
+        <el-tab-pane :label="t('rescueStationPage.dashboard')" name="dashboard">
           <div v-if="dashboardLoading" class="form-shell"><el-skeleton :rows="5" animated /></div>
           <div v-else-if="dashboard" class="dashboard-grid">
             <div class="stat-card">
               <div class="stat-icon rescue-icon">🐾</div>
               <div class="stat-info">
                 <strong>{{ dashboard.rescueCount }}</strong>
-                <span>救助信息</span>
+                <span>{{ t('nav.rescues') }}</span>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon animal-icon">🐱</div>
               <div class="stat-info">
                 <strong>{{ dashboard.animalCount }}</strong>
-                <span>动物档案</span>
+                <span>{{ t('nav.animals') }}</span>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon donation-icon">📦</div>
               <div class="stat-info">
                 <strong>{{ dashboard.donationDemandCount }}</strong>
-                <span>物资需求</span>
+                <span>{{ t('rescueStationPage.supplyNeeds') }}</span>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon record-icon">💝</div>
               <div class="stat-info">
                 <strong>{{ dashboard.totalDonationRecords }}</strong>
-                <span>捐赠记录</span>
+                <span>{{ t('rescueStationPage.donationRecords') }}</span>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon task-icon">🤝</div>
               <div class="stat-info">
                 <strong>{{ dashboard.volunteerTaskCount }}</strong>
-                <span>志愿者任务</span>
+                <span>{{ t('nav.volunteerTasks') }}</span>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon app-icon">📋</div>
               <div class="stat-info">
                 <strong>{{ dashboard.totalVolunteerApplications }}</strong>
-                <span>报名申请</span>
+                <span>{{ t('rescueStationPage.applications') }}</span>
               </div>
             </div>
             <div class="stat-card highlight">
               <div class="stat-icon fan-icon">❤️</div>
               <div class="stat-info">
                 <strong>{{ dashboard.followerCount }}</strong>
-                <span>粉丝关注</span>
+                <span>{{ t('rescueStationPage.fanFollowers') }}</span>
               </div>
             </div>
           </div>
         </el-tab-pane>
 
-        <el-tab-pane :label="'粉丝 (' + station.followerCount + ')'" name="followers">
+        <el-tab-pane :label="t('rescueStationPage.followersTab', { count: station.followerCount })" name="followers">
           <el-skeleton v-if="followersLoading" :rows="4" animated />
           <div v-else-if="followers.length" class="follower-list">
             <div v-for="f in followers" :key="f.id" class="follower-item">
@@ -180,17 +180,17 @@
               <div v-else class="avatar-sm avatar-placeholder">👤</div>
               <div class="follower-info">
                 <strong>{{ f.nickname }}</strong>
-                <small class="muted">{{ formatTime(f.followedAt) }} 关注了你</small>
+                <small class="muted">{{ t('rescueStationPage.followedAt', { time: formatTime(f.followedAt) }) }}</small>
               </div>
               <RouterLink :to="{ path: '/users/' + f.userId }">
-                <el-button text size="small">查看主页</el-button>
+                <el-button text size="small">{{ t('rescueStationPage.viewProfile') }}</el-button>
               </RouterLink>
             </div>
           </div>
-          <EmptyState v-else title="暂无粉丝" description="当有人关注你的救助站时会显示在这里。" :compact="true" />
+          <EmptyState v-else :title="t('rescueStationPage.noFollowers')" :description="t('rescueStationPage.noFollowersDesc')" :compact="true" />
         </el-tab-pane>
 
-        <el-tab-pane label="我关注的" name="following">
+        <el-tab-pane :label="t('rescueStationPage.following')" name="following">
           <el-skeleton v-if="followingLoading" :rows="4" animated />
           <div v-else-if="followingList.length" class="follower-list">
             <div v-for="f in followingList" :key="f.id" class="follower-item">
@@ -201,37 +201,37 @@
                 <small class="muted">{{ f.stationName }}</small>
               </div>
               <RouterLink :to="{ path: '/rescue-station' }">
-                <el-button text size="small">查看</el-button>
+                <el-button text size="small">{{ t('common.details') }}</el-button>
               </RouterLink>
             </div>
           </div>
-          <EmptyState v-else title="暂无关注" description="去发现并关注其他救助站吧！" :compact="true" />
+          <EmptyState v-else :title="t('rescueStationPage.noFollowing')" :description="t('rescueStationPage.noFollowingDesc')" :compact="true" />
         </el-tab-pane>
       </el-tabs>
     </div>
 
     <!-- Edit dialog -->
-    <el-dialog v-model="editVisible" title="编辑救助站资料" width="600px" append-to-body>
+    <el-dialog v-model="editVisible" :title="t('rescueStationPage.editDialogTitle')" width="600px" append-to-body>
       <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-position="top">
-        <el-form-item label="救助站名称" prop="stationName">
+        <el-form-item :label="t('rescueStationPage.stationName')" prop="stationName">
           <el-input v-model="editForm.stationName" />
         </el-form-item>
-        <el-form-item label="简介">
+        <el-form-item :label="t('common.description')">
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
         </el-form-item>
-        <el-form-item label="地址">
+        <el-form-item :label="t('common.region')">
           <el-input v-model="editForm.address" />
         </el-form-item>
-        <el-form-item label="联系电话">
+        <el-form-item :label="t('common.contact')">
           <el-input v-model="editForm.contactPhone" />
         </el-form-item>
-        <el-form-item label="封面图片">
+        <el-form-item :label="t('rescueStationPage.coverImage')">
           <ImageUploader v-model="editForm.imageUrls" usage="station" :limit="1" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button :loading="saving" type="primary" @click="saveEdit">保存</el-button>
+        <el-button @click="editVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button :loading="saving" type="primary" @click="saveEdit">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </section>
@@ -242,14 +242,18 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { MapPin, MessageCircle, Phone, Pencil, Search, Users, Heart } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import EmptyState from '../components/EmptyState.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { rescueStationApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
+import { certificationOptions } from '../utils/status'
 
 const router = useRouter()
+const { locale, t } = useI18n()
 
 const auth = useAuth()
 const saving = ref(false)
@@ -273,20 +277,14 @@ const followingIds = ref(new Set())
 const applyFormRef = ref()
 const editFormRef = ref()
 
-const certificationOptions = [
-  { label: '待审核', value: 'PENDING', type: 'warning' },
-  { label: '已认证', value: 'APPROVED', type: 'success' },
-  { label: '未通过', value: 'REJECTED', type: 'danger' }
-]
-
 const applyForm = reactive({ stationName: '', description: '', address: '', contactPhone: '', imageUrls: [] })
 const editForm = reactive({ id: null, stationName: '', description: '', address: '', contactPhone: '', imageUrls: [] })
 const applyRules = {
-  stationName: [{ required: true, message: '请输入救助站名称', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入简介', trigger: 'blur' }]
+  stationName: [{ required: true, message: t('rescueStationPage.stationNameRequired'), trigger: 'blur' }],
+  description: [{ required: true, message: t('rescueStationPage.descriptionRequired'), trigger: 'blur' }]
 }
 const editRules = {
-  stationName: [{ required: true, message: '请输入救助站名称', trigger: 'blur' }]
+  stationName: [{ required: true, message: t('rescueStationPage.stationNameRequired'), trigger: 'blur' }]
 }
 
 const hasStation = computed(() => !!station.value)
@@ -294,8 +292,43 @@ const canEdit = computed(() => auth.isLoggedIn.value && station.value && (
   auth.state.user?.id === station.value.userId || auth.isAdmin.value
 ))
 
+useAiAssistantPageContext(() => ({
+  pageTitle: t('rescueStationPage.title'),
+  pageSummary: hasStation.value
+    ? t('rescueStationPage.pageSummaryHasStation')
+    : t('rescueStationPage.pageSummaryNoStation'),
+  entityType: hasStation.value ? 'RESCUE_STATION' : null,
+  entityId: station.value?.id || null,
+  viewData: {
+    hasStation: hasStation.value,
+    activeTab: activeTab.value,
+    myStation: station.value ? {
+      id: station.value.id,
+      stationName: station.value.stationName,
+      description: station.value.description,
+      address: station.value.address,
+      contactPhone: station.value.contactPhone,
+      certificationStatusText: station.value.certificationStatusText,
+      followerCount: station.value.followerCount
+    } : null,
+    dashboard: dashboard.value,
+    discoverStations: discoverStations.value.slice(0, 6).map((item) => ({
+      id: item.id,
+      userId: item.userId,
+      stationName: item.stationName,
+      certificationStatusText: item.certificationStatusText,
+      followerCount: item.followerCount
+    })),
+    followersCount: followers.value.length,
+    followingCount: followingList.value.length
+  }
+}))
+
 function formatTime(value) {
-  return value ? new Date(value).toLocaleDateString('zh-CN') : '-'
+  if (!value) {
+    return '-'
+  }
+  return new Date(value).toLocaleDateString(locale.value === 'zh' ? 'zh-CN' : 'en-US')
 }
 
 async function loadStation() {
@@ -357,7 +390,7 @@ async function submitApply() {
   try {
     const payload = { ...applyForm, imageUrl: applyForm.imageUrls?.[0] || null }
     await rescueStationApi.apply(payload)
-    ElMessage.success('申请已提交，请等待管理员审核')
+    ElMessage.success(t('rescueStationPage.applySuccess'))
     Object.assign(applyForm, { stationName: '', description: '', address: '', contactPhone: '', imageUrls: [] })
     await loadStation()
   } catch (error) {
@@ -386,7 +419,7 @@ async function saveEdit() {
   try {
     const payload = { ...editForm, imageUrl: editForm.imageUrls?.[0] || null }
     await rescueStationApi.updateProfile(payload)
-    ElMessage.success('资料已更新')
+    ElMessage.success(t('rescueStationPage.updated'))
     editVisible.value = false
     await loadStation()
   } catch (error) {
@@ -502,13 +535,13 @@ function isFollowing(userId) {
 
 async function followStation(userId) {
   if (!auth.isLoggedIn.value) {
-    ElMessage.warning('请先登录')
+    ElMessage.warning(t('rescueStationPage.loginFirst'))
     return
   }
   try {
     await rescueStationApi.follow(userId)
     followingIds.value.add(userId)
-    ElMessage.success('关注成功')
+    ElMessage.success(t('common.followed'))
     await loadDiscoverStations()
   } catch (error) {
     notifyError(error)
@@ -519,7 +552,7 @@ async function unfollowStation(userId) {
   try {
     await rescueStationApi.unfollow(userId)
     followingIds.value.delete(userId)
-    ElMessage.success('已取消关注')
+    ElMessage.success(t('common.unfollowed'))
     await loadDiscoverStations()
   } catch (error) {
     notifyError(error)
@@ -528,7 +561,7 @@ async function unfollowStation(userId) {
 
 function openChat(userId, stationName) {
     if (!auth.isLoggedIn.value) {
-      ElMessage.warning('请先登录')
+      ElMessage.warning(t('rescueStationPage.loginFirst'))
       return
     }
     router.push({ name: 'messages', query: { userId, userName: stationName } })

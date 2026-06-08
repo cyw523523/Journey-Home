@@ -93,6 +93,7 @@ import LikeButton from '../components/community/LikeButton.vue'
 import FavoriteButton from '../components/community/FavoriteButton.vue'
 import FollowUserButton from '../components/community/FollowUserButton.vue'
 import { communityApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 import { communityPostStatusOptions } from '../utils/status'
@@ -106,6 +107,26 @@ const reportTarget = ref({ type: 'COMMUNITY_POST', id: 0 })
 const replyTarget = ref(null)
 const floorListRef = ref(null)
 
+useAiAssistantPageContext(() => ({
+  pageTitle: detail.value?.post?.title || '社区帖子详情',
+  pageSummary: '当前页面展示一条社区帖子、互动数据和评论区。',
+  entityType: 'COMMUNITY_POST',
+  entityId: detail.value?.post?.id || Number(route.params.id) || null,
+  viewData: {
+    currentPost: detail.value?.post ? {
+      id: detail.value.post.id,
+      title: detail.value.post.title,
+      authorNickname: detail.value.post.authorNickname,
+      categoryName: detail.value.post.categoryName,
+      commentCount: detail.value.post.commentCount || 0,
+      viewCount: detail.value.post.viewCount || 0,
+      contentPreview: summarizeContent(detail.value.post.content)
+    } : null,
+    commentCount: detail.value?.post?.commentCount || 0,
+    canComment: auth.isLoggedIn.value
+  }
+}))
+
 const API_BASE = window.location.origin
 
 function getFullUrl(url) {
@@ -116,6 +137,12 @@ function getFullUrl(url) {
 
 function formatTime(value) {
   return value ? new Date(value).toLocaleString() : '-'
+}
+
+function summarizeContent(content) {
+  if (!content) return ''
+  const normalized = content.replace(/\s+/g, ' ').trim()
+  return normalized.length > 220 ? `${normalized.slice(0, 220)}...` : normalized
 }
 
 function avatarTarget(userId) {

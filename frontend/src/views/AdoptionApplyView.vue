@@ -151,6 +151,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Send } from 'lucide-vue-next'
 import { adoptionApi, animalApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 
@@ -189,6 +190,23 @@ const rules = {
   livingCondition: [{ required: true, message: '请输入居住条件', trigger: 'blur' }],
   experience: [{ required: true, message: '请输入饲养经验', trigger: 'blur' }]
 }
+
+useAiAssistantPageContext(() => ({
+  pageTitle: animal.value?.id ? `领养申请 #${animal.value.id}` : '领养申请',
+  pageSummary: '当前页面用于提交某只动物的领养申请，也可以生成 AI 领养建议。',
+  entityType: 'ANIMAL',
+  entityId: animal.value?.id || Number(route.params.animalId) || null,
+  viewData: {
+    animal: animal.value ? {
+      id: animal.value.id,
+      typeText: animal.value.typeText,
+      foundRegion: animal.value.foundRegion,
+      statusText: animal.value.statusText
+    } : null,
+    formReady: Boolean(form.reason.trim() && form.livingCondition.trim() && form.experience.trim()),
+    smartMatchGenerated: Boolean(smartMatch.value)
+  }
+}))
 
 function formatTime(value) {
   if (!value) return '刚刚'

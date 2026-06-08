@@ -191,6 +191,7 @@ import { useI18n } from 'vue-i18n'
 import { ImagePlus, X } from 'lucide-vue-next'
 import EmptyState from '../components/EmptyState.vue'
 import { messageApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { notifyError } from '../api/http'
 import { useAuth } from '../stores/auth'
 
@@ -215,6 +216,27 @@ const uploadHeaders = computed(() => {
   const token = localStorage.getItem('guitu_token')
   return token ? { Authorization: `Bearer ${token}` } : {}
 })
+
+useAiAssistantPageContext(() => ({
+  pageTitle: tr('messages.title', '私聊消息'),
+  pageSummary: '当前页面展示会话列表、未读消息数量和当前会话消息内容。',
+  viewData: {
+    unreadCount: totalUnread.value,
+    conversationCount: conversations.value.length,
+    conversations: conversations.value.slice(0, 8).map((item) => ({
+      id: item.id,
+      peerNickname: item.peer.nickname,
+      unreadCount: item.unreadCount || 0,
+      lastMessageContent: item.lastMessageContent || ''
+    })),
+    activeConversation: activeConversation.value ? {
+      id: activeConversation.value.id,
+      peerNickname: activeConversation.value.peer.nickname,
+      peerRoleText: activeConversation.value.peer.roleText
+    } : null,
+    visibleMessageCount: messages.value.length
+  }
+}))
 
 function getFullUrl(url) {
   if (!url) return ''

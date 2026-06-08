@@ -14,3 +14,6 @@ frontend/*screenshot.png
 CLAUDE.md
 UI-DESIGN.md
 *.png
+frontend/.env.localcompile-error.txt
+compile-error-detail.txt
+main-compile-error.txt

@@ -92,6 +92,58 @@ CREATE TABLE IF NOT EXISTS adopt_applies (
     CONSTRAINT fk_adopt_applies_applicant FOREIGN KEY (applicant_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS adoption_agreements (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    apply_id BIGINT NOT NULL UNIQUE,
+    animal_id BIGINT NOT NULL,
+    adopter_id BIGINT NOT NULL,
+    publisher_id BIGINT NOT NULL,
+    agreement_no VARCHAR(64) NOT NULL UNIQUE,
+    title VARCHAR(120) NOT NULL,
+    content LONGTEXT NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    adopter_signature_name VARCHAR(64),
+    adopter_signature_image_url VARCHAR(500),
+    adopter_signed_at DATETIME,
+    counterpart_signature_name VARCHAR(64),
+    counterpart_signature_image_url VARCHAR(500),
+    counterpart_signed_at DATETIME,
+    pdf_url VARCHAR(500),
+    completed_at DATETIME,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_adoption_agreements_apply FOREIGN KEY (apply_id) REFERENCES adopt_applies(id),
+    CONSTRAINT fk_adoption_agreements_animal FOREIGN KEY (animal_id) REFERENCES animals(id),
+    CONSTRAINT fk_adoption_agreements_adopter FOREIGN KEY (adopter_id) REFERENCES users(id),
+    CONSTRAINT fk_adoption_agreements_publisher FOREIGN KEY (publisher_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS adoption_follow_ups (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    apply_id BIGINT NOT NULL,
+    animal_id BIGINT NOT NULL,
+    adopter_id BIGINT NOT NULL,
+    creator_id BIGINT,
+    stage_code VARCHAR(32) NOT NULL,
+    stage_label VARCHAR(64) NOT NULL,
+    planned_at DATETIME NOT NULL,
+    completed_at DATETIME,
+    status VARCHAR(32) NOT NULL,
+    note VARCHAR(1000),
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_adoption_follow_ups_apply FOREIGN KEY (apply_id) REFERENCES adopt_applies(id),
+    CONSTRAINT fk_adoption_follow_ups_animal FOREIGN KEY (animal_id) REFERENCES animals(id),
+    CONSTRAINT fk_adoption_follow_ups_adopter FOREIGN KEY (adopter_id) REFERENCES users(id),
+    CONSTRAINT fk_adoption_follow_ups_creator FOREIGN KEY (creator_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS adoption_follow_up_images (
+    follow_up_id BIGINT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_adoption_follow_up_images_follow_up FOREIGN KEY (follow_up_id) REFERENCES adoption_follow_ups(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS notices (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(120) NOT NULL,
@@ -151,6 +203,23 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at DATETIME,
     updated_at DATETIME,
     CONSTRAINT fk_audit_logs_auditor FOREIGN KEY (auditor_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS operation_logs (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    target_type VARCHAR(64) NOT NULL,
+    target_id BIGINT NOT NULL,
+    target_name VARCHAR(255) NOT NULL,
+    operator_id BIGINT NOT NULL,
+    operation_type VARCHAR(64) NOT NULL,
+    operator_ip VARCHAR(64),
+    detail VARCHAR(500),
+    before_snapshot LONGTEXT,
+    after_snapshot LONGTEXT,
+    operated_at DATETIME NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    CONSTRAINT fk_operation_logs_operator FOREIGN KEY (operator_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS direct_conversations (

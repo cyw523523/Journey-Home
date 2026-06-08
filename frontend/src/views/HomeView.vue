@@ -58,6 +58,17 @@
             <span>{{ copy.marquee[2] }}</span>
           </div>
 
+          <div class="hero-trust">
+            <article
+              v-for="item in copy.heroPromises"
+              :key="item.title"
+              class="hero-trust-card"
+            >
+              <strong>{{ item.title }}</strong>
+              <p>{{ item.description }}</p>
+            </article>
+          </div>
+
           <div class="hero-search">
             <el-input v-model="keyword" size="large" :placeholder="$t('home.searchPlaceholder')" @keyup.enter="goSearch" />
             <el-button :icon="Search" size="large" type="primary" @click="goSearch">{{ $t('common.search') }}</el-button>
@@ -67,6 +78,11 @@
             <el-button size="large" type="primary" @click="$router.push('/animals')">{{ copy.primaryAction }}</el-button>
             <el-button size="large" plain @click="$router.push('/community')">{{ copy.secondaryAction }}</el-button>
             <el-button size="large" text @click="$router.push('/rescues')">{{ copy.tertiaryAction }}</el-button>
+          </div>
+
+          <div class="hero-note">
+            <span>{{ copy.heroNoteLabel }}</span>
+            <p>{{ copy.heroNoteText }}</p>
           </div>
         </div>
 
@@ -102,7 +118,10 @@
 
         <div class="pet-marquee-shell">
           <div class="pet-marquee-head">
-            <strong>{{ copy.galleryTitle }}</strong>
+            <div>
+              <strong>{{ copy.galleryTitle }}</strong>
+              <p>{{ copy.galleryDescription }}</p>
+            </div>
           </div>
           <div
             ref="petMarqueeRef"
@@ -157,6 +176,7 @@
         <p class="eyebrow"><Sparkles :size="16" /> {{ copy.storyEyebrow }}</p>
         <h2>{{ copy.storyTitle }}</h2>
         <p>{{ copy.storyDescription }}</p>
+        <span class="story-intro-note">{{ copy.storyNote }}</span>
       </div>
 
       <div class="story-grid">
@@ -183,6 +203,7 @@
 
     <div class="section-head">
       <div>
+        <p class="section-kicker">{{ copy.latestAnimalsKicker }}</p>
         <h2>{{ copy.latestAnimalsTitle || $t('home.latestAnimals') }}</h2>
         <p>{{ copy.latestAnimalsDescription || $t('home.latestAnimalsDesc') }}</p>
       </div>
@@ -196,6 +217,7 @@
 
     <div class="section-head">
       <div>
+        <p class="section-kicker">{{ copy.rescueSectionKicker }}</p>
         <h2>{{ $t('home.rescueDynamics') }}</h2>
         <p>{{ $t('home.rescueDynamicsDesc') }}</p>
       </div>
@@ -234,6 +256,7 @@ import AnimalCard from '../components/AnimalCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { homeApi } from '../api'
+import { useAiAssistantPageContext } from '../composables/useAiAssistantPageContext'
 import { demoAnimals, demoOverview, demoRescues } from '../data/demoData'
 import { rescueStatusOptions } from '../utils/status'
 
@@ -393,16 +416,34 @@ const zhCopy = {
   dynamicPrefix: '一起让流浪动物',
   dynamicWords: ['被更多人看见', '更快得到帮助', '慢慢走向新家'],
   marquee: ['领养档案', '救助发布', '社区交流'],
+  heroPromises: [
+    {
+      title: '真实公开',
+      description: '待领养档案、救助信息和社区经验持续更新，帮助你在行动前看清情况。'
+    },
+    {
+      title: '温柔引导',
+      description: '不鼓励冲动决定，而是让每一次靠近都更稳妥、更有准备。'
+    },
+    {
+      title: '陪伴到底',
+      description: '从第一次看见，到领养、救助与后续照护，这里都希望成为可依靠的入口。'
+    }
+  ],
   primaryAction: '看看待领养动物',
   secondaryAction: '进入社区交流',
   tertiaryAction: '发布救助信息',
+  heroNoteLabel: '自然、安静、值得停留',
+  heroNoteText: '我们想把公益平台做得不只“能用”，而是让人愿意多停留一会儿，多看一眼，多做一次温柔的决定。',
   spotlightText: '愿每一只等待中的小动物，都能遇到愿意停下来看看它的人。',
   galleryTitle: '可爱相册',
+  galleryDescription: '像翻一本慢慢展开的小相册，先被治愈，再决定如何靠近它们。',
   noticeTitle: '最新公告',
   noticeDescription: '活动通知、平台提醒和重要说明都会更新在这里。',
   storyEyebrow: '你可以这样参与',
   storyTitle: '看见它，也帮它找到回家的路',
   storyDescription: '这里汇集了待领养动物、救助信息和真实照护经验。无论你想带它回家、帮它被更多人看见，还是先了解如何开始，都能找到适合自己的方式。',
+  storyNote: '平台不是匆忙的信息墙，而更像一处认真整理过的公益入口。',
   storyCards: [
     {
       title: '想领养它的人',
@@ -423,8 +464,10 @@ const zhCopy = {
   ribbonLabel: '一起让善意流动起来',
   ribbonTitle: '看见它、帮助它、陪它找到新的归属',
   ribbonDescription: '从一条信息开始，让需要帮助的动物被更多人看见。',
+  latestAnimalsKicker: '正在等待被看见',
   latestAnimalsTitle: '最新待领养动物',
-  latestAnimalsDescription: '以下信息已通过审核，方便你了解它们的情况与领养状态。'
+  latestAnimalsDescription: '以下信息已通过审核，方便你了解它们的情况与领养状态。',
+  rescueSectionKicker: '及时连接附近善意'
 }
 
 const enCopy = {
@@ -434,16 +477,34 @@ const enCopy = {
   dynamicPrefix: 'Together, we help them',
   dynamicWords: ['get noticed sooner', 'receive care earlier', 'find a safer home'],
   marquee: ['Adoption profiles', 'Rescue posts', 'Community stories'],
+  heroPromises: [
+    {
+      title: 'Grounded information',
+      description: 'Public profiles, rescue updates, and lived care experience stay visible so people can act with context.'
+    },
+    {
+      title: 'Gentle guidance',
+      description: 'The platform should slow people down in the right way and encourage thoughtful, better-prepared choices.'
+    },
+    {
+      title: 'Support through the journey',
+      description: 'From the first encounter to adoption, rescue, and aftercare, this space aims to stay useful and steady.'
+    }
+  ],
   primaryAction: 'Browse adoptable pets',
   secondaryAction: 'Join the community',
   tertiaryAction: 'Publish rescue info',
+  heroNoteLabel: 'Natural, calm, and worth lingering in',
+  heroNoteText: 'This homepage should feel less like a generic dashboard and more like a quiet, trustworthy entrance to real care work.',
   spotlightText: 'Every waiting animal deserves someone willing to pause, notice, and care.',
   galleryTitle: 'Pet gallery',
+  galleryDescription: 'A softer visual pause before action, designed to make the platform feel human rather than mechanical.',
   noticeTitle: 'Latest notices',
   noticeDescription: 'Platform reminders, events, and important updates are collected here.',
   storyEyebrow: 'Ways to take part',
   storyTitle: 'More than a homepage, this should feel like a place worth staying in',
   storyDescription: 'As you scroll, the homepage keeps explaining how the platform supports adopters, rescuers, and people who simply want to contribute.',
+  storyNote: 'The goal is not noise or urgency, but clarity, warmth, and a reason to care a little longer.',
   storyCards: [
     {
       title: 'For adopters',
@@ -463,7 +524,11 @@ const enCopy = {
   ],
   ribbonLabel: 'Let kindness keep moving',
   ribbonTitle: 'See them, help them, and walk with them toward a new home',
-  ribbonDescription: 'The homepage now behaves more like a polished brand entrance, giving people a reason to stay curious as they scroll.'
+  ribbonDescription: 'The homepage now behaves more like a polished brand entrance, giving people a reason to stay curious as they scroll.',
+  latestAnimalsKicker: 'Profiles waiting to be noticed',
+  latestAnimalsTitle: 'Latest adoptable animals',
+  latestAnimalsDescription: 'These profiles have already been reviewed so you can understand their situation and adoption status with more confidence.',
+  rescueSectionKicker: 'Timely help for urgent moments'
 }
 
 const copy = computed(() => (locale.value === 'zh' ? zhCopy : enCopy))
@@ -476,6 +541,31 @@ const activeWord = computed(() => copy.value.dynamicWords[activeWordIndex.value]
 const heroGlowStyle = computed(() => ({
   '--hero-glow-x': heroGlow.value.x,
   '--hero-glow-y': heroGlow.value.y
+}))
+
+useAiAssistantPageContext(() => ({
+  pageTitle: locale.value === 'zh' ? '首页' : 'Home',
+  pageSummary: locale.value === 'zh'
+    ? '首页展示平台概览、最新待领养动物、最新救助信息和最新公告。'
+    : 'Homepage with overview stats, latest adoptable animals, rescue updates, and notices.',
+  viewData: {
+    overview: overview.value,
+    latestAnimals: animals.value.slice(0, 4).map((item) => ({
+      id: item.id,
+      typeText: item.typeText,
+      statusText: item.statusText,
+      foundRegion: item.foundRegion
+    })),
+    latestRescues: rescues.value.slice(0, 4).map((item) => ({
+      id: item.id,
+      location: item.location,
+      statusText: item.statusText
+    })),
+    latestNotices: notices.value.slice(0, 4).map((item) => ({
+      id: item.id,
+      title: item.title
+    }))
+  }
 }))
 
 function goSearch() {
